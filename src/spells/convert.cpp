@@ -844,6 +844,39 @@ public:
         return true;
     }
 
+    void ignoreBlock(const QModelIndex iSrc) {
+        int lSrc = nifSrc->getBlockNumber(iSrc);
+
+        if (lSrc < 0) {
+            qDebug() << __FUNCTION__ << "Block not found";
+
+            return;
+        }
+
+        if (!handledBlocks[lSrc] && indexMap[lSrc] != -1) {
+            // Block already handled
+            return;
+        }
+
+        handledBlocks[lSrc] = false;
+        indexMap[lSrc] = -1;
+
+        for (int i = linkList.count() - 1; i >= 0; i--) {
+            if (std::get<0>(linkList[i]) == lSrc) {
+                // Remove the current link
+                nifDst->setLink(std::get<1>(linkList[i]), -1);
+
+                linkList.remove(i);
+            }
+        }
+
+        progress++;
+    }
+
+    void ignoreBlock(const QModelIndex iSrc, const QString & name) {
+        ignoreBlock(nifSrc->getBlock(nifSrc->getLink(iSrc, name)));
+    }
+
     void niPSysData(const QModelIndex iDst, const QModelIndex iSrc) {
         Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
 
@@ -1005,6 +1038,7 @@ public:
         // Controlled Blocks
         QModelIndex iControlledBlocksDst = nifDst->getIndex(iDst, "Controlled Blocks");
         QModelIndex iControlledBlocksSrc = nifSrc->getIndex(iSrc, "Controlled Blocks");
+
         if (iControlledBlocksSrc.isValid()) {
             for (int i = 0; i < nifDst->rowCount(iControlledBlocksDst); i++) {
                 QModelIndex iBlockDst = iControlledBlocksDst.child(i, 0);
@@ -1022,7 +1056,7 @@ public:
 
                 c.copyValue("Priority");
 
-                // Handled in copyBlock().
+                // Handled in copyBlock() and niControllerSequencesFinalize().
                 c.ignore("Node Name");
                 c.ignore("Property Type");
                 c.ignore("Controller Type");
@@ -1101,7 +1135,9 @@ public:
             return {nifDst->insertNiBlock("BSEffectShaderProperty" + name + "Controller"), "Effect"};
         }
 
-        qCritical() << "Unknown shader property:" << dstType;
+        qDebug() << "Unknown shader property:" << dstType;
+
+        conversionResult = false;
 
         return {QModelIndex(), ""};
     }
@@ -1115,7 +1151,11 @@ public:
         }
 
         if (isHandled(numController)) {
-            return getHandled(numController);
+            QModelIndex iControllerDst = getHandled(numController);
+
+            nifDst->setLink(iDst, name, nifDst->getBlockNumber(iControllerDst));
+
+            return iControllerDst;
         }
 
         QModelIndex iControllerSrc = nifSrc->getBlock(numController);
@@ -1145,6 +1185,40 @@ public:
                 // Alpha Transparency = 5
                 nifDst->set<uint>(iControllerDst, "Type of Controlled Variable", 5);
             }
+        } else if (controllerType == "BSRefractionFirePeriodController") {
+            // TODO:
+
+            std::tie(iControllerDst, shaderType) = getControllerType("BSLightingShaderProperty", "Float");
+
+            if (shaderType == "Lighting") {
+                bool ok = false;
+                uint val = NifValue::enumOptionValue("LightingShaderControlledVariable", "U Offset", &ok);
+
+                nifDst->set<uint>(iControllerDst, "Type of Controlled Variable", val);
+
+                if (!ok) {
+                    qDebug() << __FUNCTION__ << __LINE__ << "Failed to get enum value";
+                }
+            } else {
+                // shaderType == "Effect"
+                qDebug() << __LINE__ << "Invalid shader type" << shaderType;
+            }
+        } else if (controllerType == "BSRefractionStrengthController") {
+            std::tie(iControllerDst, shaderType) = getControllerType("BSLightingShaderProperty", "Float");
+
+            if (shaderType == "Lighting") {
+                bool ok = false;
+                uint val = NifValue::enumOptionValue("LightingShaderControlledVariable", "Refraction Strength", &ok);
+
+                nifDst->set<uint>(iControllerDst, "Type of Controlled Variable", val);
+
+                if (!ok) {
+                    qDebug() << __FUNCTION__ << __LINE__ << "Failed to get enum value";
+                }
+            } else {
+                // shaderType == "Effect"
+                qDebug() << __LINE__ << "Invalid shader type" << shaderType;
+            }
         } else if (controllerType == "NiTextureTransformController") {
             uint val = nifSrc->get<uint>(iControllerSrc, "Operation");
             #define U_OFFSET 20
@@ -1173,6 +1247,19 @@ public:
             }
 
             nifDst->set<uint>(iControllerDst, "Type of Controlled Variable", val);
+        } else if (controllerType == "NiGeomMorpherController") {
+            // NOTE: If in niControllerSequence warnings will be given by the ck.
+            // TODO: Might have use bones?
+            ignoreBlock(iControllerSrc);
+            ignoreBlock(iControllerSrc, "Data");
+
+            QModelIndex iInterpolatorWeightsSrc = nifSrc->getIndex(iControllerSrc, "Interpolator Weights");
+
+            for (int i = 0; i < nifSrc->rowCount(iInterpolatorWeightsSrc); i++) {
+                ignoreBlock(iInterpolatorWeightsSrc.child(i, 0), "Interpolator");
+            }
+
+            return QModelIndex();
         } else {
             bExactCopy = true;
         }
@@ -1221,16 +1308,12 @@ public:
                                 "NiPSysEmitterDeclinationVarCtlr",
                                 "NiPSysEmitterDeclinationCtlr",
                                 "NiPSysEmitterSpeedCtlr",
+                                "NiFloatExtraDataController",
 
                     }).contains(nifSrc->getBlockName(nifSrc->getBlock(numController)))) {
                 qDebug() << __FUNCTION__ << "Controller not found in exact copy list:" << nifSrc->getBlockName(nifSrc->getBlock(numController));
 
                 conversionResult = false;
-
-                // TODO: Might have use bones?
-                if (nifSrc->getBlockName(nifSrc->getBlock(numController)) == "NiGeomMorpherController") {
-                    return QModelIndex();
-                }
             }
 
             iControllerDst = copyBlock(QModelIndex(), nifSrc->getBlock(numController));
@@ -1296,13 +1379,12 @@ public:
 
         // Follow the controller chain until an empty spot is found.
         while (lNextController != -1) {
-            qDebug() << "Searching...";
-            qDebug() << "lNextController" << lNextController;
             if (linkList.contains(lNextController)) {
                 qDebug() << __LINE__ << "Infinite Recursive link";
 
                 exit(1);
             }
+
             linkList.append(lNextController);
 
             // Get next controller block.
@@ -1687,8 +1769,132 @@ public:
         return iDst;
     }
 
-    void bhkPackedNiTriStripsShapeDataTriangles() {
-        //
+    bool inRange(int low, int high, int x) {
+        return x >= low && x <= high;
+    }
+
+    /**
+     * @brief vertexRange
+     * Handle vertices connected to a vertex in a sub shape but not in the sub shape range.
+     * @param iVerticesSrc
+     * @param vertexList
+     * @param vertexMap
+     * @param bInRange
+     * @param index
+     */
+    void vertexRange(const QModelIndex iVerticesSrc, QVector<Vector3> & vertexList, QMap<int, int> & vertexMap, bool bInRange, int index) {
+        if (!bInRange && !vertexMap.contains(index)) {
+            // Append the vertex and map the old index to the new one.
+            vertexMap[index] = vertexList.count();
+            vertexList.append(nifSrc->get<Vector3>(iVerticesSrc.child(index, 0)));
+        }
+    }
+
+    void setVertex(QModelIndex iPoint1, QModelIndex iPoint2, QMap<int, int> & vertexMap, int firstIndex, int index) {
+        if (vertexMap.contains(index)) {
+            index = vertexMap[index];
+        } else {
+            index -= firstIndex;
+        }
+
+        nifDst->set<ushort>(iPoint1, ushort(index));
+        nifDst->set<ushort>(iPoint2, ushort(index));
+    }
+
+    QModelIndex bhkPackedNiTriStripsShapeDataSubShapeTriangles(QModelIndex iSubShapeSrc, QModelIndex iDataSrc, int firstVertIndex, int row) {
+        int numVerticesSubShape = nifSrc->get<int>(iSubShapeSrc, "Num Vertices");
+        int numTrianglesTotal = nifSrc->get<int>(iDataSrc, "Num Triangles");
+        int vertIndexMax = firstVertIndex + numVerticesSubShape - 1;
+
+        // Scale up (from glnode.cpp)
+        float scale = 7.0;
+
+        QVector<Vector3> vertexList;
+        QModelIndex iVerticesSrc = getIndexSrc(iDataSrc, "Vertices");
+
+        // Add vertices in sub shape range.
+        for (int i = firstVertIndex; i <= vertIndexMax; i++) {
+            vertexList.append(nifSrc->get<Vector3>(iVerticesSrc.child(i, 0)));
+        }
+
+        QModelIndex iTrianglesArraySrc = getIndexSrc(iDataSrc, "Triangles");
+
+        QList<Triangle> triangleList;
+        QMap<int, int> vertexMap;
+
+        // Find all triangles and vertices related to those in the sub shape range.
+        for (int i = 0; i < numTrianglesTotal; i++) {
+            QModelIndex iTriangleSrc = iTrianglesArraySrc.child(i, 0);
+            Triangle triangle = nifSrc->get<Triangle>(iTriangleSrc, "Triangle");
+
+            bool bInRange1 = inRange(firstVertIndex, vertIndexMax, triangle.v1());
+            bool bInRange2 = inRange(firstVertIndex, vertIndexMax, triangle.v2());
+            bool bInRange3 = inRange(firstVertIndex, vertIndexMax, triangle.v3());
+
+            if (bInRange1 || bInRange2 || bInRange3) {
+                triangleList.append(triangle);
+
+                vertexRange(iVerticesSrc, vertexList, vertexMap, bInRange1, triangle.v1());
+                vertexRange(iVerticesSrc, vertexList, vertexMap, bInRange2, triangle.v2());
+                vertexRange(iVerticesSrc, vertexList, vertexMap, bInRange3, triangle.v3());
+            }
+        }
+
+        // Elric crashes without at least one triangle.
+        if (triangleList.count() == 0) {
+            return QModelIndex();
+        }
+
+        // Set sub shape fields.
+
+        // Set Vertices
+
+        QModelIndex iNiTriStripsDst = nifDst->insertNiBlock("NiTriStripsData", row);
+        QModelIndex iVerticesDst = getIndexDst(iNiTriStripsDst, "Vertices");
+
+        nifDst->set<bool>(iNiTriStripsDst, "Has Vertices", true);
+        nifDst->set<int>(iNiTriStripsDst, "Num Vertices", vertexList.count());
+
+        // Scale and set vertices
+        nifDst->updateArray(iVerticesDst);
+        for (int i = 0; i < vertexList.count(); i++) {
+            nifDst->set<Vector3>(iVerticesDst.child(i, 0), vertexList[i] * scale);
+        }
+
+        // Set Triangles
+
+        // Create Double sided triangles.
+        nifDst->set<bool>(iNiTriStripsDst, "Has Points", true);
+        nifDst->set<ushort>(iNiTriStripsDst, "Num Triangles", ushort(triangleList.count() * 2));
+        nifDst->set<ushort>(iNiTriStripsDst, "Num Strips", ushort(triangleList.count() * 2));
+
+        nifDst->updateArray(iNiTriStripsDst, "Strip Lengths");
+
+        QModelIndex iStripLengthsDst = getIndexDst(iNiTriStripsDst, "Strip Lengths");
+        for (int i = 0; i < nifDst->rowCount(iStripLengthsDst); i++) {
+            nifDst->set<ushort>(iStripLengthsDst.child(i, 0), 3);
+        }
+
+        nifDst->updateArray(iNiTriStripsDst, "Points");
+
+        QModelIndex iPointsArrayDst = getIndexDst(iNiTriStripsDst, "Points");
+
+        // Set Triangles
+        for (int i = 0; i < triangleList.count(); i++) {
+            QModelIndex iPointsDst1 = iPointsArrayDst.child(i * 2 + 0, 0);
+            QModelIndex iPointsDst2 = iPointsArrayDst.child(i * 2 + 1, 0);
+
+            nifDst->updateArray(iPointsDst1);
+            nifDst->updateArray(iPointsDst2);
+
+            Triangle triangle = triangleList[i];
+
+            setVertex(iPointsDst1.child(0 ,0), iPointsDst2.child(2 ,0), vertexMap, firstVertIndex, triangle.v1());
+            setVertex(iPointsDst1.child(1 ,0), iPointsDst2.child(1 ,0), vertexMap, firstVertIndex, triangle.v2());
+            setVertex(iPointsDst1.child(2 ,0), iPointsDst2.child(0 ,0), vertexMap, firstVertIndex, triangle.v3());
+        }
+
+        return iNiTriStripsDst;
     }
 
     QModelIndex bhkPackedNiTriStripsShapeData(QModelIndex iSrc, QModelIndex iBhkNiTriStripsShapeDst, int row) {
@@ -1709,117 +1915,42 @@ public:
 
         QModelIndex iDataLayersArrayDst = getIndexDst(iBhkNiTriStripsShapeDst, "Data Layers");
 
-        // Scale up (from glnode.cpp)
-        float scale = 7.0;
-
         int vertIndex = 0;
-        int triIndex = 0;
+        int subShapeIndex = 0;
 
-        for (int k = 0; k < numSubShapes; k++) {
-            QModelIndex iSubShapeSrc = iSubShapesArraySrc.child(k, 0);
-            QModelIndex iDst = nifDst->insertNiBlock("NiTriStripsData", row);
+        for (int i = 0; i < numSubShapes; i++) {
+            QModelIndex iSubShapeSrc = iSubShapesArraySrc.child(i, 0);
+
+            QModelIndex iDst = bhkPackedNiTriStripsShapeDataSubShapeTriangles(iSubShapeSrc, iSrc, vertIndex, row);
+
+            if (!iDst.isValid()) {
+                continue;
+            }
 
             c.setIDst(iDst);
 
-            // Vertices
+            vertIndex += ushort(nifSrc->get<uint>(iSubShapeSrc, "Num Vertices"));
 
-            ushort numVertices = ushort(nifSrc->get<uint>(iSubShapeSrc, "Num Vertices"));
-            nifDst->set<ushort>(iDst, "Num Vertices", numVertices);
-            nifDst->set<bool>(iDst, "Has Vertices", true);
-            nifDst->updateArray(iDst, "Vertices");
-
-            QModelIndex iVerticesDst = getIndexDst(iDst, "Vertices");
-            QModelIndex iVerticesSrc = getIndexSrc(iSrc, "Vertices");
-
-            // Scale and set vertices
-            for (int i = 0; i < numVertices; i++) {
-                nifDst->set<Vector3>(iVerticesDst.child(i, 0), nifSrc->get<Vector3>(iVerticesSrc.child(i + vertIndex, 0)) * scale);
-            }
-
-            // Triangles
-
-            QModelIndex iTrianglesArraySrc = getIndexSrc(iSrc, "Triangles");
-            QModelIndex iTrianglesSrc;
-            int numTriangles = 0;
-
-            if (k == numSubShapes - 1) {
-                numTriangles = nifSrc->rowCount(iTrianglesArraySrc) - triIndex;
-            } else for (ushort i = 0; i < nifSrc->rowCount(iTrianglesArraySrc); i++) {
-                iTrianglesSrc = iTrianglesArraySrc.child(i, 0);
-                Triangle triangle = nifSrc->get<Triangle>(iTrianglesSrc, "Triangle");
-                if (triangle.v1() > vertIndex + numVertices - 1 || triangle.v2() > vertIndex + numVertices - 1 || triangle.v3() > vertIndex + numVertices - 1) {
-                    numTriangles = i - triIndex;
-                    break;
-                }
-            }
-
-            // Create Double sided triangles.
-            nifDst->set<ushort>(iDst, "Num Triangles", ushort(numTriangles * 2));
-            nifDst->set<ushort>(iDst, "Num Strips", ushort(numTriangles * 2));
-            nifDst->updateArray(iDst, "Strip Lengths");
-
-            QModelIndex iStripLengthsDst = getIndexDst(iDst, "Strip Lengths");
-            for (int i = 0; i < nifDst->rowCount(iStripLengthsDst); i++) {
-                nifDst->set<ushort>(iStripLengthsDst.child(i, 0), 3);
-            }
-
-            nifDst->set<bool>(iDst, "Has Points", true);
-            nifDst->updateArray(iDst, "Points");
-
-
-            QModelIndex iPointsArrayDst = getIndexDst(iDst, "Points");
-
-            bhkPackedNiTriStripsShapeDataTriangles();
-
-            for (int i = 0; i < numTriangles; i++) {
-                iTrianglesSrc = iTrianglesArraySrc.child(triIndex + i, 0);
-                QModelIndex iPointsDst1 = iPointsArrayDst.child(i * 2 + 0, 0);
-                QModelIndex iPointsDst2 = iPointsArrayDst.child(i * 2 + 1, 0);
-
-                nifDst->updateArray(iPointsDst1);
-                nifDst->updateArray(iPointsDst2);
-
-                Triangle triangle = nifSrc->get<Triangle>(iTrianglesSrc, "Triangle");
-
-                if (       vertIndex > triangle.v1() ||
-                           vertIndex > triangle.v2() ||
-                           vertIndex > triangle.v3()) {
-                    qDebug() << __FILE__ << __LINE__ << "Vertex index too low";
-
-                    conversionResult = false;
-                } else if (triangle.v1() >= vertIndex + numVertices ||
-                           triangle.v2() >= vertIndex + numVertices ||
-                           triangle.v3() >= vertIndex + numVertices) {
-                    qDebug() << __FILE__ << __LINE__ << "Vertex index too high";
-
-                    conversionResult = false;
-                }
-
-                nifDst->set<ushort>(iPointsDst1.child(0, 0), ushort(triangle.v1() - vertIndex));
-                nifDst->set<ushort>(iPointsDst1.child(1, 0), ushort(triangle.v2() - vertIndex));
-                nifDst->set<ushort>(iPointsDst1.child(2, 0), ushort(triangle.v3() - vertIndex));
-
-                nifDst->set<ushort>(iPointsDst2.child(0, 0), ushort(triangle.v3() - vertIndex));
-                nifDst->set<ushort>(iPointsDst2.child(1, 0), ushort(triangle.v2() - vertIndex));
-                nifDst->set<ushort>(iPointsDst2.child(2, 0), ushort(triangle.v1() - vertIndex));
-            }
-
-            vertIndex += numVertices;
-            triIndex += numTriangles;
-
-            nifDst->setLink(getIndexDst(iBhkNiTriStripsShapeDst, "Strips Data").child(k, 0), row);
+            nifDst->setLink(getIndexDst(iBhkNiTriStripsShapeDst, "Strips Data").child(subShapeIndex, 0), row);
 
             // Data Layer
-            QModelIndex iDataLayerDst = iDataLayersArrayDst.child(k, 0);
+            QModelIndex iDataLayerDst = iDataLayersArrayDst.child(subShapeIndex, 0);
             nifDst->set<uint>(iDataLayerDst, "Layer", layerMap.convert(nifSrc->getIndex(iSubShapeSrc, "Layer")));
             nifDst->set<int>(iDataLayerDst, "Flags and Part Number", nifSrc->get<int>(iSubShapeSrc, "Flags and Part Number"));
             nifDst->set<ushort>(iDataLayerDst, "Group", nifSrc->get<ushort>(iSubShapeSrc, "Group"));
 
             nifDst->set<uint>(iDst, "Material CRC", matMap.convert(getIndexSrc(iSubShapeSrc, "Material")));
 
+            subShapeIndex++;
 
             setHandled(iDst, iSrc);
         }
+
+        // Update arrays to account for deleted sub shapes.
+        nifDst->set<ushort>(iBhkNiTriStripsShapeDst, "Num Strips Data", ushort(subShapeIndex));
+        nifDst->updateArray(iBhkNiTriStripsShapeDst, "Strips Data");
+        nifDst->set<ushort>(iBhkNiTriStripsShapeDst, "Num Data Layers", ushort(subShapeIndex));
+        nifDst->updateArray(iBhkNiTriStripsShapeDst, "Data Layers");
 
         QModelIndex iTrianglesArraySrc = getIndexSrc(iSrc, "Triangles");
         c.ignore(getIndexSrc(iTrianglesArraySrc.child(0, 0), "Triangle"));
@@ -1888,6 +2019,8 @@ public:
                 return  bhkTransformShape(iSrc, parent, row, bScaleSet, radius);
             } else if (shapeType == "bhkBoxShape") {
                 return  bhkBoxShape(iSrc, row, bScaleSet, radius);
+            } else if (shapeType == "bhkCapsuleShape") {
+                return  bhkCapsuleShape(iSrc, row, bScaleSet, radius);
             } else {
                 qDebug() << __FUNCTION__ << "Unknown collision shape:" << shapeType;
 
@@ -1996,6 +2129,35 @@ public:
         if (bhkUpdateScale(bScaleSet, radius, nifSrc->get<float>(iSrc, "Radius"))) {
             nifDst->set<Vector3>(iDst, "Dimensions", nifSrc->get<Vector3>(iSrc, "Dimensions") * radius);
         }
+
+        return iDst;
+    }
+
+    QModelIndex bhkCapsuleShape(QModelIndex iSrc, int row, bool & bScaleSet, float & radius) {
+        QModelIndex iDst = copyBlock(QModelIndex(), iSrc, row);
+
+        nifDst->set<uint>(iDst, "Material", matMap.convert(nifSrc->getIndex(iSrc, "Material")));
+
+        // Capsule seems to always be scaled by 10
+        float scale = 0.1f;
+
+        bhkUpdateScale(bScaleSet, radius, scale);
+
+        float newRadius = nifSrc->get<float>(iSrc, "Radius") * scale;
+
+        nifDst->set<float>(iDst, "Radius", newRadius);
+        nifDst->set<float>(iDst, "Radius 1", newRadius);
+        nifDst->set<float>(iDst, "Radius 2", newRadius);
+
+        QModelIndex iFirstPointDst = getIndexDst(iDst, "First Point");
+        QModelIndex iSecondPointDst = getIndexDst(iDst, "Second Point");
+
+        nifDst->set<Vector3>(iFirstPointDst, nifDst->get<Vector3>(iFirstPointDst) * scale);
+        nifDst->set<Vector3>(iSecondPointDst, nifDst->get<Vector3>(iSecondPointDst) * scale);
+
+//        bhkUpdateScale(bScaleSet, radius, newRadius);
+
+
 
         return iDst;
     }
@@ -2371,19 +2533,21 @@ public:
         QVector<qint32> links = nifSrc->getLinkArray(iSrc, "Extra Data List");
 
         for (int link:links) {
-            QModelIndex linkNode = nifSrc->getBlock(link);
+            QModelIndex iExtraDataSrc = nifSrc->getBlock(link);
 
-            QString type = nifSrc->getBlockName(linkNode);
+            QString type = nifSrc->getBlockName(iExtraDataSrc);
             if (type == "BSXFlags") {
-                copyBlock(iDst, linkNode);
+                copyBlock(iDst, iExtraDataSrc);
             } else if (type == "NiStringExtraData") {
-                copyBlock(iDst, linkNode);
+                copyBlock(iDst, iExtraDataSrc);
             } else if (type == "BSFurnitureMarker") {
-                blockLink(nifDst, iDst, bsFurnitureMarker(linkNode));
+                blockLink(nifDst, iDst, bsFurnitureMarker(iExtraDataSrc));
             } else if (type == "NiTextKeyExtraData") {
-                copyBlock(iDst, linkNode);
+                copyBlock(iDst, iExtraDataSrc);
+            } else if (type == "NiFloatExtraData") {
+                copyBlock(iDst, iExtraDataSrc);
             } else {
-                qDebug() << "Unknown block:" << type;
+                qDebug() << "Unknown Extra Data block:" << type;
 
                 conversionResult = false;
             }
@@ -2472,7 +2636,7 @@ public:
             if (nifSrc->getBlockName(linkNode) == "NiTriStrips") {
                 QModelIndex triShape = niTriStrips(linkNode);
                 nifDst->setLink(iChildDst, nifDst->getBlockNumber(triShape));
-            } else if (type == "BSFadeNode" || type == "NiNode" || type == "BSOrderedNode" || type == "NiBillboardNode") {
+            } else if (type == "BSFadeNode" || type == "NiNode" || type == "BSOrderedNode" || type == "NiBillboardNode" || type == "BSValueNode") {
                 // TODO: BSOrderedNode
                 // TODO: NiBillBoardNode
                 // TODO: Check NiNode instead of BSFadeNode
@@ -2483,6 +2647,8 @@ public:
                 niParticleSystem(iNiParticleSystemDst, linkNode);
                 nifDst->setLink(iChildDst, nifDst->getBlockNumber(iNiParticleSystemDst));
 //                copyBlock(QModelIndex(), linkNode);
+            } else if (type == "NiPointLight") {
+                nifDst->setLink(iChildDst, nifDst->getBlockNumber(niPointLight(linkNode)));
             } else {
                 qDebug() << __FUNCTION__ << "Unknown child type:" << type;
 
@@ -2502,7 +2668,58 @@ public:
             c.copyValue("Billboard Mode");
         }
 
+        if (nodeType == "BSValueNode") {
+            c.copyValue("Value");
+            c.copyValue("Value Node Flags");
+        }
+
         return fadeNode;
+    }
+
+    QModelIndex niPointLight(QModelIndex iSrc) {
+        // Copies up to "Num Properties"
+        QModelIndex iDst = copyBlock(QModelIndex(), iSrc);
+
+        Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
+
+        c.ignore("Name");
+
+        extraDataList(iDst, iSrc, c);
+
+        niControllerCopy(iDst, iSrc);
+        c.ignore("Controller");
+
+        c.ignore("Flags");
+        c.ignore("Translation");
+        c.ignore("Rotation");
+        c.ignore("Scale");
+
+        // Values copied up to here
+
+        properties(iDst, iSrc, c);
+
+        // Collision Object
+        nifDst->setLink(iDst, "Collision Object", -1);
+        collisionObjectCopy(iDst, iSrc);
+        c.ignore("Collision Object");
+
+        c.ignore("Switch State");
+        c.ignore("Num Affected Nodes");
+
+        if (nifSrc->get<int>(iSrc, "Num Affected Nodes") > 0) {
+            c.ignore(getIndexSrc(iSrc, "Affected Nodes").child(0, 0));
+        }
+
+        c.copyValue("Dimmer");
+        c.copyValue("Ambient Color");
+        c.copyValue("Diffuse Color");
+        c.copyValue("Specular Color");
+        c.copyValue("Constant Attenuation");
+        c.copyValue("Linear Attenuation");
+        c.copyValue("Quadratic Attenuation");
+
+
+        return iDst;
     }
 
     QString updateTexturePath(QString fname) {
@@ -2573,6 +2790,7 @@ public:
 
         c.ignore("Name");
         c.ignore("Num Extra Data List");
+        niControllerCopy(iDst, iSrc);
         c.ignore("Controller");
         c.ignore("Flags");
         c.ignore("Shader Type");
@@ -2674,6 +2892,38 @@ public:
                 conversionResult = false;
             }
         }
+    }
+
+    void properties(QModelIndex iDst, QModelIndex iSrc) {
+        QVector<qint32> links = nifSrc->getLinkArray(iSrc, "Properties");
+
+        QString dstType = nifDst->getBlockName(iDst);
+
+        for (int link:links) {
+            QModelIndex iPropertySrc = nifSrc->getBlock(link);
+
+            QString type = nifSrc->getBlockName(iPropertySrc);
+
+            if (type == "NiAlphaProperty") {
+                qDebug() << __FUNCTION__ << "no way to handle" << type << "for" << dstType;
+
+                conversionResult = false;
+            } else {
+                qDebug() << "Unknown Property block:" << type;
+
+                conversionResult = false;
+            }
+        }
+    }
+
+    void properties(QModelIndex iDst, QModelIndex iSrc, Copier & c) {
+        c.ignore("Num Properties");
+
+        if (nifSrc->get<int>(iSrc, "Num Properties") > 0) {
+            c.ignore(getIndexSrc(iSrc, "Properties").child(0, 0));
+        }
+
+        properties(iDst, iSrc);
     }
 
     QModelIndex niTriStrips( QModelIndex iSrc) {
@@ -2923,11 +3173,15 @@ bool convert(const QString & fname, const QString & root = "") {
     }
 
 //    fnameDst = "D:\\Games\\Fallout New Vegas\\FNVFo4 Converted\\test\\" + fnameDst;
-    fnameDst = "E:\\SteamLibrary\\steamapps\\common\\Fallout 4\\Data\\Meshes\\test\\" + fnameDst;
+    fnameDst = "E:\\SteamLibrary\\steamapps\\common\\Fallout 4\\Data\\Meshes\\test\\" + fnameDst.replace('/', '\\');
     qDebug() << "Destination: " + fnameDst;
+
+    QDir().mkpath(QFileInfo(fnameDst).path());
 
     if (!newNif.saveToFile(fnameDst)) {
         fprintf(stderr, "Failed to save nif\n");
+
+        return false;
     }
 
     printf("Time taken: %.2fs\n", double(clock() - tStart)/CLOCKS_PER_SEC);
