@@ -294,7 +294,24 @@ public:
         return copyValue<T, T>(name, name);
     }
 
-    // Copy 1D value arrays
+    // Traverse all child nodes
+    bool tree(const QModelIndex iDst, const QModelIndex iSrc) {
+        if (nifSrc->isArray(iSrc)) {
+            array(iDst, iSrc);
+        } else if (nifSrc->rowCount(iSrc) > 0) {
+            for (int i = 0; i < nifSrc->rowCount(iSrc); i++) {
+                tree(iDst.child(i, 0), iSrc.child(i, 0));
+            }
+        } else if (!copyValue(iDst, iSrc)) {
+            arrayError("Failed to copy value.");
+
+            return false;
+        }
+
+        return true;
+    }
+
+    // Copy arrays
     bool array(const QModelIndex iDst, const QModelIndex iSrc) {
         int rows = nifSrc->rowCount(iSrc);
 
@@ -308,9 +325,7 @@ public:
         }
 
         for (int i = 0; i < rows; i++) {
-            if (!copyValue(iDst.child(i, 0), iSrc.child(i, 0))) {
-                arrayError("Failed to copy value.");
-            }
+            tree(iDst.child(i, 0), iSrc.child(i, 0));
         }
 
         return true;
@@ -2636,7 +2651,13 @@ public:
             if (nifSrc->getBlockName(linkNode) == "NiTriStrips") {
                 QModelIndex triShape = niTriStrips(linkNode);
                 nifDst->setLink(iChildDst, nifDst->getBlockNumber(triShape));
-            } else if (type == "BSFadeNode" || type == "NiNode" || type == "BSOrderedNode" || type == "NiBillboardNode" || type == "BSValueNode") {
+            } else if (type == "BSFadeNode" ||
+                       type == "NiNode" ||
+                       type == "BSOrderedNode" ||
+                       type == "NiBillboardNode" ||
+                       type == "BSValueNode" ||
+                       type == "BSDamageStage" ||
+                       type == "BSBlastNode") {
                 // TODO: BSOrderedNode
                 // TODO: NiBillBoardNode
                 // TODO: Check NiNode instead of BSFadeNode
@@ -2649,6 +2670,8 @@ public:
 //                copyBlock(QModelIndex(), linkNode);
             } else if (type == "NiPointLight") {
                 nifDst->setLink(iChildDst, nifDst->getBlockNumber(niPointLight(linkNode)));
+            } else if (type == "NiTriShape") {
+                niTriShape(linkNode);
             } else {
                 qDebug() << __FUNCTION__ << "Unknown child type:" << type;
 
@@ -2662,18 +2685,114 @@ public:
         if (nodeType == "BSOrderedNode") {
             c.copyValue("Alpha Sort Bound");
             c.copyValue("Static Bound");
-        }
-
-        if (nodeType == "NiBillboardNode") {
+        } else if (nodeType == "NiBillboardNode") {
             c.copyValue("Billboard Mode");
-        }
-
-        if (nodeType == "BSValueNode") {
+        } else if (nodeType == "BSValueNode") {
             c.copyValue("Value");
             c.copyValue("Value Node Flags");
+        } else if (nodeType == "BSDamageStage" || nodeType == "BSBlastNode") {
+            c.copyValue("Min");
+            c.copyValue("Max");
+            c.copyValue("Current");
         }
 
         return fadeNode;
+    }
+
+    QModelIndex niTriShape(QModelIndex iSrc) {
+        // Copy up to Num Properties
+        QModelIndex iDst = copyBlock(QModelIndex(), iSrc);
+
+        Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
+
+        c.ignore("Name");
+
+        extraDataList(iDst, iSrc, c);
+
+        nifDst->setLink(iDst, "Controller", -1);
+        niControllerCopy(iDst, iSrc);
+        c.ignore("Controller");
+
+        c.ignore("Flags");
+        c.ignore("Translation");
+        c.ignore("Rotation");
+        c.ignore("Scale");
+
+        // Copied till here
+
+        properties(iDst, iSrc, c);
+
+        collisionObjectCopy(iDst, iSrc);
+        c.ignore("Collision Object");
+
+        //
+        nifDst->setLink(iDst, "Data", -1);
+        nifDst->setLink(iDst, "Skin Instance", -1);
+        niTriShapeData(getBlockSrc(iSrc, "Data"));
+
+        return iDst;
+    }
+
+    void niTriShapeDataArray(const QString & name, bool bHasArray, Copier & c) {
+        if (!bHasArray) {
+            return;
+        }
+
+        c.array(name);
+    }
+
+    void niTriShapeDataArray(QModelIndex iSrc, const QString & name, const QString & boolName, Copier & c, bool isFlag = false) {
+        bool isSet = false;
+
+        if (!isFlag) {
+            if (nifSrc->get<bool>(iSrc, boolName)) {
+                c.copyValue<bool>(boolName);
+                isSet = true;
+            } else {
+                c.ignore(boolName);
+            }
+        } else {
+            // Use BS Vector Flags
+
+            bool ok = false;
+            isSet = nifSrc->get<ushort>(iSrc, "BS Vector Flags") & NifValue::enumOptionValue("BSVectorFlags", boolName, &ok);
+
+            if (!ok) {
+                qDebug() << __FUNCTION__ << "Enum Option" << boolName << "not found";
+            }
+        }
+
+        niTriShapeDataArray(name, isSet, c);
+    }
+
+    QModelIndex niTriShapeData(QModelIndex iSrc) {
+        QModelIndex iDst = nifDst->insertNiBlock("NiTriShapeData");
+
+        Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
+
+        c.copyValue("Group ID");
+        c.copyValue("Num Vertices");
+        c.copyValue("Keep Flags");
+        c.copyValue("Compress Flags");
+        niTriShapeDataArray(iSrc, "Vertices", "Has Vertices", c);
+        c.copyValue("BS Vector Flags");
+        niTriShapeDataArray(iSrc, "Normals", "Has Normals", c);
+        niTriShapeDataArray(iSrc, "Tangents", "Has_Tangents", c, true);
+        niTriShapeDataArray(iSrc, "Bitangents", "Has_Tangents", c, true);
+        c.copyValue("Center");
+        c.copyValue("Radius");
+        niTriShapeDataArray(iSrc, "Vertex Colors", "Has Vertex Colors", c);
+        niTriShapeDataArray(iSrc, "UV Sets", "Has_UV", c, true);
+        c.copyValue("Consistency Flags");
+        // TODO: Additional Data
+        c.ignore("Additional Data");
+        c.copyValue("Num Triangles");
+        c.copyValue("Num Triangle Points");
+        niTriShapeDataArray(iSrc, "Triangles", "Has Triangles", c);
+        c.copyValue("Num Match Groups");
+        c.array("Match Groups");
+
+        return iDst;
     }
 
     QModelIndex niPointLight(QModelIndex iSrc) {
