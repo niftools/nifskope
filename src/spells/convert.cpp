@@ -1224,6 +1224,19 @@ public:
         return {QModelIndex(), ""};
     }
 
+
+    QModelIndex niController(QModelIndex iDst, QModelIndex iSrc, Copier & c, QString name = "Controller", const int target = -1) {
+        c.processed(iSrc, name);
+
+        return niController(iDst, iSrc, name, target);
+    }
+
+    QModelIndex niController(QModelIndex iDst, QModelIndex iSrc, QString name = "Controller", const int target = -1) {
+        nifDst->setLink(iDst, name, -1);
+
+        return niControllerCopy(iDst, iSrc, name, target);
+    }
+
     QModelIndex niControllerCopy(QModelIndex iDst, QModelIndex iSrc, QString name = "Controller", const int target = -1) {
         bool bExactCopy = false;
 
@@ -1357,7 +1370,7 @@ public:
                 c.ignore("Texture Slot");
                 c.ignore("Shader Map");
                 c.ignore("Operation");
-            } else if (blockName == "NiMaterialColorController") {
+            } else if (blockName == "NiMaterialColorController" || blockName == "NiLightColorController") {
                 c.ignore("Target Color");
             }
 
@@ -1384,6 +1397,8 @@ public:
                                 "NiPSysEmitterDeclinationCtlr",
                                 "NiPSysEmitterSpeedCtlr",
                                 "NiFloatExtraDataController",
+                                "NiLightDimmerController",
+                                "NiLightColorController",
 
                     }).contains(nifSrc->getBlockName(nifSrc->getBlock(numController)))) {
                 qDebug() << __FUNCTION__ << "Controller not found in exact copy list:" << nifSrc->getBlockName(nifSrc->getBlock(numController));
@@ -2484,8 +2499,7 @@ public:
 
         Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
 
-        niControllerCopy(iDst, iSrc, "Controller", nifDst->getBlockNumber(iDst));
-        c.ignore("Controller");
+        niController(iDst, iSrc, c, "Controller", nifDst->getBlockNumber(iDst));
 
         c.ignore("Name");
         c.ignore("Num Extra Data List");
@@ -2542,8 +2556,7 @@ public:
 
         c.ignore("Name");
         c.ignore("Num Extra Data List");
-        niControllerCopy(iDst, iSrc);
-        c.ignore("Controller");
+        niController(iDst, iSrc, c);
         c.ignore("Specular Color");
         c.ignore("Emissive Color");
 //        nifDst->set<Color4>(iDst, "Emissive Color", Color4(c.getSrc<Color3>("Emissive Color")));
@@ -2563,8 +2576,7 @@ public:
         c.copyValue<QString>("Name");
         c.ignore("Num Extra Data List");
         // TODO: Extra data
-        niControllerCopy(iDst, iSrc);
-        c.ignore("Controller");
+        niController(iDst, iSrc, c);
 
         c.copyValue<int>("Flags");
         c.copyValue<Vector3>("Translation");
@@ -2726,7 +2738,7 @@ public:
 //        newNif->updateArray(newNif->getIndex(fadeNode, "Extra Data List"));
         extraDataList(fadeNode, iNode, c);
 
-        niControllerCopy(fadeNode, iNode);
+        niController(fadeNode, iNode);
 
         c.copyValue("Flags");
         c.copyValue("Translation");
@@ -2838,9 +2850,7 @@ public:
 
         extraDataList(iDst, iSrc, c);
 
-        nifDst->setLink(iDst, "Controller", -1);
-        niControllerCopy(iDst, iSrc);
-        c.ignore("Controller");
+        niController(iDst, iSrc, c);
 
         c.copyValue("Flags");
         c.copyValue("Translation");
@@ -2879,9 +2889,7 @@ public:
 
         extraDataList(iDst, iSrc, c);
 
-        nifDst->setLink(iDst, "Controller", -1);
-        niControllerCopy(iDst, iSrc);
-        c.ignore("Controller");
+        niController(iDst, iSrc, c);
 
         c.copyValue("Flags");
         c.copyValue("Translation");
@@ -3157,8 +3165,7 @@ public:
 
         extraDataList(iDst, iSrc, c);
 
-        niControllerCopy(iDst, iSrc);
-        c.ignore("Controller");
+        niController(iDst, iSrc, c);
 
         c.ignore("Flags");
         c.ignore("Translation");
@@ -3299,8 +3306,7 @@ public:
 
         c.ignore("Name");
         c.ignore("Num Extra Data List");
-        niControllerCopy(iDst, iSrc);
-        c.ignore("Controller");
+        niController(iDst, iSrc, c);
         c.ignore("Flags");
         c.ignore("Shader Type");
         c.ignore("Shader Flags");
@@ -3550,8 +3556,7 @@ public:
         c.copyValue("Flags");
         c.copyValue("Scale");
 
-        c.ignore("Controller");
-        niControllerCopy(iDst, iSrc);
+        niController(iDst, iSrc, c);
 
         c.ignore("Num Properties");
         c.ignore("Collision Object");
@@ -3826,14 +3831,8 @@ public:
 
             c.ignore(getIndexSrc(iMatchGroupsArraySrc.child(0, 0), "Num Vertices"));
 
-            for (int i = 0; i < nifSrc->rowCount(iMatchGroupsArraySrc); i++) {
-                QModelIndex iMatchGroupSrc = iMatchGroupsArraySrc.child(i, 0);
-
-                if (nifSrc->get<int>(iMatchGroupSrc, "Num Vertices") > 0) {
-                    c.ignore(getIndexSrc(iMatchGroupSrc, "Vertex Indices").child(0, 0));
-
-                    break;
-                }
+            if (nifSrc->get<int>(iMatchGroupsArraySrc.child(0, 0), "Num Vertices") > 0) {
+                c.ignore(iMatchGroupsArraySrc.child(0, 0).child(0, 0));
             }
         }
     }
