@@ -2261,10 +2261,8 @@ public:
 
     // NOTE: Copy of rigidBody is only correct up to and including Angular Damping
     // NOTE: Some props have weird collision e.g: 9mmammo.nif.
-    // TODO: Merge shape functions.
-    // TODO: Skyrim layers
     QModelIndex bhkRigidBody(QModelIndex iSrc, QModelIndex & parent, int row) {
-        QModelIndex iDst = copyBlock(QModelIndex(), iSrc, row);
+        QModelIndex iDst = nifDst->insertNiBlock(nifSrc->getBlockName(iSrc), row);
 
         Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
 
@@ -2274,6 +2272,8 @@ public:
         bool bScaleSet = false;
         QModelIndex iShapeDst = bhkShape(iShapeSrc, parent, nifDst->getBlockNumber(iDst), bScaleSet, radius);
 
+        c.copyValue("Translation");
+
         // TODO: Always 0.1?
         if (bScaleSet) {
             collapseScaleRigidBody(iDst, radius);
@@ -2282,6 +2282,7 @@ public:
         // Shape
         // NOTE: Radius not rendered? Seems to be at 10 times always
         nifDst->setLink(iDst, "Shape", nifDst->getBlockNumber(iShapeDst));
+        c.processed("Shape");
         // TODO: Material
 
         nifDst->set<float>(iDst, "Time Factor", 1.0);
@@ -2298,43 +2299,42 @@ public:
             nifDst->set<bool>(iDst, "Enable Deactivation", true);
             c.copyValue<int>("Solver Deactivation");
         } else {
-            c.ignore("Solver Deactivation");
+            c.processed("Solver Deactivation");
         }
 
         c.copyValue<int>("Quality Type");
-        c.copyValue("Num Constraints");
-        // Constraints
-        // Body Flags
 
-        c.ignore("Shape");
-        c.ignore("Layer");
-        c.ignore("Flags and Part Number");
-        c.ignore("Group");
-        c.ignore("Broad Phase Type");
-        c.ignore("Collision Response");
-        c.ignore("Collision Response 2");
-        c.ignore("Process Contact Callback Delay");
-        c.ignore("Process Contact Callback Delay 2");
-        c.ignore("Translation");
-        c.ignore("Rotation");
-        c.ignore("Linear Velocity");
-        c.ignore("Angular Velocity");
-        c.ignore("Center");
+        nifDst->set<uint>(iDst, "Layer", layerMap.convert(getIndexSrc(iSrc, "Layer")));
+        c.processed("Layer");
+
+        c.copyValue("Flags and Part Number");
+        c.copyValue("Group");
+        c.copyValue("Broad Phase Type");
+        c.copyValue("Collision Response");
+        c.copyValue("Collision Response 2");
+        c.copyValue("Process Contact Callback Delay");
+        c.copyValue("Process Contact Callback Delay 2");
+        c.copyValue("Rotation");
+
+        c.copyValue("Linear Velocity");
+        c.copyValue("Angular Velocity");
+        c.copyValue("Center");
 
         if (nifSrc->get<float>(iSrc, "Mass") == 0.0f) {
-            // Mass of 0 causes glitching in ck.
+            // NOTE: Mass of 0 causes glitching in ck.
             nifDst->set<float>(iDst, "Mass", 1.0f);
 
-            c.ignore("Mass");
+            c.processed("Mass");
         } else {
             c.copyValue("Mass");
         }
 
-        c.ignore("Linear Damping");
-        c.ignore("Angular Damping");
-        c.ignore("Deactivator Type");
-        c.ignore("Body Flags");
+        c.copyValue("Linear Damping");
+        c.copyValue("Angular Damping");
 
+        c.ignore("Deactivator Type");
+
+        // Unused values
         c.ignore("Unused Byte 1");
         c.ignore("Unused Byte 2");
         c.ignore("Unknown Int 1");
@@ -2344,31 +2344,72 @@ public:
         c.ignore(nifSrc->getIndex(iSrc, "Unused 2"), "Unused 2");
         c.ignore(nifSrc->getIndex(iSrc, "Unused"), "Unused");
 
+        QModelIndex iHavokFilterCopyDst = nifDst->getIndex(iDst, "Havok Filter Copy");
         QModelIndex iHavokFilterCopySrc = nifSrc->getIndex(iSrc, "Havok Filter Copy");
-        c.ignore(iHavokFilterCopySrc, "Layer");
-        c.ignore(iHavokFilterCopySrc, "Flags and Part Number");
-        c.ignore(iHavokFilterCopySrc, "Group");
+        c.copyValue(iHavokFilterCopyDst, iHavokFilterCopySrc, "Layer");
+        c.copyValue(iHavokFilterCopyDst, iHavokFilterCopySrc, "Flags and Part Number");
+        c.copyValue(iHavokFilterCopyDst, iHavokFilterCopySrc, "Group");
 
+        QModelIndex iCInfoPropertyDst = nifDst->getIndex(iDst, "Cinfo Property");
         QModelIndex iCInfoPropertySrc = nifSrc->getIndex(iSrc, "Cinfo Property");
-        c.ignore(iCInfoPropertySrc, "Data");
-        c.ignore(iCInfoPropertySrc, "Size");
-        c.ignore(iCInfoPropertySrc, "Capacity and Flags");
+        c.copyValue(iCInfoPropertyDst, iCInfoPropertySrc, "Data");
+        c.copyValue(iCInfoPropertyDst, iCInfoPropertySrc, "Size");
+        c.copyValue(iCInfoPropertyDst, iCInfoPropertySrc, "Capacity and Flags");
 
+        QModelIndex iInertiaTensorDst = nifDst->getIndex(iDst, "Inertia Tensor");
         QModelIndex iInertiaTensorSrc = nifSrc->getIndex(iSrc, "Inertia Tensor");
-        c.ignore(iInertiaTensorSrc, "m11");
-        c.ignore(iInertiaTensorSrc, "m12");
-        c.ignore(iInertiaTensorSrc, "m13");
-        c.ignore(iInertiaTensorSrc, "m14");
-        c.ignore(iInertiaTensorSrc, "m21");
-        c.ignore(iInertiaTensorSrc, "m22");
-        c.ignore(iInertiaTensorSrc, "m23");
-        c.ignore(iInertiaTensorSrc, "m24");
-        c.ignore(iInertiaTensorSrc, "m31");
-        c.ignore(iInertiaTensorSrc, "m32");
-        c.ignore(iInertiaTensorSrc, "m33");
-        c.ignore(iInertiaTensorSrc, "m34");
+        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m11");
+        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m12");
+        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m13");
+        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m14");
+        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m21");
+        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m22");
+        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m23");
+        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m24");
+        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m31");
+        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m32");
+        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m33");
+        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m34");
+
+        c.copyValue("Num Constraints");
+
+        if (nifSrc->get<uint>(iSrc, "Num Constraints") > 0) {
+            QModelIndex iConstraintsDst = getIndexDst(iDst, "Constraints");
+            QModelIndex iConstraintsSrc = getIndexSrc(iSrc, "Constraints");
+
+            nifDst->updateArray(iConstraintsDst);
+
+            for (int i = 0; i < nifSrc->rowCount(iConstraintsSrc); i++) {
+                setLink(iConstraintsDst.child(i, 0), bhkConstraint(getBlockSrc(iConstraintsSrc.child(i, 0))));
+            }
+
+            c.processed(iConstraintsSrc.child(0, 0));
+        }
+
+        c.copyValue<ushort, uint>("Body Flags");
+
+        setHandled(iDst, iSrc);
 
         return iDst;
+    }
+
+    // NOTE: Block number does not appear to matter
+    QModelIndex bhkConstraint(QModelIndex iSrc) {
+        QString type = nifSrc->getBlockName(iSrc);
+
+        if (type == "bhkLimitedHingeConstraint") {
+            QModelIndex iDst = copyBlock(QModelIndex(), iSrc);
+
+            reLinkArray(iDst, iSrc, "Entities");
+
+            return iDst;
+        }
+
+        qDebug() << __FUNCTION__ << "Unknown constraint type:" << type;
+
+        conversionResult = false;
+
+        return QModelIndex();
     }
 
     QModelIndex bhkConvexVerticesShape(QModelIndex iSrc, int row, bool & bScaleSet, float & radius) {
