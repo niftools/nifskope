@@ -2111,6 +2111,8 @@ public:
                 return  bhkBoxShape(iSrc, row, bScaleSet, radius);
             } else if (shapeType == "bhkCapsuleShape") {
                 return  bhkCapsuleShape(iSrc, row, bScaleSet, radius);
+            } else if (shapeType == "bhkSphereShape") {
+                return bhkSphereShape(iSrc, row);
             } else {
                 qDebug() << __FUNCTION__ << "Unknown collision shape:" << shapeType;
 
@@ -2119,6 +2121,19 @@ public:
         }
 
         return QModelIndex();
+    }
+
+    QModelIndex bhkSphereShape(QModelIndex iSrc, int row) {
+        QModelIndex iDst = nifDst->insertNiBlock("bhkSphereShape", row);
+
+        nifDst->set<uint>(iDst, "Material", matMap.convert(getIndexSrc(iSrc, "Material")));
+
+        // NOTE: Seems to be always scaled by 10 in source.
+        nifDst->set<float>(iDst, "Radius", nifSrc->get<float>(iSrc, "Radius") * 0.1f);
+
+        setHandled(iDst, iSrc);
+
+        return iDst;
     }
 
     QModelIndex bhkConvexTransformShape(QModelIndex iSrc, QModelIndex & parent, int row, bool & bScaleSet, float & radius) {
@@ -2412,7 +2427,10 @@ public:
     QModelIndex bhkConstraint(QModelIndex iSrc) {
         QString type = nifSrc->getBlockName(iSrc);
 
-        if (type == "bhkLimitedHingeConstraint") {
+        if (
+                type == "bhkLimitedHingeConstraint" ||
+                type == "bhkRagdollConstraint" ||
+                type == "bhkHingeConstraint") {
             QModelIndex iDst = copyBlock(QModelIndex(), iSrc);
 
             reLinkArray(iDst, iSrc, "Entities");
