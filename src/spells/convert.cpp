@@ -988,35 +988,35 @@ public:
         }
 
         if (lSrc != -1) {
-            QModelIndex iLinkDst;
-            const QModelIndex iLinkSrc = nifSrc->getBlock(lSrc);
+            QModelIndex iBlockDst;
+            const QModelIndex iBlockSrc = nifSrc->getBlock(lSrc);
 
-            const QString type = nifSrc->getBlockName(iLinkSrc);
+            const QString type = nifSrc->getBlockName(iBlockSrc);
 
             if (type == "NiPSysData") {
-                iLinkDst = nifDst->insertNiBlock(type);
-                niPSysData(iLinkDst, iLinkSrc);
+                iBlockDst = nifDst->insertNiBlock(type);
+                niPSysData(iBlockDst, iBlockSrc);
             } else {
-                iLinkDst = copyBlock(QModelIndex(), iLinkSrc);
+                iBlockDst = copyBlock(QModelIndex(), iBlockSrc);
             }
 
             if (name.length() > 0) {
-                if (!nifDst->setLink(iDst, name, nifDst->getBlockNumber(iLinkDst))) {
-                    qDebug() << "Failed to set link";
+                if (!nifDst->setLink(iDst, name, nifDst->getBlockNumber(iBlockDst))) {
+                    qDebug() << __FUNCTION__ << "Failed to set link";
 
                     conversionResult = false;
                 }
             } else {
-                if (!nifDst->setLink(iDst, nifDst->getBlockNumber(iLinkDst))) {
-                    qDebug() << "Failed to set link for" << nifDst->getBlockName(iLinkDst);
+                if (!nifDst->setLink(iDst, nifDst->getBlockNumber(iBlockDst))) {
+                    qDebug() << __FUNCTION__ << "Failed to set link for" << nifDst->getBlockName(iBlockDst);
 
                     conversionResult = false;
                 }
             }
 
-            setHandled(iLinkDst, iLinkSrc);
+            setHandled(iBlockDst, iBlockSrc);
 
-            return {iLinkDst, iLinkSrc};
+            return {iBlockDst, iBlockSrc};
         }
 
         return {QModelIndex(), QModelIndex()};
@@ -2430,7 +2430,8 @@ public:
         if (
                 type == "bhkLimitedHingeConstraint" ||
                 type == "bhkRagdollConstraint" ||
-                type == "bhkHingeConstraint") {
+                type == "bhkHingeConstraint" ||
+                type == "bhkMalleableConstraint") {
             QModelIndex iDst = copyBlock(QModelIndex(), iSrc);
 
             reLinkArray(iDst, iSrc, "Entities");
@@ -2640,11 +2641,64 @@ public:
         }
 
         for (int i = 0; i < nifSrc->rowCount(iModifiersSrc); i++) {
-            QModelIndex iModifierDst  = std::get<0>(copyLink(iModifiersDst.child(i, 0), iModifiersSrc.child(i, 0)));
-            reLinkRec(iModifierDst);
+            niPSys(iModifiersDst.child(i, 0), iModifiersSrc.child(i, 0));
         }
 
         c.printUnused();
+    }
+
+    void niPSys(QModelIndex iLinkDst, QModelIndex iLinkSrc) {
+        QModelIndex iDst = std::get<0>(copyLink(iLinkDst, iLinkSrc));
+        QModelIndex iSrc = getBlockSrc(iLinkSrc);
+        QString type = nifSrc->getBlockName(iSrc);
+
+        if (type == "NiPSysColliderManager") {
+            niPSysColliderManager(iDst, iSrc);
+        } else {
+            reLinkRec(iDst);
+        }
+    }
+
+    QModelIndex niPSysColliderManager(QModelIndex iDst, QModelIndex iSrc) {
+        QModelIndex iColliderSrc = getBlockSrc(iSrc, "Collider");
+
+        if (iColliderSrc.isValid()) {
+            reLink(iDst, iSrc, "Target");
+            nifDst->setLink(iDst, "Collider", nifDst->getBlockNumber(niPSysCollider(iColliderSrc)));
+        }
+
+        return iDst;
+    }
+
+    QModelIndex niPSysCollider(QModelIndex iSrc) {
+        if (!iSrc.isValid()) {
+            return QModelIndex();
+        }
+
+        QString type = nifSrc->getBlockName(iSrc);
+
+        if (
+                type == "NiPSysSphericalCollider" ||
+                type == "NiPSysPlanarCollider") {
+            return niPSysColliderCopy(iSrc);
+        } else {
+            qDebug() << __FUNCTION__ << "Unknown collider:" << type;
+
+            conversionResult = false;
+        }
+
+        return QModelIndex();
+    }
+
+    QModelIndex niPSysColliderCopy(QModelIndex iSrc) {
+        QModelIndex iDst = copyBlock(QModelIndex(), iSrc);
+
+        reLink(iDst, iSrc, "Spawn Modifier");
+        reLink(iDst, iSrc, "Parent");
+        nifDst->setLink(iDst, "Next Collider", nifDst->getBlockNumber(niPSysCollider(getBlockSrc(iSrc, "Next Collider"))));
+        reLink(iDst, iSrc, "Collider Object");
+
+        return iDst;
     }
 
 //    QModelIndex niBillBoardNode(QModelIndex iDst, QModelIndex iSrc) {
@@ -3068,6 +3122,13 @@ public:
                     ushort vertexIndex = nifSrc->get<ushort>(iVertexWeightSrc, "Index");
                     float vertexWeight = nifSrc->get<float>(iVertexWeightSrc, "Weight");
 
+                    if (weightCounts[vertexIndex] >= 4) {
+                        // TODO: conversionResult = false;
+                        qDebug() << "Too many boneweights for one vertex. Blocknr.:" << nifSrc->getBlockNumber(iSrc);
+
+                        continue;
+                    }
+
                     QModelIndex iVertexDataDst = iVertexDataArrayDst.child(vertexIndex, 0);
                     QModelIndex iBoneWeightsDst = getIndexDst(iVertexDataDst, "Bone Weights");
                     QModelIndex iBoneIndicesDst = getIndexDst(iVertexDataDst, "Bone Indices");
@@ -3078,11 +3139,6 @@ public:
                     nifDst->set<float>(iBoneWeightsDst.child(weightIndex, 0), vertexWeight);
 
                     weightCounts[vertexIndex]++;
-                    if (weightCounts[vertexIndex] > 4) {
-                        qDebug() << "Too many boneweights for one vertex";
-
-                        conversionResult = false;
-                    }
                 }
             }
 
