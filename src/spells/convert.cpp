@@ -2112,7 +2112,7 @@ public:
             } else if (shapeType == "bhkCapsuleShape") {
                 return  bhkCapsuleShape(iSrc, row, bScaleSet, radius);
             } else if (shapeType == "bhkSphereShape") {
-                return bhkSphereShape(iSrc, row);
+                return bhkSphereShape(iSrc, row, bScaleSet, radius);
             } else {
                 qDebug() << __FUNCTION__ << "Unknown collision shape:" << shapeType;
 
@@ -2123,12 +2123,13 @@ public:
         return QModelIndex();
     }
 
-    QModelIndex bhkSphereShape(QModelIndex iSrc, int row) {
+    QModelIndex bhkSphereShape(QModelIndex iSrc, int row, bool & bScaleSet, float & radius) {
         QModelIndex iDst = nifDst->insertNiBlock("bhkSphereShape", row);
 
         nifDst->set<uint>(iDst, "Material", matMap.convert(getIndexSrc(iSrc, "Material")));
 
         // NOTE: Seems to be always scaled by 10 in source.
+        bhkUpdateScale(bScaleSet, radius, 0.1f);
         nifDst->set<float>(iDst, "Radius", nifSrc->get<float>(iSrc, "Radius") * 0.1f);
 
         setHandled(iDst, iSrc);
@@ -2866,6 +2867,8 @@ public:
 //                copyBlock(QModelIndex(), linkNode);
             } else if (type == "NiPointLight") {
                 nifDst->setLink(iChildDst, nifDst->getBlockNumber(niPointLight(linkNode)));
+            } else if (type == "NiCamera") {
+                nifDst->setLink(iChildDst, nifDst->getBlockNumber(niCamera(linkNode)));
             } else if (type == "NiTriShape") {
                 setLink(iChildDst, niTriShapeAlt(linkNode));
             } else {
@@ -2893,6 +2896,43 @@ public:
         }
 
         return fadeNode;
+    }
+
+    QModelIndex niCamera(QModelIndex iSrc) {
+        QModelIndex iDst = nifDst->insertNiBlock("NiCamera");
+
+        Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
+
+        c.copyValue<QString>("Name");
+        extraDataList(iDst, iSrc, c);
+        niController(iDst, iSrc, c);
+        c.copyValue("Flags");
+        c.copyValue("Translation");
+        c.copyValue("Rotation");
+        c.copyValue("Scale");
+        properties(iDst, iSrc, c);
+        collisionObjectCopy(iDst, iSrc);
+        c.processed("Collision Object");
+        c.copyValue("Camera Flags");
+        c.copyValue("Frustum Left");
+        c.copyValue("Frustum Right");
+        c.copyValue("Frustum Top");
+        c.copyValue("Frustum Bottom");
+        c.copyValue("Frustum Near");
+        c.copyValue("Frustum Far");
+        c.copyValue("Use Orthographic Projection");
+        c.copyValue("Viewport Left");
+        c.copyValue("Viewport Right");
+        c.copyValue("Viewport Top");
+        c.copyValue("Viewport Bottom");
+        c.copyValue("LOD Adjust");
+        c.ignore("Scene");
+        c.copyValue("Num Screen Polygons");
+        c.copyValue("Num Screen Textures");
+
+        setHandled(iDst, iSrc);
+
+        return iDst;
     }
 
     void niTriShapeMaterialData(QModelIndex iDst, QModelIndex iSrc, Copier & c) {
@@ -3050,6 +3090,15 @@ public:
 
         // Only used for optimization?
         ignoreBlock(iSrc, "Skin Partition", false);
+
+        if (nifSrc->getBlockName(iSrc) == "BSDismemberSkinInstance") {
+            c.ignore("Num Partitions");
+
+            if (nifSrc->get<int>(iSrc, "Num Partitions") > 0) {
+                c.ignore(getIndexSrc(getIndexSrc(iSrc, "Partitions").child(0, 0), "Part Flag"));
+                c.ignore(getIndexSrc(getIndexSrc(iSrc, "Partitions").child(0, 0), "Body Part"));
+            }
+        }
 
         setHandled(iDst, iSrc);
 
@@ -3635,7 +3684,6 @@ public:
         c.ignore("Num Properties");
         c.ignore("Collision Object");
         c.ignore("Data");
-        c.ignore("Skin Instance");
         c.ignore("Num Extra Data List");
 
         QModelIndex iMaterialDataSrc = getIndexSrc(iSrc, "Material Data");
@@ -3670,6 +3718,9 @@ public:
 
         // Shader Flags
         nifDst->set<int>(shaderProperty, "Shader Flags 1", getFlagsBSShaderFlags1(shaderProperty, iNiTriStripsData, iBSShaderLightingPropertySrc));
+
+        niSkinInstance(iDst, shaderProperty, getBlockSrc(iSrc, "Skin Instance"));
+        c.processed("Skin Instance");
 
         return iDst;
     }
@@ -3906,7 +3957,7 @@ public:
             c.ignore(getIndexSrc(iMatchGroupsArraySrc.child(0, 0), "Num Vertices"));
 
             if (nifSrc->get<int>(iMatchGroupsArraySrc.child(0, 0), "Num Vertices") > 0) {
-                c.ignore(iMatchGroupsArraySrc.child(0, 0).child(0, 0));
+                c.ignore(getIndexSrc(iMatchGroupsArraySrc.child(0, 0), "Vertex Indices").child(0, 0));
             }
         }
     }
