@@ -1232,8 +1232,6 @@ public:
     }
 
     QModelIndex niController(QModelIndex iDst, QModelIndex iSrc, QString name = "Controller", const int target = -1) {
-        nifDst->setLink(iDst, name, -1);
-
         return niControllerCopy(iDst, iSrc, name, target);
     }
 
@@ -2636,6 +2634,22 @@ public:
         c.printUnused();
     }
 
+    void particleSystemModifiers(QModelIndex iDst, QModelIndex iSrc, Copier & c) {
+        c.copyValue<uint>("Num Modifiers");
+        // TODO: Modifiers
+        QModelIndex iModifiersDst = nifDst->getIndex(iDst, "Modifiers");
+        QModelIndex iModifiersSrc = nifSrc->getIndex(iSrc, "Modifiers");
+        nifDst->updateArray(iModifiersDst);
+
+        if (nifSrc->rowCount(iModifiersSrc) > 0) {
+            c.ignore(iModifiersSrc.child(0, 0));
+        }
+
+        for (int i = 0; i < nifSrc->rowCount(iModifiersSrc); i++) {
+            niPSys(iModifiersDst.child(i, 0), iModifiersSrc.child(i, 0));
+        }
+    }
+
     void niParticleSystem(QModelIndex iDst, QModelIndex iSrc) {
         setHandled(iDst, iSrc);
 
@@ -2678,21 +2692,8 @@ public:
         }
 
         c.copyValue<int>("World Space");
-        c.copyValue<uint>("Num Modifiers");
-        // TODO: Modifiers
-        QModelIndex iModifiersDst = nifDst->getIndex(iDst, "Modifiers");
-        QModelIndex iModifiersSrc = nifSrc->getIndex(iSrc, "Modifiers");
-        nifDst->updateArray(iModifiersDst);
 
-        if (nifSrc->rowCount(iModifiersSrc) > 0) {
-            c.ignore(iModifiersSrc.child(0, 0));
-        }
-
-        for (int i = 0; i < nifSrc->rowCount(iModifiersSrc); i++) {
-            niPSys(iModifiersDst.child(i, 0), iModifiersSrc.child(i, 0));
-        }
-
-        c.printUnused();
+        particleSystemModifiers(iDst, iSrc, c);
     }
 
     void niPSys(QModelIndex iLinkDst, QModelIndex iLinkSrc) {
@@ -2912,13 +2913,14 @@ public:
                 QModelIndex iNiParticleSystemDst = nifDst->insertNiBlock("NiParticleSystem");
                 niParticleSystem(iNiParticleSystemDst, linkNode);
                 nifDst->setLink(iChildDst, nifDst->getBlockNumber(iNiParticleSystemDst));
-//                copyBlock(QModelIndex(), linkNode);
             } else if (type == "NiPointLight" || type == "NiAmbientLight") {
                 nifDst->setLink(iChildDst, nifDst->getBlockNumber(niPointLight(linkNode)));
             } else if (type == "NiCamera") {
                 nifDst->setLink(iChildDst, nifDst->getBlockNumber(niCamera(linkNode)));
             } else if (type == "NiTriShape") {
                 setLink(iChildDst, niTriShapeAlt(linkNode));
+            } else if (type == "BSStripParticleSystem") {
+                setLink(iChildDst, bsStripParticleSystem(linkNode));
             } else {
                 qDebug() << __FUNCTION__ << "Unknown child type:" << type;
 
@@ -2944,6 +2946,93 @@ public:
         }
 
         return fadeNode;
+    }
+
+    void materialData(QModelIndex iSrc, Copier & c) {
+        QModelIndex iMaterialDataSrc = getIndexSrc(iSrc, "Material Data");
+
+        c.ignore(iMaterialDataSrc, "Num Materials");
+
+        if (nifSrc->get<uint>(iMaterialDataSrc, "Num Materials") > 0) {
+            c.ignore(getIndexSrc(iMaterialDataSrc, "Material Name").child(0, 0));
+            c.ignore(getIndexSrc(iMaterialDataSrc, "Material Extra Data").child(0, 0));
+        }
+
+        c.ignore(iMaterialDataSrc, "Active Material");
+        c.ignore(iMaterialDataSrc, "Material Needs Update");
+    }
+
+    QModelIndex bsStripParticleSystem(QModelIndex iSrc) {
+        QModelIndex iDst = nifDst->insertNiBlock("BSStripParticleSystem");
+
+        Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
+        QModelIndex iShaderPropertyDst = getShaderProperty(iSrc);
+
+        setLink(iDst, "Shader Property", iShaderPropertyDst);
+
+        c.copyValue("Name");
+        extraDataList(iDst, iSrc, c);
+        niController(iDst, iSrc, c);
+        c.copyValue("Flags");
+        c.copyValue("Translation");
+        c.copyValue("Rotation");
+        c.copyValue("Scale");
+        properties(iSrc, iShaderPropertyDst, iDst, c);
+        collisionObjectCopy(iDst, iSrc);
+        c.processed("Collision Object");
+        niSkinInstance(iDst, iShaderPropertyDst, getBlockSrc(iSrc, "Skin Instance"));
+        c.processed("Skin Instance");
+        materialData(iSrc, c);
+        c.copyValue("World Space");
+
+        particleSystemModifiers(iDst, iSrc, c);
+
+        setLink(iDst, "Data", bsStripPSysData(getBlockSrc(iSrc, "Data")));
+        c.processed("Data");
+
+        setHandled(iDst, iSrc);
+
+        return iDst;
+    }
+
+    QModelIndex bsStripPSysData(QModelIndex iSrc) {
+        QModelIndex iDst = nifDst->insertNiBlock("NiPSysData");
+
+        Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
+
+        c.copyValue("Group ID");
+
+        // Causes crash
+        c.ignore("BS Max Vertices");
+
+        c.copyValue("Keep Flags");
+        c.copyValue("Compress Flags");
+        c.copyValue("Has Vertices");
+        c.copyValue("BS Vector Flags");
+        c.copyValue("Has Normals");
+        c.copyValue("Center");
+        c.copyValue("Radius");
+        c.copyValue("Has Vertex Colors");
+        c.copyValue("Consistency Flags");
+        c.ignore("Additional Data");
+        c.copyValue("Has Radii");
+        c.copyValue("Num Active");
+        c.copyValue("Has Sizes");
+        c.copyValue("Has Rotations");
+        c.copyValue("Has Rotation Angles");
+        c.copyValue("Has Rotation Axes");
+        c.copyValue("Has Texture Indices");
+        c.copyValue<uint>("Num Subtexture Offsets");
+        c.array("Subtexture Offsets");
+        c.copyValue("Has Rotation Speeds");
+        c.ignore("Max Point Count");
+        c.ignore("Start Cap Size");
+        c.ignore("End Cap Size");
+        c.ignore("Do Z Prepass");
+
+        setHandled(iDst, iSrc);
+
+        return iDst;
     }
 
     QModelIndex niCamera(QModelIndex iSrc) {
@@ -3724,7 +3813,7 @@ public:
         QModelIndex shaderProperty = getShaderProperty(iSrc);
         QModelIndex iBSShaderLightingPropertySrc = getShaderPropertySrc(iSrc);
 
-        properties(iSrc, shaderProperty, iDst);
+        properties(iSrc, shaderProperty, iDst, c);
 
         setLink( iDst, "Shader Property", shaderProperty);
 
@@ -3735,7 +3824,6 @@ public:
 
         niController(iDst, iSrc, c);
 
-        c.ignore("Num Properties");
         c.ignore("Collision Object");
         c.ignore("Data");
         c.ignore("Num Extra Data List");
@@ -3744,10 +3832,6 @@ public:
         c.ignore(iMaterialDataSrc, "Num Materials");
         c.ignore(iMaterialDataSrc, "Active Material");
         c.ignore(iMaterialDataSrc, "Material Needs Update");
-
-        if (nifSrc->rowCount(getIndexSrc(iSrc, "Properties")) > 0) {
-            c.ignore(getIndexSrc(iSrc, "Properties").child(0, 0));
-        }
 
         extraDataList(iDst, iSrc, c);
 
