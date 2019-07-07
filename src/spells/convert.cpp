@@ -909,7 +909,7 @@ public:
     void ignoreBlock(const QModelIndex iSrc, bool ignoreChildBlocks) {
         int lSrc = nifSrc->getBlockNumber(iSrc);
 
-        if (lSrc < 0) {
+        if (lSrc == -1) {
             qDebug() << __FUNCTION__ << "Block not found";
 
             return;
@@ -1348,6 +1348,10 @@ public:
             ignoreBlock(iControllerSrc, true);
 
             return QModelIndex();
+        } else if (controllerType == "NiBSBoneLODController") {
+            ignoreBlock(iControllerSrc, true);
+
+            return QModelIndex();
         } else {
             bExactCopy = true;
         }
@@ -1399,6 +1403,7 @@ public:
                                 "NiFloatExtraDataController",
                                 "NiLightDimmerController",
                                 "NiLightColorController",
+                                "bhkBlendController",
 
                     }).contains(nifSrc->getBlockName(nifSrc->getBlock(numController)))) {
                 qDebug() << __FUNCTION__ << "Controller not found in exact copy list:" << nifSrc->getBlockName(nifSrc->getBlock(numController));
@@ -1502,8 +1507,17 @@ public:
         int numCollision = nifSrc->getLink(iSrc, name);
         if (numCollision != -1) {
             QModelIndex iCollisionSrc = nifSrc->getBlock(numCollision);
-            if (nifSrc->getBlockName(iCollisionSrc) == "bhkCollisionObject") {
-                collisionObject(iDst, iCollisionSrc);
+            QString type = nifSrc->getBlockName(iCollisionSrc);
+
+            if (
+                    type == "bhkCollisionObject" ||
+                    type == "bhkBlendCollisionObject" ||
+                    type == "bhkSPCollisionObject") {
+                collisionObject(iDst, iCollisionSrc, type);
+            } else {
+                qDebug() << __FUNCTION__ << "Unknown Collision Object:" << type;
+
+                conversionResult = false;
             }
         }
     }
@@ -2182,6 +2196,8 @@ public:
             m(0, 0) = m(0, 0) * 7.0f;
             m(1, 1) = m(1, 1) * 7.0f;
             m(2, 2) = m(2, 2) * 7.0f;
+        } else if (blockType == "bhkBoxShape") {
+            // Don't scale
         } else {
             qDebug() << __FUNCTION__ << __LINE__ << "Unknown block:" << blockType;
 
@@ -2268,8 +2284,8 @@ public:
         return iDst;
     }
 
-    void collisionObject( QModelIndex parent, QModelIndex iSrc ) {
-        QModelIndex iDst = insertNiBlock("bhkCollisionObject");
+    void collisionObject( QModelIndex parent, QModelIndex iSrc, QString type = "bhkCollisionObject" ) {
+        QModelIndex iDst = insertNiBlock(type);
 
         Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
 
@@ -2287,13 +2303,20 @@ public:
         nifDst->setLink(parent, "Collision Object", nifDst->getBlockNumber(iDst));
         nifDst->setLink(iDst, "Target", nifDst->getBlockNumber(parent));
 
+        if (type == "bhkBlendCollisionObject") {
+            c.copyValue("Heir Gain");
+            c.copyValue("Vel Gain");
+        }
+
         setHandled(iDst, iSrc);
     }
 
     // NOTE: Copy of rigidBody is only correct up to and including Angular Damping
     // NOTE: Some props have weird collision e.g: 9mmammo.nif.
     QModelIndex bhkRigidBody(QModelIndex iSrc, QModelIndex & parent, int row) {
-        QModelIndex iDst = nifDst->insertNiBlock(nifSrc->getBlockName(iSrc), row);
+        QString type = nifSrc->getBlockName(iSrc);
+
+        QModelIndex iDst = nifDst->insertNiBlock(type, row);
 
         Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
 
@@ -2303,37 +2326,10 @@ public:
         bool bScaleSet = false;
         QModelIndex iShapeDst = bhkShape(iShapeSrc, parent, nifDst->getBlockNumber(iDst), bScaleSet, radius);
 
-        c.copyValue("Translation");
-
-        // TODO: Always 0.1?
-        if (bScaleSet) {
-            collapseScaleRigidBody(iDst, radius);
-        }
-
         // Shape
         // NOTE: Radius not rendered? Seems to be at 10 times always
         nifDst->setLink(iDst, "Shape", nifDst->getBlockNumber(iShapeDst));
         c.processed("Shape");
-        // TODO: Material
-
-        nifDst->set<float>(iDst, "Time Factor", 1.0);
-        c.copyValue<float>("Friction");
-        nifDst->set<float>(iDst, "Rolling Friction Multiplier", 0.0);
-        c.copyValue<float>("Restitution");
-        c.copyValue<float>("Max Linear Velocity");
-        c.copyValue<float>("Max Angular Velocity");
-        c.copyValue<float>("Penetration Depth");
-        c.copyValue<int>("Motion System");
-
-        // Deactivator Type
-        if (nifSrc->get<int>(iSrc, "Solver Deactivation") > 1) {
-            nifDst->set<bool>(iDst, "Enable Deactivation", true);
-            c.copyValue<int>("Solver Deactivation");
-        } else {
-            c.processed("Solver Deactivation");
-        }
-
-        c.copyValue<int>("Quality Type");
 
         nifDst->set<uint>(iDst, "Layer", layerMap.convert(getIndexSrc(iSrc, "Layer")));
         c.processed("Layer");
@@ -2341,45 +2337,10 @@ public:
         c.copyValue("Flags and Part Number");
         c.copyValue("Group");
         c.copyValue("Broad Phase Type");
-        c.copyValue("Collision Response");
-        c.copyValue("Collision Response 2");
-        c.copyValue("Process Contact Callback Delay");
-        c.copyValue("Process Contact Callback Delay 2");
-        c.copyValue("Rotation");
 
-        c.copyValue("Linear Velocity");
-        c.copyValue("Angular Velocity");
-        c.copyValue("Center");
-
-        if (nifSrc->get<float>(iSrc, "Mass") == 0.0f) {
-            // NOTE: Mass of 0 causes glitching in ck.
-            nifDst->set<float>(iDst, "Mass", 1.0f);
-
-            c.processed("Mass");
-        } else {
-            c.copyValue("Mass");
-        }
-
-        c.copyValue("Linear Damping");
-        c.copyValue("Angular Damping");
-
-        c.ignore("Deactivator Type");
-
-        // Unused values
-        c.ignore("Unused Byte 1");
-        c.ignore("Unused Byte 2");
-        c.ignore("Unknown Int 1");
-        c.ignore("Unknown Int 2");
         c.ignore(nifSrc->getIndex(iSrc, "Unused Bytes"), "Unused Bytes");
-        c.ignore(nifSrc->getIndex(iSrc, "Unknown Bytes 1"), "Unknown Bytes 1");
-        c.ignore(nifSrc->getIndex(iSrc, "Unused 2"), "Unused 2");
         c.ignore(nifSrc->getIndex(iSrc, "Unused"), "Unused");
-
-        QModelIndex iHavokFilterCopyDst = nifDst->getIndex(iDst, "Havok Filter Copy");
-        QModelIndex iHavokFilterCopySrc = nifSrc->getIndex(iSrc, "Havok Filter Copy");
-        c.copyValue(iHavokFilterCopyDst, iHavokFilterCopySrc, "Layer");
-        c.copyValue(iHavokFilterCopyDst, iHavokFilterCopySrc, "Flags and Part Number");
-        c.copyValue(iHavokFilterCopyDst, iHavokFilterCopySrc, "Group");
+        c.ignore(nifSrc->getIndex(iSrc, "Unused 2"), "Unused 2");
 
         QModelIndex iCInfoPropertyDst = nifDst->getIndex(iDst, "Cinfo Property");
         QModelIndex iCInfoPropertySrc = nifSrc->getIndex(iSrc, "Cinfo Property");
@@ -2387,37 +2348,112 @@ public:
         c.copyValue(iCInfoPropertyDst, iCInfoPropertySrc, "Size");
         c.copyValue(iCInfoPropertyDst, iCInfoPropertySrc, "Capacity and Flags");
 
-        QModelIndex iInertiaTensorDst = nifDst->getIndex(iDst, "Inertia Tensor");
-        QModelIndex iInertiaTensorSrc = nifSrc->getIndex(iSrc, "Inertia Tensor");
-        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m11");
-        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m12");
-        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m13");
-        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m14");
-        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m21");
-        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m22");
-        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m23");
-        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m24");
-        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m31");
-        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m32");
-        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m33");
-        c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m34");
+        if (type == "bhkRigidBody" || type == "bhkRigidBodyT") {
+            c.copyValue("Translation");
+            c.copyValue("Center");
 
-        c.copyValue("Num Constraints");
-
-        if (nifSrc->get<uint>(iSrc, "Num Constraints") > 0) {
-            QModelIndex iConstraintsDst = getIndexDst(iDst, "Constraints");
-            QModelIndex iConstraintsSrc = getIndexSrc(iSrc, "Constraints");
-
-            nifDst->updateArray(iConstraintsDst);
-
-            for (int i = 0; i < nifSrc->rowCount(iConstraintsSrc); i++) {
-                setLink(iConstraintsDst.child(i, 0), bhkConstraint(getBlockSrc(iConstraintsSrc.child(i, 0))));
+            // TODO: Always 0.1?
+            if (bScaleSet) {
+                collapseScaleRigidBody(iDst, 0.1f);
             }
 
-            c.processed(iConstraintsSrc.child(0, 0));
-        }
+            // TODO: Material
 
-        c.copyValue<ushort, uint>("Body Flags");
+            nifDst->set<float>(iDst, "Time Factor", 1.0);
+            c.copyValue<float>("Friction");
+            nifDst->set<float>(iDst, "Rolling Friction Multiplier", 0.0);
+            c.copyValue<float>("Restitution");
+            c.copyValue<float>("Max Linear Velocity");
+            c.copyValue<float>("Max Angular Velocity");
+            c.copyValue<float>("Penetration Depth");
+            c.copyValue<int>("Motion System");
+
+            // Deactivator Type
+            if (nifSrc->get<int>(iSrc, "Solver Deactivation") > 1) {
+                nifDst->set<bool>(iDst, "Enable Deactivation", true);
+                c.copyValue<int>("Solver Deactivation");
+            } else {
+                c.processed("Solver Deactivation");
+            }
+
+            c.copyValue<int>("Quality Type");
+
+            c.copyValue("Collision Response");
+            c.copyValue("Collision Response 2");
+            c.copyValue("Process Contact Callback Delay");
+            c.copyValue("Process Contact Callback Delay 2");
+            c.copyValue("Rotation");
+
+            c.copyValue("Linear Velocity");
+            c.copyValue("Angular Velocity");
+
+            if (nifSrc->get<float>(iSrc, "Mass") == 0.0f) {
+                // NOTE: Mass of 0 causes glitching in ck.
+                nifDst->set<float>(iDst, "Mass", 1.0f);
+
+                c.processed("Mass");
+            } else {
+                c.copyValue("Mass");
+            }
+
+            c.copyValue("Linear Damping");
+            c.copyValue("Angular Damping");
+
+            c.ignore("Deactivator Type");
+
+            // Unused values
+            c.ignore("Unused Byte 1");
+            c.ignore("Unused Byte 2");
+            c.ignore("Unknown Int 1");
+            c.ignore("Unknown Int 2");
+            c.ignore(nifSrc->getIndex(iSrc, "Unknown Bytes 1"), "Unknown Bytes 1");
+
+            QModelIndex iHavokFilterCopyDst = nifDst->getIndex(iDst, "Havok Filter Copy");
+            QModelIndex iHavokFilterCopySrc = nifSrc->getIndex(iSrc, "Havok Filter Copy");
+            // TODO: Convert Layer
+            c.copyValue(iHavokFilterCopyDst, iHavokFilterCopySrc, "Layer");
+            c.copyValue(iHavokFilterCopyDst, iHavokFilterCopySrc, "Flags and Part Number");
+            c.copyValue(iHavokFilterCopyDst, iHavokFilterCopySrc, "Group");
+
+            QModelIndex iInertiaTensorDst = nifDst->getIndex(iDst, "Inertia Tensor");
+            QModelIndex iInertiaTensorSrc = nifSrc->getIndex(iSrc, "Inertia Tensor");
+            c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m11");
+            c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m12");
+            c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m13");
+            c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m14");
+            c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m21");
+            c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m22");
+            c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m23");
+            c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m24");
+            c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m31");
+            c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m32");
+            c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m33");
+            c.copyValue(iInertiaTensorDst, iInertiaTensorSrc, "m34");
+
+            c.copyValue("Num Constraints");
+
+            if (nifSrc->get<uint>(iSrc, "Num Constraints") > 0) {
+                QModelIndex iConstraintsDst = getIndexDst(iDst, "Constraints");
+                QModelIndex iConstraintsSrc = getIndexSrc(iSrc, "Constraints");
+
+                nifDst->updateArray(iConstraintsDst);
+
+                for (int i = 0; i < nifSrc->rowCount(iConstraintsSrc); i++) {
+                    setLink(iConstraintsDst.child(i, 0), bhkConstraint(getBlockSrc(iConstraintsSrc.child(i, 0))));
+                }
+
+                c.processed(iConstraintsSrc.child(0, 0));
+            }
+
+            c.copyValue<ushort, uint>("Body Flags");
+        } else if (type == "bhkSimpleShapePhantom") {
+            // TODO: Scale?
+            c.copyValue("Transform");
+        } else {
+            qDebug() << __FUNCTION__ << "Unknown Type:" << type;
+
+            conversionResult = false;
+        }
 
         setHandled(iDst, iSrc);
 
@@ -2432,12 +2468,23 @@ public:
                 type == "bhkLimitedHingeConstraint" ||
                 type == "bhkRagdollConstraint" ||
                 type == "bhkHingeConstraint" ||
-                type == "bhkMalleableConstraint") {
+                type == "bhkMalleableConstraint" ||
+                type == "bhkPrismaticConstraint" ||
+                type == "bhkBreakableConstraint") {
             QModelIndex iDst = copyBlock(QModelIndex(), iSrc);
 
             reLinkArray(iDst, iSrc, "Entities");
 
             return iDst;
+        } else if (type == "bhkOrientHingedBodyAction") {
+            QModelIndex iDst = copyBlock(QModelIndex(), iSrc);
+
+            reLink(iDst, iSrc, "Body");
+
+            return iDst;
+        } else if (type == "bhkLiquidAction") {
+            // NOTE: Cannot be converted at runtime and untested
+            return copyBlock(QModelIndex(), iSrc);
         }
 
         qDebug() << __FUNCTION__ << "Unknown constraint type:" << type;
@@ -2750,14 +2797,15 @@ public:
             QString type = nifSrc->getBlockName(iExtraDataSrc);
             if (type == "BSXFlags") {
                 copyBlock(iDst, iExtraDataSrc);
-            } else if (type == "NiStringExtraData") {
+            } else if (
+                    type == "NiStringExtraData" ||
+                    type == "NiTextKeyExtraData" ||
+                    type == "NiFloatExtraData" ||
+                    type == "BSBound" ||
+                    type == "NiIntegerExtraData") {
                 copyBlock(iDst, iExtraDataSrc);
             } else if (type == "BSFurnitureMarker") {
                 blockLink(nifDst, iDst, bsFurnitureMarker(iExtraDataSrc));
-            } else if (type == "NiTextKeyExtraData") {
-                copyBlock(iDst, iExtraDataSrc);
-            } else if (type == "NiFloatExtraData") {
-                copyBlock(iDst, iExtraDataSrc);
             } else {
                 qDebug() << "Unknown Extra Data block:" << type;
 
@@ -2831,16 +2879,15 @@ public:
         // MO_SYS_BOX_STABILIZED works???
         //
         // Scale collision with NiNode
-        linkNode = nifSrc->getBlock( nifSrc->getLink(iNode, "Collision Object") );
-        if (linkNode.isValid()) {
-            if (nifSrc->getBlockName(linkNode) == "bhkCollisionObject") {
-                collisionObject(fadeNode, linkNode);
-            }
-        }
+        collisionObjectCopy(fadeNode, iNode);
 
         nifDst->updateArray(fadeNode, "Children");
         QVector<qint32> links = nifSrc->getLinkArray(iNode, "Children");
         for (int i = 0; i < links.count(); i++) {
+            if (links[i] == -1) {
+                continue;
+            }
+
             linkNode = nifSrc->getBlock(links[i]);
             QModelIndex iChildDst = nifDst->getIndex(fadeNode, "Children").child(i, 0);
 
@@ -2848,13 +2895,14 @@ public:
             if (nifSrc->getBlockName(linkNode) == "NiTriStrips") {
                 QModelIndex triShape = niTriStrips(linkNode);
                 nifDst->setLink(iChildDst, nifDst->getBlockNumber(triShape));
-            } else if (type == "BSFadeNode" ||
-                       type == "NiNode" ||
-                       type == "BSOrderedNode" ||
-                       type == "NiBillboardNode" ||
-                       type == "BSValueNode" ||
-                       type == "BSDamageStage" ||
-                       type == "BSBlastNode") {
+            } else if (
+                    type == "BSFadeNode" ||
+                    type == "NiNode" ||
+                    type == "BSOrderedNode" ||
+                    type == "NiBillboardNode" ||
+                    type == "BSValueNode" ||
+                    type == "BSDamageStage" ||
+                    type == "BSBlastNode") {
                 // TODO: BSOrderedNode
                 // TODO: NiBillBoardNode
                 // TODO: Check NiNode instead of BSFadeNode
@@ -2865,7 +2913,7 @@ public:
                 niParticleSystem(iNiParticleSystemDst, linkNode);
                 nifDst->setLink(iChildDst, nifDst->getBlockNumber(iNiParticleSystemDst));
 //                copyBlock(QModelIndex(), linkNode);
-            } else if (type == "NiPointLight") {
+            } else if (type == "NiPointLight" || type == "NiAmbientLight") {
                 nifDst->setLink(iChildDst, nifDst->getBlockNumber(niPointLight(linkNode)));
             } else if (type == "NiCamera") {
                 nifDst->setLink(iChildDst, nifDst->getBlockNumber(niCamera(linkNode)));
@@ -3279,21 +3327,23 @@ public:
     }
 
     QModelIndex niPointLight(QModelIndex iSrc) {
+        QString type = nifSrc->getBlockName(iSrc);
+
         // Copies up to "Num Properties"
-        QModelIndex iDst = copyBlock(QModelIndex(), iSrc);
+        QModelIndex iDst = nifDst->insertNiBlock(type);
 
         Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
 
-        c.ignore("Name");
+        c.copyValue<QString>("Name");
 
         extraDataList(iDst, iSrc, c);
 
         niController(iDst, iSrc, c);
 
-        c.ignore("Flags");
-        c.ignore("Translation");
-        c.ignore("Rotation");
-        c.ignore("Scale");
+        c.copyValue("Flags");
+        c.copyValue("Translation");
+        c.copyValue("Rotation");
+        c.copyValue("Scale");
 
         // Values copied up to here
 
@@ -3302,7 +3352,7 @@ public:
         // Collision Object
         nifDst->setLink(iDst, "Collision Object", -1);
         collisionObjectCopy(iDst, iSrc);
-        c.ignore("Collision Object");
+        c.processed("Collision Object");
 
         c.ignore("Switch State");
         c.ignore("Num Affected Nodes");
@@ -3315,10 +3365,14 @@ public:
         c.copyValue("Ambient Color");
         c.copyValue("Diffuse Color");
         c.copyValue("Specular Color");
-        c.copyValue("Constant Attenuation");
-        c.copyValue("Linear Attenuation");
-        c.copyValue("Quadratic Attenuation");
 
+        if (type == "NiPointLight") {
+            c.copyValue("Constant Attenuation");
+            c.copyValue("Linear Attenuation");
+            c.copyValue("Quadratic Attenuation");
+        }
+
+        setHandled(iDst, iSrc);
 
         return iDst;
     }
