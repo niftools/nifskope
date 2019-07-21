@@ -3502,14 +3502,13 @@ public:
         collisionObjectCopy(iDst, iSrc);
         c.ignore("Collision Object");
 
-        // TODO: Skin instance
-        niSkinInstance(iDst, iShaderPropertyDst, getBlockSrc(iSrc, "Skin Instance"));
-        c.ignore("Skin Instance");
-
         setLink(iDst, "Data", niTriShapeData(getBlockSrc(iSrc, "Data")));
         c.ignore("Data");
 
         niTriShapeMaterialData(iDst, iSrc, c);
+
+        niSkinInstance(iDst, iShaderPropertyDst, getBlockSrc(iSrc, "Skin Instance"));
+        c.ignore("Skin Instance");
 
         setHandled(iDst, iSrc);
 
@@ -3706,7 +3705,26 @@ public:
                     QModelIndex iBoneWeightsDst = getIndexDst(iVertexDataDst, "Bone Weights");
                     QModelIndex iBoneIndicesDst = getIndexDst(iVertexDataDst, "Bone Indices");
 
+                    nifDst->updateArray(iBoneWeightsDst);
+                    nifDst->updateArray(iBoneIndicesDst);
+
                     int weightIndex = weightCounts[vertexIndex];
+
+                    if (!iBoneWeightsDst.child(weightIndex, 0).isValid()) {
+                        qDebug() << __FUNCTION__ << "Bone Weights not found";
+
+                        conversionResult = false;
+
+                        break;
+                    }
+
+                    if (!iBoneIndicesDst.child(weightIndex, 0).isValid()) {
+                        qDebug() << __FUNCTION__ << "Bone Indices not found";
+
+                        conversionResult = false;
+
+                        break;
+                    }
 
                     nifDst->set<ushort>(iBoneIndicesDst.child(weightIndex, 0), ushort(i));
                     nifDst->set<float>(iBoneWeightsDst.child(weightIndex, 0), vertexWeight);
