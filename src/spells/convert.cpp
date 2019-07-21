@@ -4951,6 +4951,79 @@ public:
         nifDst->set<Vector3>(iTranslation, translation);
     }
 
+    void lODLandscapeShape(const qint32 link, const QModelIndex iLink, const QModelIndex iLinkBlock, QModelIndex & iWater) {
+        QModelIndex iShaderProperty = getBlockDst(iLinkBlock, "Shader Property");
+
+        if (!iShaderProperty.isValid()) {
+            qDebug() << __FUNCTION__ << "Shader Property not found";
+
+            conversionResult = false;
+
+            return;
+        }
+
+        Vector3 translation = nifDst->get<Vector3>(iLinkBlock, "Translation");
+
+        if (translation[0] != 0.0f || translation[1] != 0.0f) {
+            if (link != 1) {
+                translation[0] = 0.0f;
+                translation[1] = 0.0f;
+
+                nifDst->set<Vector3>(iLinkBlock, "Translation", translation);
+            } else {
+                qDebug() << __FUNCTION__ << "Unknown case of first trishape in LOD to be translated";
+
+                conversionResult = false;
+            }
+        }
+
+        if (link != 1) {
+            if (iWater.isValid()) {
+                nifDst->setLink(iLink, -1);
+
+                lodLandscapeWaterShader(iLinkBlock);
+                nifDst->set<int>(iWater, "Num Children", nifDst->get<int>(iWater, "Num Children") + 1);
+
+                QModelIndex iWaterChildren = getIndexDst(iWater, "Children");
+
+                nifDst->updateArray(iWaterChildren);
+                nifDst->setLink(iWaterChildren.child(nifDst->rowCount(iWaterChildren) - 1, 0), link);
+
+                return;
+            }
+
+            iWater = lodLandscapeWater(iLinkBlock);
+
+            // Make water branch
+            nifDst->setLink(iLink, nifDst->getBlockNumber(iWater));
+
+            return;
+        }
+
+        bool ok = false;
+
+        nifDst->set<uint>(iShaderProperty, "Skyrim Shader Type", NifValue::enumOptionValue("BSLightingShaderPropertyShaderType", "LOD Landscape Noise", & ok));
+
+        uint flags = 0;
+
+        bsShaderFlags1Add(flags, "Model_Space_Normals");
+        bsShaderFlags1Add(flags, "Own_Emit");
+        bsShaderFlags1Add(flags, "ZBuffer_Test");
+
+        nifDst->set<uint>(iShaderProperty, "Shader Flags 1", flags);
+
+        flags = 0;
+
+        bsShaderFlags2Add(flags, "ZBuffer_Write");
+        bsShaderFlags2Add(flags, "LOD_Landscape");
+
+        nifDst->set<uint>(iShaderProperty, "Shader Flags 2", flags);
+
+        nifDst->set<QString>(iLinkBlock, "Name", "Land");
+
+        // TODO: Set shader type
+    }
+
     void lODLandscape() {
         if (!bLODLandscape) {
             return;
@@ -4970,14 +5043,10 @@ public:
         nifDst->set<uint>(iRoot, "Culling Mode", 1);
 
         lodLandscapeTranslationZero(getIndexDst(iRoot, "Translation"));
-
         lodLandscapeMultiBound(iRoot);
 
         QModelIndex iChildren = getIndexDst(iRoot, "Children");
-
         QVector<qint32> links = nifDst->getLinkArray(iRoot, "Children");
-
-        bool bWaterProcessed = false;
         QModelIndex iWater;
 
         for (qint32 i = 0; i < nifDst->rowCount(iChildren); i++) {
@@ -4987,78 +5056,7 @@ public:
             QString type = nifDst->getBlockName(iLinkBlock);
 
             if (type == "BSTriShape" || type == "BSSubIndexTriShape") {
-                QModelIndex iShaderProperty = getBlockDst(iLinkBlock, "Shader Property");
-
-                if (!iShaderProperty.isValid()) {
-                    qDebug() << __FUNCTION__ << "Shader Property not found";
-
-                    conversionResult = false;
-
-                    return;
-                }
-
-                Vector3 translation = nifDst->get<Vector3>(iLinkBlock, "Translation");
-
-                if (translation[0] != 0.0f || translation[1] != 0.0f) {
-                    if (link != 1) {
-                        translation[0] = 0.0f;
-                        translation[1] = 0.0f;
-
-                        nifDst->set<Vector3>(iLinkBlock, "Translation", translation);
-                    } else {
-                        qDebug() << __FUNCTION__ << "Unknown case of first trishape in LOD to be translated";
-
-                        conversionResult = false;
-                    }
-                }
-
-                if (link != 1) {
-                    if (bWaterProcessed) {
-                        nifDst->setLink(iLink, -1);
-
-                        lodLandscapeWaterShader(iLinkBlock);
-                        nifDst->set<int>(iWater, "Num Children", nifDst->get<int>(iWater, "Num Children") + 1);
-
-                        QModelIndex iWaterChildren = getIndexDst(iWater, "Children");
-
-                        nifDst->updateArray(iWaterChildren);
-                        nifDst->setLink(iWaterChildren.child(nifDst->rowCount(iWaterChildren) - 1, 0), link);
-
-                        continue;
-                    }
-
-                    iWater = lodLandscapeWater(iLinkBlock);
-
-                    // Make water branch
-                    nifDst->setLink(iLink, nifDst->getBlockNumber(iWater));
-
-                    bWaterProcessed = true;
-
-                    continue;
-                }
-
-                bool ok = false;
-
-                nifDst->set<uint>(iShaderProperty, "Skyrim Shader Type", NifValue::enumOptionValue("BSLightingShaderPropertyShaderType", "LOD Landscape Noise", & ok));
-
-                uint flags = 0;
-
-                bsShaderFlags1Add(flags, "Model_Space_Normals");
-                bsShaderFlags1Add(flags, "Own_Emit");
-                bsShaderFlags1Add(flags, "ZBuffer_Test");
-
-                nifDst->set<uint>(iShaderProperty, "Shader Flags 1", flags);
-
-                flags = 0;
-
-                bsShaderFlags2Add(flags, "ZBuffer_Write");
-                bsShaderFlags2Add(flags, "LOD_Landscape");
-
-                nifDst->set<uint>(iShaderProperty, "Shader Flags 2", flags);
-
-                nifDst->set<QString>(iLinkBlock, "Name", "Land");
-
-                // TODO: Set shader type
+                lODLandscapeShape(link, iLink, iLinkBlock, iWater);
             } else if (type == "BSMultiBoundNode") {
                 nifDst->set<QString>(iLinkBlock, "Name", "WATER");
             } else {
@@ -5081,9 +5079,183 @@ public:
 
         nifDst->set<int>(iRoot, "Num Children", numChildren);
 
-        if (bWaterProcessed) {
+        if (iWater.isValid()) {
             lodLandscapeWaterMultiBound(iWater);
+            lodLandscapeWaterRemoveEdgeFaces(iWater);
         }
+    }
+
+    void lodLandscapeMinVert(QModelIndex iShape, float & min) {
+        for (int i = 0; i < nifDst->rowCount(iShape); i++) {
+            HalfVector3 v = nifDst->get<Vector3>(iShape.child(i, 0), "Vertex");
+
+            if (v[2] < min) {
+                min = v[2];
+            }
+        }
+    }
+
+    bool lodLandscapeIsEdgeCoord(float f) {
+        return f == 0.0f || f == 4096.0f;
+    }
+
+    void lodLandscapeWaterRemoveEdgeFaces(QModelIndex iWater) {
+        QList<QPair<QModelIndex, QModelIndex>> vertexDataArrayList;
+        QList<QPair<QModelIndex, QModelIndex>> triangleArrayList;
+
+        for (qint32 link : nifDst->getLinkArray(iWater, "Children")) {
+            QModelIndex iBlock = nifDst->getBlock(link);
+
+            QModelIndex iVertexDataArray = getIndexDst(iBlock, "Vertex Data");
+            QModelIndex iNumVertices = getIndexDst(iBlock, "Num Vertices");
+            QModelIndex iTriangleArray = getIndexDst(iBlock, "Triangles");
+            QModelIndex iNUmTriangles = getIndexDst(iBlock, "Num Triangles");
+
+            if (
+                    !iVertexDataArray.isValid() ||
+                    nifDst->rowCount(iVertexDataArray) == 0 ||
+                    !getIndexDst(iVertexDataArray.child(0, 0), "Vertex").isValid() ||
+                    !iTriangleArray.isValid() ||
+                    !iNumVertices.isValid() ||
+                    !iNUmTriangles.isValid()) {
+                continue;
+            }
+
+            vertexDataArrayList.append(QPair<QModelIndex, QModelIndex>(iNumVertices, iVertexDataArray));
+            triangleArrayList.append(QPair<QModelIndex, QModelIndex>(iNUmTriangles, iTriangleArray));
+        }
+
+        if (vertexDataArrayList.count() == 0) {
+            return;
+        }
+
+        float min = nifDst->get<float>(vertexDataArrayList[0].second.child(0, 0), "Vertex");
+
+        // Set min to the lowest vertex.
+        for (QPair pair : vertexDataArrayList) {
+            lodLandscapeMinVert(pair.second, min);
+        }
+
+        for (int j = 0; j < vertexDataArrayList.count(); j++) {
+            QPair vertPair = vertexDataArrayList[j];
+            QPair triPair = triangleArrayList[j];
+
+            QModelIndex iNumTriangles = triPair.first;
+            QModelIndex iTriangleArray = triPair.second;
+            QModelIndex iNumVertices = vertPair.first;
+            QModelIndex iVertexDataArray = vertPair.second;
+            QList<int> vertRemoveList;
+            int numTriangles = nifDst->get<int>(iNumTriangles);
+            int numVertices = nifDst->get<int>(iNumVertices);
+
+            for (int i = nifDst->rowCount(iTriangleArray) - 1; i >= 0; i--) {
+                Triangle tri = nifDst->get<Triangle>(iTriangleArray.child(i, 0));
+
+                int vertIndex1 = tri.v1();
+                int vertIndex2 = tri.v2();
+                int vertIndex3 = tri.v3();
+
+                HalfVector3 v1 = nifDst->get<HalfVector3>(iVertexDataArray.child(vertIndex1, 0), "Vertex");
+                HalfVector3 v2 = nifDst->get<HalfVector3>(iVertexDataArray.child(vertIndex2, 0), "Vertex");
+                HalfVector3 v3 = nifDst->get<HalfVector3>(iVertexDataArray.child(vertIndex3, 0), "Vertex");
+
+                if (removeTri(v1, v2, v3, min)) {
+                    qDebug() << tri;
+
+                    vertRemoveListAppend(v1, vertIndex1, min, vertRemoveList);
+                    vertRemoveListAppend(v2, vertIndex2, min, vertRemoveList);
+                    vertRemoveListAppend(v3, vertIndex3, min, vertRemoveList);
+
+                    nifDst->removeRow(i, iTriangleArray);
+                    numTriangles--;
+                }
+            }
+
+            nifDst->set<int>(iNumTriangles, numTriangles);
+
+            // NOTE: Removal of vertices not required. There can still be detached vertices.
+
+            std::sort(vertRemoveList.begin(), vertRemoveList.end(), std::greater<int>());
+
+            for (int vertIndex : vertRemoveList) {
+                // Remove verts and update triangle vert indices
+                if (removeVertex(iVertexDataArray, iTriangleArray, vertIndex)) {
+                    numVertices--;
+                }
+            }
+
+            nifDst->set<int>(iNumVertices, numVertices);
+        }
+    }
+
+    bool removeVertex(QModelIndex iVertices, QModelIndex iTriangles, int index) {
+        for (int i = 0; i < nifDst->rowCount(iTriangles); i++) {
+            Triangle tri = nifDst->get<Triangle>(iTriangles.child(i, 0));
+
+            if (tri[0] == index || tri[1] == index || tri[2] == index) {
+                qDebug() << __FUNCTION__ << "Deleting referenced vertex" << nifDst->get<Vector3>(iVertices.child(index, 0), "Vertex");
+
+                conversionResult = false;
+
+                return false;
+            }
+
+            if (tri[0] > index) {
+                tri[0]--;
+            } else if (tri[1] > index) {
+                tri[1]--;
+            } else if (tri[2] > index) {
+                tri[2]--;
+            }
+        }
+
+        nifDst->removeRow(index, iVertices);
+
+        return true;
+    }
+
+    void vertRemoveListAppend(HalfVector3 v, int vertIndex, float min, QList<int> & vertRemoveList) {
+        if (isLowVert(v, min) && isEdgeVert(v)) {
+            if (!vertRemoveList.contains(vertIndex)) {
+                vertRemoveList.append(vertIndex);
+            }
+        }
+    }
+
+    bool isSameEdgeCoord(float f1, float f2, float f3) {
+        if (lodLandscapeIsEdgeCoord(f1) && (f1 - f2 == 0.0f && f2 - f3 == 0.0f)) {
+            qDebug() << f1 << f2 << f3;
+
+            return true;
+        }
+
+        return false;
+
+//        return lodLandscapeIsEdgeCoord(f1) && (f1 - f2 == 0.0f && f2 - f3 == 0.0f);
+    }
+
+    bool isEdgeVert(HalfVector3 v) {
+        return lodLandscapeIsEdgeCoord(v[0]) || lodLandscapeIsEdgeCoord(v[1]);
+    }
+
+    bool isLowVert(HalfVector3 v, float min) {
+        return v[2] - min == 0.0f;
+    }
+
+    /**
+     * @brief removeTri
+     * Return true if any of the given vertices is as low as the lowest vertex in a LOD water branch and
+     * if all vertices have the same x or the same y coordinates and are at the edge of the LOD.
+     * @param v1
+     * @param v2
+     * @param v3
+     * @param min
+     * @return
+     */
+    bool removeTri(HalfVector3 v1, HalfVector3 v2, HalfVector3 v3, float min) {
+        return
+                (isLowVert(v1, min) || isLowVert(v2, min) || isLowVert(v3, min)) &&
+                (isSameEdgeCoord(v1[0], v2[0], v3[0]) || isSameEdgeCoord(v1[1], v2[1], v3[1]));
     }
 
     void lodLandscapeWaterMultiBound(QModelIndex iWater) {
