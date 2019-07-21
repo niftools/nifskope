@@ -1,8 +1,12 @@
 /*
  * TODO:
- * Check on every block whether it has already been handled and whether a new block is required.
- * Copy full QString in Copier. Now it only copies the string index.
- * Fix collision. Causes glitching in CK.
+ * Remove vertical faces of LOD Water at LOD edges as these faces can be seen through other LOD Waters.
+ *
+ * TODO:
+ * Fix Camera movement affecting LOD lighting which is possibly due to second LOD textures
+ *
+ * TODO:
+ * Fix extreme light reflection of objects which is possibly due to specularity.
  */
 
 #include "stripify.h"
@@ -420,7 +424,7 @@ public:
 class FileProperties
 {
 private:
-    int fileType;
+    FileType fileType;
     QString fnameDst;
     int lodLevel = 0;
     int lodXCoord = 0;
@@ -433,11 +437,11 @@ public:
           lodXCoord(lodXCoord),
           lodYCoord(lodYCoord) {}
 
-    FileProperties(int fileType, QString fnameDst) : fileType(fileType), fnameDst(fnameDst) {}
+    FileProperties(FileType fileType, QString fnameDst) : fileType(fileType), fnameDst(fnameDst) {}
 
     FileProperties() : fileType(FileType::Invalid) {}
 
-    int getFileType() const;
+    FileType getFileType() const;
     int getLodLevel() const;
     int getLodXCoord() const;
     int getLodYCoord() const;
@@ -3155,18 +3159,6 @@ public:
         c.copyValue("Rotation");
         c.copyValue("Scale");
 
-        // Collision object
-        // TODO: Collision object tree must be numbered in reverse e.g:
-        // 8 bhkCollsionObject
-        // 7 bhkRigidBody
-        // 6 bhkConvexVerticesShape
-        // Ideally change insertion order to accomplish
-        //
-        // bhkRigidBody causes all other issues.
-        // MO_SYS_SPHERE_STABILIZED works
-        // MO_SYS_BOX_STABILIZED works???
-        //
-        // Scale collision with NiNode
         collisionObjectCopy(fadeNode, iNode);
 
         c.copyValue("Num Children");
@@ -3194,9 +3186,6 @@ public:
                     type == "BSMasterParticleSystem" ||
                     type == "BSMultiBoundNode" ||
                     type == "BSDebrisNode") {
-                // TODO: BSOrderedNode
-                // TODO: NiBillBoardNode
-                // TODO: Check NiNode instead of BSFadeNode
                 QModelIndex iFadeNodeChild = bsFadeNode(linkNode);
                 nifDst->setLink(iChildDst, nifDst->getBlockNumber(iFadeNodeChild));
             } else if (type == "NiParticleSystem") {
@@ -3285,6 +3274,18 @@ public:
         }
 
         nifDst->set<uint>(iDst, "Num Primitives", numPrimitives);
+    }
+
+    bool hasProperty(QModelIndex iSrc, const QString & name) {
+        QVector<qint32> links = nifSrc->getLinkArray(iSrc, "Properties");
+
+        for (qint32 link : links) {
+            if (nifSrc->getBlockName(nifSrc->getBlock(link)).compare(name) == 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     QModelIndex bsSegmentedTriShape(QModelIndex iSrc) {
@@ -3963,6 +3964,26 @@ public:
         bsShaderFlagsAdd(flagsDst, optionNameDst, "Fallout4ShaderPropertyFlags1");
     }
 
+    void bsShaderFlagsAdd(QModelIndex iShaderFlags, const QString & enumName, const QString & option) {
+        uint flags = nifDst->get<uint>(iShaderFlags);
+
+        bsShaderFlagsAdd(flags, option, enumName);
+
+        nifDst->set<uint>(iShaderFlags, flags);
+    }
+
+    void bsShaderFlagsAdd(QModelIndex iDst, const QString & name, const QString & enumName, const QString & option) {
+        bsShaderFlagsAdd(getIndexDst(iDst, name), enumName, option);
+    }
+
+    void bsShaderFlags1Add(QModelIndex iDst, const QString & option) {
+        bsShaderFlagsAdd(iDst, "Shader Flags 1", "Fallout4ShaderPropertyFlags1", option);
+    }
+
+    void bsShaderFlags2Add(QModelIndex iDst, const QString & option) {
+        bsShaderFlagsAdd(iDst, "Shader Flags 2", "Fallout4ShaderPropertyFlags2", option);
+    }
+
     void bsShaderFlags2Add(uint & flagsDst, const QString & optionNameDst) {
         bsShaderFlagsAdd(flagsDst, optionNameDst, "Fallout4ShaderPropertyFlags2");
     }
@@ -4236,6 +4257,8 @@ public:
                 iResult = nifDst->insertNiBlock("BSEffectShaderProperty");
             } else if (type == "BSShaderPPLightingProperty") {
                 iResult = nifDst->insertNiBlock("BSLightingShaderProperty");
+
+                nifDst->set<float>(iResult, "Specular Strength", 0);
             } else if (type == "SkyShaderProperty") {
                 iResult = nifDst->insertNiBlock("BSSkyShaderProperty");
             } else if (type == "WaterShaderProperty") {
@@ -4329,6 +4352,14 @@ public:
 
         if (iNiAlphaPropertyDst.isValid() || iBSShaderLightingPropertySrc.isValid()) {
             bsShaderFlags(iDst, iShaderPropertyDst, nifSrc->get<uint>(iBSShaderLightingPropertySrc, "Shader Flags"), nifSrc->get<uint>(iBSShaderLightingPropertySrc, "Shader Flags 2"));
+        }
+
+        if (!iBSShaderLightingPropertySrc.isValid()) {
+            QModelIndex iEmissive = getIndexDst(iShaderPropertyDst, "Emissive Color");
+            Color4 colorEmmissive = nifDst->get<Color4>(iEmissive);
+
+            colorEmmissive.setAlpha(0);
+            nifDst->set<Color4>(iEmissive, colorEmmissive);
         }
     }
 
@@ -5232,6 +5263,8 @@ public:
                     return;
                 }
 
+                setLink(iLinkBlock, "Alpha Property", nifDst->insertNiBlock("NiAlphaProperty"));
+
                 // TODO: Set shader type
             } else {
                 qDebug() << __FUNCTION__ << "Unknown LOD Structure";
@@ -5727,7 +5760,7 @@ int FileProperties::getLodYCoord() const
 return lodYCoord;
 }
 
-int FileProperties::getFileType() const
+FileType FileProperties::getFileType() const
 {
 return fileType;
 }
