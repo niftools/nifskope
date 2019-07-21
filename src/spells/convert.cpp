@@ -5048,6 +5048,7 @@ public:
         QModelIndex iChildren = getIndexDst(iRoot, "Children");
         QVector<qint32> links = nifDst->getLinkArray(iRoot, "Children");
         QModelIndex iWater;
+        QList<QModelIndex> shapeList;
 
         for (qint32 i = 0; i < nifDst->rowCount(iChildren); i++) {
             QModelIndex iLink = iChildren.child(i, 0);
@@ -5057,6 +5058,8 @@ public:
 
             if (type == "BSTriShape" || type == "BSSubIndexTriShape") {
                 lODLandscapeShape(link, iLink, iLinkBlock, iWater);
+
+                shapeList.append(iLinkBlock);
             } else if (type == "BSMultiBoundNode") {
                 nifDst->set<QString>(iLinkBlock, "Name", "WATER");
             } else {
@@ -5081,8 +5084,24 @@ public:
 
         if (iWater.isValid()) {
             lodLandscapeWaterMultiBound(iWater);
-            lodLandscapeWaterRemoveEdgeFaces(iWater);
+            lodLandscapeWaterRemoveEdgeFaces(iWater, lodLandscapeMinVert(shapeList));
         }
+    }
+
+    float lodLandscapeMinVert(QList<QModelIndex> shapeList) {
+        float min = HUGE_VALF;
+
+        for (QModelIndex iBlock : shapeList) {
+            QModelIndex iVertices = getIndexDst(iBlock, "Vertices");
+
+            if (!iVertices.isValid()) {
+                continue;
+            }
+
+            lodLandscapeMinVert(iVertices, min);
+        }
+
+        return min;
     }
 
     void lodLandscapeMinVert(QModelIndex iShape, float & min) {
@@ -5099,7 +5118,7 @@ public:
         return f == 0.0f || f == 4096.0f;
     }
 
-    void lodLandscapeWaterRemoveEdgeFaces(QModelIndex iWater) {
+    void lodLandscapeWaterRemoveEdgeFaces(QModelIndex iWater, float min) {
         QList<QPair<QModelIndex, QModelIndex>> vertexDataArrayList;
         QList<QPair<QModelIndex, QModelIndex>> triangleArrayList;
 
@@ -5129,7 +5148,7 @@ public:
             return;
         }
 
-        float min = nifDst->get<float>(vertexDataArrayList[0].second.child(0, 0), "Vertex");
+//        float min = nifDst->get<float>(vertexDataArrayList[0].second.child(0, 0), "Vertex");
 
         // Set min to the lowest vertex.
         for (QPair pair : vertexDataArrayList) {
@@ -5160,8 +5179,6 @@ public:
                 HalfVector3 v3 = nifDst->get<HalfVector3>(iVertexDataArray.child(vertIndex3, 0), "Vertex");
 
                 if (removeTri(v1, v2, v3, min)) {
-                    qDebug() << tri;
-
                     vertRemoveListAppend(v1, vertIndex1, min, vertRemoveList);
                     vertRemoveListAppend(v2, vertIndex2, min, vertRemoveList);
                     vertRemoveListAppend(v3, vertIndex3, min, vertRemoveList);
@@ -5215,7 +5232,7 @@ public:
     }
 
     void vertRemoveListAppend(HalfVector3 v, int vertIndex, float min, QList<int> & vertRemoveList) {
-        if (isLowVert(v, min) && isEdgeVert(v)) {
+        if (isLowVert(v, min)) {
             if (!vertRemoveList.contains(vertIndex)) {
                 vertRemoveList.append(vertIndex);
             }
@@ -5223,15 +5240,7 @@ public:
     }
 
     bool isSameEdgeCoord(float f1, float f2, float f3) {
-        if (lodLandscapeIsEdgeCoord(f1) && (f1 - f2 == 0.0f && f2 - f3 == 0.0f)) {
-            qDebug() << f1 << f2 << f3;
-
-            return true;
-        }
-
-        return false;
-
-//        return lodLandscapeIsEdgeCoord(f1) && (f1 - f2 == 0.0f && f2 - f3 == 0.0f);
+        return lodLandscapeIsEdgeCoord(f1) && (f1 - f2 == 0.0f && f2 - f3 == 0.0f);
     }
 
     bool isEdgeVert(HalfVector3 v) {
@@ -5253,9 +5262,7 @@ public:
      * @return
      */
     bool removeTri(HalfVector3 v1, HalfVector3 v2, HalfVector3 v3, float min) {
-        return
-                (isLowVert(v1, min) || isLowVert(v2, min) || isLowVert(v3, min)) &&
-                (isSameEdgeCoord(v1[0], v2[0], v3[0]) || isSameEdgeCoord(v1[1], v2[1], v3[1]));
+        return isLowVert(v1, min) || isLowVert(v2, min) || isLowVert(v3, min);
     }
 
     void lodLandscapeWaterMultiBound(QModelIndex iWater) {
