@@ -7,6 +7,12 @@
  *
  * TODO:
  * Fix extreme light reflection of objects which is possibly due to specularity.
+ *
+ * TODO:
+ * Change LOD Water shader to non transparent.
+ *
+ * TODO:
+ * Check if UV Transform controllers transform in the right direction
  */
 
 #include "stripify.h"
@@ -98,7 +104,6 @@ public:
         if (!FIND_UNUSED) {
             return;
         }
-
 
         for (int r = 0; r < nifSrc->rowCount(iSrc); r++) {
             QModelIndex iLink = iSrc.child(r, 0);
@@ -385,6 +390,10 @@ public:
         return true;
     }
 
+    bool tree() {
+        return tree(iDst, iSrc);
+    }
+
     // Copy arrays
     bool array(const QModelIndex iDst, const QModelIndex iSrc) {
         int rows = nifSrc->rowCount(iSrc);
@@ -413,12 +422,13 @@ public:
         return array(name, name);
     }
 
+    void setIDst(const QModelIndex &value);
+    void setISrc(const QModelIndex &value);
+
+private:
     void arrayError(const QString msg = "") {
         qDebug() << "Array Copy error:" << msg << "Source:" << nifSrc->getBlockName(iSrc) << "Destination:" << nifDst->getBlockName(iDst);
     }
-
-    void setIDst(const QModelIndex &value);
-    void setISrc(const QModelIndex &value);
 };
 
 class FileProperties
@@ -505,15 +515,19 @@ class Controller
 {
 private:
     // Original Controller blocknumber in destination nif.
-    int origin;
+    const int origin;
+    const QString name;
 
     // TODO: These need to be included in any manager and sequences
+    // TODO: Change QList to Controller List
+    // TODO: Add an interpolator list which contains all interpolators which affect the block
     QList<int> clones;
+    QList<QString> cloneBlockNames;
 
 public:
-    Controller(int origin) : origin(origin) {}
+    Controller(int origin, const QString & name) : origin(origin), name(name) {}
 
-    void add(int blockNumber) {
+    void add(int blockNumber, const QString & blockName) {
         if (clones.contains(blockNumber) || blockNumber == origin) {
             qDebug() << __FUNCTION__ << "Invalid blocknumber";
 
@@ -521,10 +535,12 @@ public:
         }
 
         clones.append(blockNumber);
+        cloneBlockNames.append(blockName);
     }
 
     int getOrigin() const;
     QList<int> getClones() const;
+    QList<QString> getCloneBlockNames() const;
 };
 
 class Converter
@@ -554,6 +570,7 @@ class Converter
     FileProperties fileProps;
 
     QList<Controller> controllerList;
+    QList<QModelIndex> controlledBlockList;
 public:
     Converter(NifModel * nifSrc, NifModel * nifDst, FileProperties fileProps)
             : nifSrc(nifSrc),
@@ -566,6 +583,24 @@ public:
         loadLayerMap();
     }
 
+    void convert() {
+        // TODO: Check for linking issues. AdjustLinks() is called by insertNiBlock.
+        nifDst->setState(NifModel::Loading);
+
+        bsFadeNode(nifSrc->getBlock(0));
+        reLinkExec();
+        niControllerSequencesFinalize();
+        niControlledBlocksFinalize();
+        lODLandscape();
+        lODObjects();
+        unhandledBlocks();
+    }
+
+    bool getConversionResult() const;
+    bool getBLODLandscape() const;
+    bool getBLODBuilding() const;
+
+private:
     void loadMatMap() {
         matMap.insert("FO_HAV_MAT_STONE",                                "FO4_HAV_MAT_STONE");
         matMap.insert("FO_HAV_MAT_CLOTH",                                "FO4_HAV_MAT_CLOTH");
@@ -1287,6 +1322,32 @@ public:
         exit(1);
     }
 
+    // TODO: Function needs to take entire controller chain into account.
+    void niInterpolatorFinalizeEmissive(QModelIndex iController, QModelIndex iInterpolator) {
+        QString controllerType = nifDst->getBlockName(iController);
+
+        if (
+                (!(controllerType == "BSEffectShaderPropertyFloatController" &&
+                   nifDst->get<uint>(iController, "Type of Controlled Variable") == enumOptionValue("EffectShaderControlledVariable", "EmissiveMultiple")) &&
+                 !(controllerType == "BSLightingShaderPropertyFloatController" &&
+                   nifDst->get<uint>(iController, "Type of Controlled Variable") == enumOptionValue("LightingShaderControlledVariable", "Emissive Multiple"))) ||
+                nifDst->getBlockName(iInterpolator) != "NiFloatInterpolator"
+                ) {
+            return;
+        }
+
+        QModelIndex iInterpolatorData = getBlockDst(iInterpolator, "Data");
+        QModelIndex iKeys = getIndexDst(getIndexDst(iInterpolatorData, "Data"), "Keys");
+
+        qDebug() << nifDst->getBlockNumber(iInterpolator);
+
+        for (int i = 0; i < nifDst->rowCount(iKeys); i++) {
+            QModelIndex iValue = getIndexDst(iKeys.child(i, 0), "Value");
+
+            nifDst->set<float>(iValue, nifDst->get<float>(iValue) + 1);
+        }
+    }
+
     void niControllerSequencesFinalize() {
         for (QModelIndex iDst : niControllerSequenceList) {
 
@@ -1306,6 +1367,7 @@ public:
 
             for (int i = 0; i < numControlledBlocksOriginal; i++) {
                 QModelIndex iBlockDst = iControlledBlocksDst.child(i, 0);
+
                 int controllerNumber = nifDst->getLink(iBlockDst, "Controller");
                 QModelIndex iControllerDst = nifDst->getBlock(controllerNumber);
                 QModelIndex iPropertyDst = nifDst->getBlock(nifDst->getLink(iControllerDst, "Target"));
@@ -1346,9 +1408,45 @@ public:
 
                             c.copyValue("Interpolator");
                             c.copyValue("Priority");
-                            c.copyValue("Node Name");
-                            c.copyValue("Property Type");
-                            c.copyValue("Controller Type");
+
+                            // TODO: Set node name to new parent
+                            const QString blockName = controller.getCloneBlockNames()[j];
+
+                            if (blockName == "") {
+                                qDebug() << __FUNCTION__ << "No block name for controlled block clone with original name:" << nifDst->get<QString>(iBlockDst, "Node Name") << i;
+
+                                conversionResult = false;
+
+                                return;
+                            } else {
+                                nifDst->set<QString>(iBlockClone, "Node Name", blockName);
+                                c.processed("Node Name");
+                            }
+
+                            const QString cloneControllerType = nifDst->getBlockName(nifDst->getBlock(clones[j]));
+                            QString clonePropertyType = "";
+
+                            if (
+                                    cloneControllerType == "BSEffectShaderPropertyFloatController" ||
+                                    cloneControllerType == "BSEffectShaderPropertyColorController") {
+                                clonePropertyType = "BSEffectShaderProperty";
+                            } else if (
+                                    cloneControllerType == "BSLightingShaderPropertyFloatController" ||
+                                    cloneControllerType == "BSLightingShaderPropertyColorController") {
+                                clonePropertyType = "BSLightingShaderProperty";
+                            } else {
+                                qDebug() << __FUNCTION__ << __LINE__ << "Unknown property type" << clonePropertyType;
+
+                                conversionResult = false;
+                            }
+
+                            nifDst->set<QString>(iBlockClone, "Property Type", clonePropertyType);
+                            c.processed("Property Type");
+
+                            nifDst->set<QString>(iBlockClone, "Controller Type", cloneControllerType);
+                            c.processed("Controller Type");
+
+
                             c.copyValue("Controller ID");
                             c.copyValue("Interpolator ID");
                         }
@@ -1358,20 +1456,36 @@ public:
         }
     }
 
-    std::tuple<QModelIndex, QString> getControllerType(QString dstType, const QString & name) {
+    QString getControllerType(QString dstType) {
         if (dstType == "BSEffectShaderProperty" ||
                 dstType == "BSEffectShaderPropertyColorController" ||
                 dstType == "BSEffectShaderPropertyFloatController") {
-            return {nifDst->insertNiBlock("BSEffectShaderProperty" + name + "Controller"), "Effect"};
+            return "Effect";
         } else if (dstType == "BSLightingShaderProperty" ||
                 dstType == "BSLightingShaderPropertyColorController" ||
                 dstType == "BSLightingShaderPropertyFloatController") {
-            return {nifDst->insertNiBlock("BSLightingShaderProperty" + name + "Controller"), "Lighting"};
+            return "Lighting";
         } else if (dstType == "Controlled Blocks") {
             // In NiControllerSequence blocks.
 
             // TODO: Confirm
+            return "Effect";
+        }
+
+        conversionResult = false;
+
+        qDebug() << "Unknown shader property:" << dstType;
+
+        return "";
+    }
+
+    std::tuple<QModelIndex, QString> getControllerType(QString dstType, const QString & name) {
+        const QString shaderType = getControllerType(dstType);
+
+        if (shaderType == "Effect") {
             return {nifDst->insertNiBlock("BSEffectShaderProperty" + name + "Controller"), "Effect"};
+        } else if (shaderType == "Lighting") {
+            return {nifDst->insertNiBlock("BSLightingShaderProperty" + name + "Controller"), "Lighting"};
         }
 
         qDebug() << "Unknown shader property:" << dstType;
@@ -1382,14 +1496,20 @@ public:
     }
 
 
-    QModelIndex niController(QModelIndex iDst, QModelIndex iSrc, Copier & c, QString name = "Controller", const int target = -1) {
+    QModelIndex niController(QModelIndex iDst, QModelIndex iSrc, Copier & c, const QString & name = "Controller", const QString & blockName = "", const int target = -1) {
         c.processed(iSrc, name);
 
-        return niController(iDst, iSrc, name, target);
+        return niController(iDst, iSrc, name, blockName, target);
     }
 
-    QModelIndex niController(QModelIndex iDst, QModelIndex iSrc, QString name = "Controller", const int target = -1) {
-        return niControllerCopy(iDst, iSrc, name, target);
+    QModelIndex niController(QModelIndex iDst, QModelIndex iSrc, const QString & name = "Controller", const QString & blockName = "", const int target = -1) {
+        if (nifSrc->getLink(iSrc, name) != -1) {
+            if (!controlledBlockList.contains(iDst)) {
+                controlledBlockList.append(iDst);
+            }
+        }
+
+        return niControllerCopy(iDst, iSrc, name, blockName, target);
     }
 
     QModelIndex niControllerSetLink(QModelIndex iDst, const QString & name, QModelIndex iControllerDst) {
@@ -1451,8 +1571,54 @@ public:
         return iNextControllerRoot;
     }
 
+    uint enumOptionValue(const QString & enumName, const QString & optionName) {
+        bool ok = false;
+
+        uint result = NifValue::enumOptionValue(enumName, optionName, &ok);
+
+        if (!ok) {
+            qDebug() << "Enum option value not found" << enumName << optionName;
+
+            conversionResult = false;
+        }
+
+        return result;
+    }
+
+    std::tuple<QModelIndex, QString> getController(const QString & dstType, const QString & valueType, const QString & controlledValueEffect, const QString & controlledValueLighting) {
+        QModelIndex iControllerDst;
+        QString shaderType;
+
+        std::tie(iControllerDst, shaderType) = getControllerType(dstType, valueType);
+
+        const QString controlledValue = shaderType == "Lighting" ? controlledValueLighting : controlledValueEffect;
+        const QString controlledType = valueType == "Color" ? "Color" : "Variable";
+        const QString enumName =  shaderType + "ShaderControlled" + controlledType;
+        const QString fieldName = "Type of Controlled " + controlledType;
+        const QModelIndex iField = getIndexDst(iControllerDst, fieldName);
+
+        if (iField.isValid()) {
+            nifDst->set<uint>(iControllerDst, fieldName, enumOptionValue(enumName, controlledValue));
+        } else {
+            qDebug() << "Field not found" << fieldName << "in" << nifDst->getBlockName(iControllerDst);
+
+            conversionResult = false;
+        }
+
+        return {iControllerDst, shaderType};
+    }
+
+    std::tuple<QModelIndex, QString> getController(const QString & dstType, const QString & valueType, const QString & controlledValue) {
+        return getController(dstType, valueType, controlledValue, controlledValue);
+    }
+
+    void ignoreController(QModelIndex iSrc) {
+        ignoreBlock(iSrc, false);
+        ignoreBlock(iSrc, "Interpolator", true);
+    }
+
     // TODO: Find best way to process blocks sharing the same controllers but with different controllers down the chain
-    QModelIndex niControllerCopy(QModelIndex iDst, QModelIndex iSrc, QString name = "Controller", const int target = -1) {
+    QModelIndex niControllerCopy(QModelIndex iDst, QModelIndex iSrc, QString name = "Controller", const QString & blockName = "", const int target = -1) {
         bool bExactCopy = false;
 
         const int numController = nifSrc->getLink(iSrc, name);
@@ -1461,7 +1627,6 @@ public:
         }
 
 //        if (isHandled(numController)) {
-//            qDebug() << "HANDLED";
 //            return niControllerSetLink(iDst, name, getHandled(numController));
 //        }
 
@@ -1475,23 +1640,22 @@ public:
 
         // Convert controller type specific values.
         if (controllerType == "NiMaterialColorController") {
-            std::tie(iControllerDst, shaderType) = getControllerType(dstType, "Float");
+            // TODO: Process other colors
+            if (nifSrc->get<uint>(iControllerSrc, "Target Color") == enumOptionValue("MaterialColor", "TC_SPECULAR")) {
+                if (getControllerType(dstType) == "Effect") {
+                    ignoreController(iControllerSrc);
 
-            nifDst->set<uint>(iControllerDst, "Type of Controlled Variable", 0);
-        } else if (controllerType == "BSMaterialEmittanceMultController") {
-            std::tie(iControllerDst, shaderType) = getControllerType(dstType, "Color");
+                    return niControllerCopy(iDst, iControllerSrc, "Next Controller", blockName);
+                }
 
-            nifDst->set<uint>(iControllerDst, "Type of Controlled Color", 0);
-        } else if (controllerType == "NiAlphaController") {
-            std::tie(iControllerDst, shaderType) = getControllerType(dstType, "Float");
-
-            if (shaderType == "Lighting") {
-            // Alpha = 12
-                nifDst->set<uint>(iControllerDst, "Type of Controlled Variable", 12);
-            } else if (shaderType == "Effect") {
-                // Alpha Transparency = 5
-                nifDst->set<uint>(iControllerDst, "Type of Controlled Variable", 5);
+                std::tie(iControllerDst, shaderType) = getController(dstType, "Color", "", "Specular Color");
+            } else {
+                std::tie(iControllerDst, shaderType) = getController(dstType, "Color", "Emissive Color");
             }
+        } else if (controllerType == "BSMaterialEmittanceMultController") {
+            std::tie(iControllerDst, shaderType) = getController(dstType, "Float", "EmissiveMultiple", "Emissive Multiple");
+        } else if (controllerType == "NiAlphaController") {
+            std::tie(iControllerDst, shaderType) = getController(dstType, "Float", "Alpha Transparency", "Alpha");
         } else if (controllerType == "BSRefractionFirePeriodController") {
             // TODO:
 
@@ -1665,7 +1829,7 @@ public:
         }
 
         // Next Controller
-        niControllerCopy(iControllerDst, iControllerSrc, "Next Controller");
+        niControllerCopy(iControllerDst, iControllerSrc, "Next Controller", blockName);
 
         // Set next controller in parent
         QModelIndex iNextControllerRoot = niControllerSetLink(iDst, name, iControllerDst);
@@ -1675,7 +1839,7 @@ public:
 
             for (int i = 0; i < controllerList.count(); i++) {
                 if (controllerList[i].getOrigin() == nifDst->getBlockNumber(getHandled(iControllerSrc))) {
-                    controllerList[i].add(nifDst->getBlockNumber(iControllerDst));
+                    controllerList[i].add(nifDst->getBlockNumber(iControllerDst), blockName);
 
                     bFound = true;
 
@@ -1689,7 +1853,7 @@ public:
                 conversionResult = false;
             }
         } else {
-            controllerList.append(Controller(nifDst->getBlockNumber(iControllerDst)));
+            controllerList.append(Controller(nifDst->getBlockNumber(iControllerDst), blockName));
 
             setHandled(iControllerDst, iControllerSrc);
         }
@@ -2636,7 +2800,11 @@ public:
             c.copyValue<float>("Max Linear Velocity");
             c.copyValue<float>("Max Angular Velocity");
             c.copyValue<float>("Penetration Depth");
+
             c.copyValue<int>("Motion System");
+            if (nifSrc->get<uint>(iSrc, "Motion System") == enumOptionValue("hkMotionType", "MO_SYS_FIXED")) {
+                nifDst->set<uint>(iDst, "Motion System", enumOptionValue("hkMotionType", "MO_SYS_INVALID"));
+            }
 
             // Deactivator Type
             if (nifSrc->get<int>(iSrc, "Solver Deactivation") > 1) {
@@ -2772,7 +2940,8 @@ public:
 
         collapseScale(iDst, radius);
 
-        nifDst->set<uint>(iDst, matMap.convert(nifSrc->getIndex(iSrc, "Material")));
+        // TODO: Check mat value
+        nifDst->set<uint>(iDst, "Material", matMap.convert(nifSrc->getIndex(iSrc, "Material")));
 
         return iDst;
     }
@@ -2829,12 +2998,12 @@ public:
         return setLink(getIndexDst(iDst, name), iTarget);
     }
 
-    void niTexturingProperty(QModelIndex iDst, QModelIndex iSrc) {
+    void niTexturingProperty(QModelIndex iDst, QModelIndex iSrc, const QString & sequenceBlockName) {
         setHandled(iDst, iSrc);
 
         Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
 
-        niController(iDst, iSrc, c, "Controller", nifDst->getBlockNumber(iDst));
+        niController(iDst, iSrc, c, "Controller", sequenceBlockName, nifDst->getBlockNumber(iDst));
 
         c.ignore("Name");
         c.ignore("Num Extra Data List");
@@ -2892,14 +3061,14 @@ public:
         }
     }
 
-    void niMaterialProperty(QModelIndex iDst, QModelIndex iSrc) {
+    void niMaterialProperty(QModelIndex iDst, QModelIndex iSrc, const QString & sequenceBlockName) {
         Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
 
         QString typeDst = nifDst->getBlockName(iDst);
 
         c.ignore("Name");
         c.ignore("Num Extra Data List");
-        niController(iDst, iSrc, c);
+        niController(iDst, iSrc, c, "Controller", sequenceBlockName);
 
         if (
                 nifSrc->getUserVersion2() == 14 ||
@@ -2915,7 +3084,7 @@ public:
 
         c.ignore("Specular Color");
         c.ignore("Emissive Color");
-//        nifDst->set<Color4>(iDst, "Emissive Color", Color4(c.getSrc<Color3>("Emissive Color")));
+        nifDst->set<Color4>(iDst, "Emissive Color", Color4(c.getSrc<Color3>("Emissive Color")));
         c.ignore("Glossiness");
         c.ignore("Alpha");
 
@@ -2949,7 +3118,7 @@ public:
         c.copyValue<QString>("Name");
         c.ignore("Num Extra Data List");
         // TODO: Extra data
-        niController(iDst, iSrc, c);
+        niController(iDst, iSrc, c, "Controller", nifSrc->get<QString>(iSrc, "Name"));
 
         c.copyValue<int>("Flags");
         c.copyValue<Vector3>("Translation");
@@ -3152,7 +3321,7 @@ public:
 
         extraDataList(fadeNode, iNode, c);
 
-        niController(fadeNode, iNode);
+        niController(fadeNode, iNode, "Controller", nifSrc->get<QString>(iNode, "Name"));
 
         c.copyValue("Flags");
         c.copyValue("Translation");
@@ -3295,7 +3464,7 @@ public:
 
         c.copyValue("Name");
         extraDataList(iDst, iSrc, c);
-        niController(iDst, iSrc, c);
+        niController(iDst, iSrc, c, "Controller", nifSrc->get<QString>(iSrc, "Name"));
         c.copyValue("Flags");
         c.copyValue("Translation");
         c.copyValue("Rotation");
@@ -3358,7 +3527,7 @@ public:
 
         c.copyValue("Name");
         extraDataList(iDst, iSrc, c);
-        niController(iDst, iSrc, c);
+        niController(iDst, iSrc, c, "Controller", nifSrc->get<QString>(iSrc, "Name"));
         c.copyValue("Flags");
         c.copyValue("Translation");
         c.copyValue("Rotation");
@@ -3429,7 +3598,7 @@ public:
 
         c.copyValue<QString>("Name");
         extraDataList(iDst, iSrc, c);
-        niController(iDst, iSrc, c);
+        niController(iDst, iSrc, c, "Controller", nifSrc->get<QString>(iSrc, "Name"));
         c.copyValue("Flags");
         c.copyValue("Translation");
         c.copyValue("Rotation");
@@ -3486,7 +3655,7 @@ public:
 
         extraDataList(iDst, iSrc, c);
 
-        niController(iDst, iSrc, c);
+        niController(iDst, iSrc, c, "Controller", nifSrc->get<QString>(iSrc, "Name"));
 
         c.copyValue("Flags");
         c.copyValue("Translation");
@@ -3524,7 +3693,7 @@ public:
 
         extraDataList(iDst, iSrc, c);
 
-        niController(iDst, iSrc, c);
+        niController(iDst, iSrc, c, "Controller", nifSrc->get<QString>(iSrc, "Name"));
 
         c.copyValue("Flags");
         c.copyValue("Translation");
@@ -3833,7 +4002,7 @@ public:
 
         extraDataList(iDst, iSrc, c);
 
-        niController(iDst, iSrc, c);
+        niController(iDst, iSrc, c, "Controller", nifSrc->get<QString>(iSrc, "Name"));
 
         c.copyValue("Flags");
         c.copyValue("Translation");
@@ -4085,8 +4254,6 @@ public:
             // Shadow_Map
             bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "ZBuffer_Test");
 
-            nifDst->set<uint>(iShaderPropertyDst, "Shader Flags 1", flags1Dst);
-
             uint flags2Dst = nifDst->get<uint>(iShaderPropertyDst, "Shader Flags 2");
 
             bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "ZBuffer_Write");
@@ -4124,6 +4291,12 @@ public:
             // Unknown 9
             // Unknown 10
 
+            if (nifDst->getBlockName(iShaderPropertyDst).compare("BSEffectShaderProperty") == 0) {
+                bsShaderFlags1Add(flags1Dst, "Use_Falloff");
+                bsShaderFlags2Add(flags2Dst, "Double_Sided");
+            }
+
+            nifDst->set<uint>(iShaderPropertyDst, "Shader Flags 1", flags1Dst);
             nifDst->set<uint>(iShaderPropertyDst, "Shader Flags 2", flags2Dst);
 
             if (bsShaderFlags2IsSet(shaderFlags2Src, "LOD_Landscape")) {
@@ -4140,20 +4313,6 @@ public:
         if (!iNiAlphaPropertyDst.isValid()) {
             return;
         }
-
-
-        int alphaFlags = nifDst->get<int>(iNiAlphaPropertyDst, "Flags");
-
-        if (bsShaderFlags1IsSet(shaderFlags1Src, "Alpha_Texture")) {
-            // Disable blending
-            alphaFlags &= ~1;
-
-            // Enable testing
-            alphaFlags |= 1 << 9;
-
-            nifDst->set<int>(iNiAlphaPropertyDst, "Flags", alphaFlags);
-            nifDst->set<int>(iNiAlphaPropertyDst, "Threshold", 128);
-        }
     }
 
     // TODO: Use enumOption
@@ -4162,26 +4321,7 @@ public:
             return nifDst->get<int>(iDst, "Shader Flags 1");
         }
 
-        int mask = ~(
-                (1 << 2 ) +
-                (1 << 4 ) +
-                (1 << 5 ) +
-                (1 << 6 ) +
-                (1 << 7 ) +
-                (1 << 8 ) +
-                (1 << 9 ) +
-                (1 << 10) + // Maybe?
-                (1 << 11) +
-                (1 << 12) +
-                (1 << 14) +
-                (1 << 19) +
-                (1 << 21) +
-                (1 << 22) +
-                (1 << 23) +
-                (1 << 25) +
-                (1 << 28) +
-                (1 << 30));
-        int flags = nifSrc->get<int>(iBSShaderPPLightingProperty, "Shader Flags") & mask;
+        int flags = 0;
 
         if (iNiTriStripsData.isValid()) {
             // Set Model_Space_Normals in case there are no tangents
@@ -4196,12 +4336,12 @@ public:
         return flags;
     }
 
-    void bSShaderLightingProperty(QModelIndex iDst, QModelIndex iSrc) {
+    void bSShaderLightingProperty(QModelIndex iDst, QModelIndex iSrc, const QString & sequenceBlockName) {
         Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
 
         c.ignore("Name");
         c.ignore("Num Extra Data List");
-        niController(iDst, iSrc, c);
+        niController(iDst, iSrc, c, "Controller", sequenceBlockName);
         c.ignore("Flags");
         c.ignore("Shader Type");
         c.ignore("Shader Flags");
@@ -4248,14 +4388,17 @@ public:
             c.ignore("File Name");
 
             if (nifSrc->getUserVersion2() == 34) {
-                c.copyValue("Falloff Start Angle");
-                c.copyValue("Falloff Stop Angle");
-                c.copyValue("Falloff Start Opacity");
-                c.copyValue("Falloff Stop Opacity");
-            }
+                // Does not appear to be used
+                c.ignore("Falloff Start Angle");
+                c.ignore("Falloff Stop Angle");
+                c.ignore("Falloff Start Opacity");
+                c.ignore("Falloff Stop Opacity");
 
-            // Set Use_Falloff flag
-            nifDst->set<int>(iDst, "Shader Flags 1", c.getDst<int>("Shader Flags 1") | (1 << 6));
+                nifDst->set<float>(iDst, "Falloff Start Angle", 1);
+                nifDst->set<float>(iDst, "Falloff Stop Angle", 1);
+                nifDst->set<float>(iDst, "Falloff Start Opacity", 1);
+                nifDst->set<float>(iDst, "Falloff Stop Opacity", 1);
+            }
         }
 
         setHandled(iDst, iSrc);
@@ -4271,7 +4414,23 @@ public:
             QModelIndex linkNode = nifSrc->getBlock(links[i]);
             QString type = nifSrc->getBlockName(linkNode);
 
+//            if (type == "BSShaderNoLightingProperty") {
+//                iResult = nifDst->insertNiBlock("BSLightingShaderProperty");
+
+//                nifDst->set<float>(iResult, "Specular Strength", 0);
+
+//                nifDst->set<qint32>(iResult, "Shader Flags 1", 0);
+//                nifDst->set<qint32>(iResult, "Shader Flags 2", 0);
+
+//                bsShaderFlags1Add(iResult, "Own_Emit");
+//                bsShaderFlags2Add(iResult, "Double_Sided");
+
+//                return iResult;
+//            }
+
             if (type == "BSShaderNoLightingProperty") {
+                // TODO: Set falloff opacity to 1 on all unless falloff flags is set in source and always set use_falloff flag
+                // TODO: Set Double sided on always
                 iResult = nifDst->insertNiBlock("BSEffectShaderProperty");
             } else if (type == "BSShaderPPLightingProperty") {
                 iResult = nifDst->insertNiBlock("BSLightingShaderProperty");
@@ -4342,21 +4501,21 @@ public:
                 }
 
                 if (type == "BSShaderPPLightingProperty" || type == "BSShaderNoLightingProperty") {
-                    bSShaderLightingProperty(iShaderPropertyDst, iPropertySrc);
+                    bSShaderLightingProperty(iShaderPropertyDst, iPropertySrc, nifSrc->get<QString>(iSrc, "Name"));
 
                     iBSShaderLightingPropertySrc = iPropertySrc;
                 } else if (type == "TileShaderProperty" ||
                            type == "TallGrassShaderProperty" ||
                            type == "SkyShaderProperty" ||
                            type == "WaterShaderProperty") {
-                    shaderProperty(iShaderPropertyDst, iPropertySrc, type);
+                    shaderProperty(iShaderPropertyDst, iPropertySrc, type, nifSrc->get<QString>(iSrc, "Name"));
 
                     iBSShaderLightingPropertySrc = iPropertySrc;
                 } else if (type == "NiMaterialProperty") {
-                    niMaterialProperty(iShaderPropertyDst, iPropertySrc);
+                    niMaterialProperty(iShaderPropertyDst, iPropertySrc, nifSrc->get<QString>(iSrc, "Name"));
                 } else if (type == "NiTexturingProperty") {
                     // Needs to be copied
-                    niTexturingProperty(iShaderPropertyDst, iPropertySrc);
+                    niTexturingProperty(iShaderPropertyDst, iPropertySrc, nifSrc->get<QString>(iSrc, "Name"));
                 } else if (type == "NiStencilProperty") {
                     // TODO: NiStencilProperty
                     setHandled(QModelIndex(), iPropertySrc);
@@ -4379,14 +4538,16 @@ public:
             colorEmmissive.setAlpha(0);
             nifDst->set<Color4>(iEmissive, colorEmmissive);
         }
+
+        //
     }
 
-    void shaderProperty(QModelIndex iDst, QModelIndex iSrc, const QString & type) {
+    void shaderProperty(QModelIndex iDst, QModelIndex iSrc, const QString & type, const QString & sequenceBlockName) {
         Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
 
         c.ignore("Name");
         extraDataList(iDst, iSrc, c);
-        niController(iDst, iSrc, c);
+        niController(iDst, iSrc, c, "Controller", sequenceBlockName);
         c.ignore("Flags");
         c.ignore("Shader Type");
 
@@ -4515,6 +4676,8 @@ public:
             conversionResult = false;
         }
 
+        niController(iDst, iSrc, c, "Controller", nifSrc->get<QString>(iSrc, "Name"));
+
         QModelIndex shaderProperty = getShaderProperty(iSrc);
         QModelIndex iBSShaderLightingPropertySrc = getShaderPropertySrc(iSrc);
 
@@ -4526,8 +4689,6 @@ public:
         c.copyValue("Rotation");
         c.copyValue<uint>("Flags");
         c.copyValue("Scale");
-
-        niController(iDst, iSrc, c);
 
         c.ignore("Collision Object");
         c.ignore("Data");
@@ -5102,7 +5263,7 @@ public:
 
         if (iWater.isValid()) {
             lodLandscapeWaterMultiBound(iWater);
-            lodLandscapeWaterRemoveEdgeFaces(iWater, lodLandscapeMinVert(shapeList));
+//            lodLandscapeWaterRemoveEdgeFaces(iWater, lodLandscapeMinVert(shapeList));
         }
     }
 
@@ -5473,21 +5634,513 @@ public:
         }
     }
 
-    void convert() {
-        // TODO: Check for linking issues. AdjustLinks() is called by insertNiBlock.
-        nifDst->setState(NifModel::Loading);
+    QModelIndex niInterpolatorMultToColor(QModelIndex iInterpolatorMult, Vector3 colorVector) {
+        QModelIndex iInterpolatorColor = nifDst->insertNiBlock("NiPoint3Interpolator");
+        QModelIndex iInterpolatorMultData = getBlockDst(iInterpolatorMult, "Data");
 
-        bsFadeNode(nifSrc->getBlock(0));
-        reLinkExec();
-        niControllerSequencesFinalize();
-        lODLandscape();
-        lODObjects();
-        unhandledBlocks();
+        if (iInterpolatorMultData.isValid()) {
+            QModelIndex iInterpolatorColorData = nifDst->insertNiBlock("NiPosData");
+
+            QModelIndex iDataMult = getIndexDst(iInterpolatorMultData, "Data");
+            QModelIndex iDataColor = getIndexDst(iInterpolatorColorData, "Data");
+
+            nifDst->set<uint>(iDataColor, "Num Keys", nifDst->get<uint>(iDataMult, "Num Keys"));
+            nifDst->set<uint>(iDataColor, "Interpolation", enumOptionValue("KeyType", "LINEAR_KEY"));
+
+            QModelIndex iKeysArrayMult = getIndexDst(iDataMult, "Keys");
+            QModelIndex iKeysArrayColor = getIndexDst(iDataColor, "Keys");
+
+            nifDst->updateArray(iKeysArrayColor);
+
+            for (int i = 0; i < nifDst->rowCount(iKeysArrayMult); i++) {
+                nifDst->set<float>(iKeysArrayColor.child(i, 0), "Time", nifDst->get<float>(iKeysArrayMult.child(i, 0), "Time"));
+                nifDst->set<Vector3>(iKeysArrayColor.child(i, 0), "Value", colorVector);
+            }
+
+            setLink(iInterpolatorColor, "Data", iInterpolatorColorData);
+        }
+
+        return iInterpolatorColor;
     }
 
-    bool getConversionResult() const;
-    bool getBLODLandscape() const;
-    bool getBLODBuilding() const;
+    void niMaterialEmittanceFinalize(const QModelIndex iBlock) {
+        if (nifDst->getBlockName(iBlock) != "BSEffectShaderProperty") {
+            return;
+        }
+
+        QModelIndex iController = getBlockDst(iBlock, "Controller");
+        QModelIndex iControllerMult;
+        QModelIndex iControllerColor;
+        QModelIndex iLastController;
+
+        QModelIndex iMult = getIndexDst(iBlock, "Emissive Multiple");
+        QModelIndex iColor = getIndexDst(iBlock, "Emissive Color");
+        float mult = nifDst->get<float>(iMult);
+        Color4 color = nifDst->get<Color4>(iColor);
+
+        while (iController.isValid()) {
+            iLastController = iController;
+
+            const QString controllerType = nifDst->getBlockName(iController);
+
+            if (controllerType == "BSEffectShaderPropertyFloatController") {
+                if (
+                        nifDst->get<uint>(iController, "Type of Controlled Variable") ==
+                        enumOptionValue("EffectShaderControlledVariable", "EmissiveMultiple")) {
+                    if (!iControllerMult.isValid()) {
+                        iControllerMult = iController;
+                    } else {
+                        qDebug() << __FUNCTION__ << "Multiple Mult Controllers";
+
+                        conversionResult = false;
+                    }
+                }
+            } else if (controllerType == "BSEffectShaderPropertyColorController") {
+                if (
+                        nifDst->get<uint>(iController, "Type of Controlled Color") ==
+                        enumOptionValue("EffectShaderControlledColor", "Emissive Color")) {
+                    if (!iControllerColor.isValid()) {
+                        iControllerColor = iController;
+                    } else {
+                        qDebug() << __FUNCTION__ << "Multiple Color Controllers";
+
+                        conversionResult = false;
+                    }
+                }
+            }
+
+            iController = getBlockDst(iController, "Next Controller");
+        }
+
+        if (!iControllerMult.isValid() && !iControllerColor.isValid()) {
+            if (mult == 0.0f) {
+                nifDst->set<float>(iMult, 1);
+                nifDst->set<Color4>(iColor, Color4(1, 1, 1, 1));
+            }
+
+            return;
+        }
+
+        if (iControllerMult.isValid() && !iControllerColor.isValid()) {
+            QModelIndex iInterpolatorMult = getBlockDst(iControllerMult, "Interpolator");
+
+            if (!iInterpolatorMult.isValid()) {
+                return;
+            }
+
+            Vector3 colorVector = Vector3(color[0], color[1], color[2]);
+
+            iControllerColor = nifDst->insertNiBlock("BSEffectShaderPropertyColorController");
+            nifDst->set<uint>(iControllerColor, "Type of Controlled Color", enumOptionValue("EffectShaderControlledColor", "Emissive Color"));
+
+            int lNextController = nifDst->getLink(iControllerMult, "Next Controller");
+
+            nifDst->setLink(iControllerMult, "Next Controller", nifDst->getBlockNumber(iControllerColor));
+            nifDst->setLink(iControllerColor, "Next Controller", lNextController);
+
+            const QString interpolatorType = nifDst->getBlockName(iInterpolatorMult);
+
+            if (interpolatorType == "NiBlendFloatInterpolator") {
+                QModelIndex iInterpolatorColor = nifDst->insertNiBlock("NiBlendPoint3Interpolator");
+
+                Copier c = Copier(iInterpolatorColor, iInterpolatorMult, nifDst, nifDst);
+
+                c.copyValue("Flags");
+                c.copyValue("Array Size");
+                c.copyValue("Weight Threshold");
+                c.ignore("Value");
+
+                for (QModelIndex iSequence : niControllerSequenceList) {
+                    QModelIndex iControlledBlocksArray = getIndexDst(iSequence, "Controlled Blocks");
+                    QModelIndex iNumControlledBlocks = getIndexDst(iSequence, "Num Controlled Blocks");
+
+                    const int numControlledBlocksOrginal = nifDst->get<int>(iNumControlledBlocks);
+                    int numControlledBlocks = numControlledBlocksOrginal;
+
+                    for (int i = 0; i < numControlledBlocksOrginal; i++) {
+                        QModelIndex iControlledBlockMult = iControlledBlocksArray.child(i, 0);
+
+                        if (nifDst->getLink(iControlledBlockMult, "Controller") == nifDst->getBlockNumber(iControllerMult)) {
+                            numControlledBlocks++;
+                            nifDst->set<int>(iNumControlledBlocks, numControlledBlocks);
+                            nifDst->updateArray(iControlledBlocksArray);
+
+                            QModelIndex iControlledBlockColor = iControlledBlocksArray.child(numControlledBlocks - 1, 0);
+
+                            Copier c = Copier(iControlledBlockColor, iControlledBlockMult, nifDst, nifDst);
+
+                            c.tree();
+
+                            QModelIndex iInterpolatorMult = getBlockDst(iControlledBlockMult, "Interpolator");
+                            QModelIndex iInterpolatorColor = niInterpolatorMultToColor(iInterpolatorMult, colorVector);
+
+                            nifDst->setLink(iControlledBlockColor, "Interpolator", nifDst->getBlockNumber(iInterpolatorColor));
+                            nifDst->setLink(iControlledBlockColor, "Controller", nifDst->getBlockNumber(iControllerColor));
+                        }
+                    }
+                }
+
+                setLink(iControllerColor, "Interpolator", iInterpolatorColor);
+            } else if (interpolatorType == "NiFloatInterpolator") {
+                QModelIndex iInterpolatorColor = niInterpolatorMultToColor(iInterpolatorMult, colorVector);
+
+                setLink(iControllerColor, "Interpolator", iInterpolatorColor);
+            } else {
+                qDebug() << __FUNCTION__ << __LINE__ << "Unknown interpolator type" << interpolatorType;
+
+                conversionResult = false;
+
+                return;
+            }
+
+            Copier c = Copier(iControllerColor, iControllerMult, nifDst, nifDst);
+
+            c.processed("Next Controller");
+            c.copyValue("Flags");
+            c.copyValue("Frequency");
+            c.copyValue("Phase");
+            c.copyValue("Start Time");
+            c.copyValue("Stop Time");
+            c.copyValue("Target");
+            c.processed("Interpolator");
+            c.processed("Type of Controlled Variable");
+        }
+
+        if (!iControllerMult.isValid() && iControllerColor.isValid()) {
+            if (mult == 0.0f) {
+                nifDst->set<float>(iMult, 1);
+                nifDst->set<Color4>(iColor, Color4(1, 1, 1, 1));
+
+                for (QModelIndex iSequence : niControllerSequenceList) {
+                    QModelIndex iControlledBlocksArray = getIndexDst(iSequence, "Controlled Blocks");
+
+                    for (int i = 0; i < nifDst->rowCount(iControlledBlocksArray); i++) {
+                        QModelIndex iControlledBlock = iControlledBlocksArray.child(i, 0);
+
+                        if (nifDst->getLink(iControlledBlock, "Controller") == nifDst->getBlockNumber(iControllerMult)) {
+                            QModelIndex iInterpolator = getBlockDst(getBlockDst(iControlledBlock, "Interpolator"), "Data");
+
+                            if (!iInterpolator.isValid()) {
+                                continue;
+                            }
+
+                            QModelIndex iData = getIndexDst(iInterpolator, "Data");
+                            QModelIndex iKeys = getIndexDst(iInterpolator, "Keys");
+
+                            if (!iInterpolator.isValid() || !iData.isValid() || !iKeys.isValid()) {
+                                qDebug() << __FUNCTION__ << __LINE__ << "No Interpolator";
+
+                                conversionResult = false;
+
+                                return;
+                            }
+
+                            nifDst->set<uint>(iData, "Num Keys", 1);
+                            nifDst->updateArray(iKeys);
+                            nifDst->set<float>(iKeys.child(0, 0), "Time", 0);
+                            nifDst->set<Vector3>(iKeys.child(0, 0), "Value", Vector3(1, 1, 1));
+                        }
+                    }
+                }
+            }
+
+            return;
+        }
+
+        QModelIndex iInterpolatorMult = getBlockDst(iControllerMult, "Interpolator");
+        QModelIndex iFlagsMult = getIndexDst(iInterpolatorMult, "Flags");
+
+        if (iFlagsMult.isValid() && nifDst->get<int>(iFlagsMult) == int(enumOptionValue("InterpBlendFlags", "MANAGER_CONTROLLED"))) {
+            iInterpolatorMult = QModelIndex();
+        }
+
+        QModelIndex iInterpolatorColor = getBlockDst(iControllerColor, "Interpolator");
+        QModelIndex iFlagsColor = getIndexDst(iInterpolatorColor, "Flags");
+
+        if (iFlagsColor.isValid() && nifDst->get<int>(iFlagsColor) == int(enumOptionValue("InterpBlendFlags", "MANAGER_CONTROLLED"))) {
+            iInterpolatorColor = QModelIndex();
+        }
+
+        QList<QPair<QModelIndex, QModelIndex>> interpolatorList;
+        int linkMult = nifDst->getBlockNumber(iControllerMult);
+        int linkColor = nifDst->getBlockNumber(iControllerColor);
+
+        if (iInterpolatorMult.isValid() && iInterpolatorColor.isValid()) {
+            interpolatorList.append(QPair(iInterpolatorMult, iInterpolatorColor));
+        } else {
+            for (QModelIndex iSequence : niControllerSequenceList) {
+                QModelIndex iControlledBlocksArray = getIndexDst(iSequence, "Controlled Blocks");
+                QPair interpolatorPair = QPair(QModelIndex(), QModelIndex());
+
+                if (iInterpolatorMult.isValid()) {
+                    interpolatorPair.first = iInterpolatorMult;
+                } else if (iInterpolatorColor.isValid()) {
+                    interpolatorPair.second = iInterpolatorColor;
+                }
+
+                for (int i = 0; i < nifDst->rowCount(iControlledBlocksArray); i++) {
+                    QModelIndex iControlledBlock = iControlledBlocksArray.child(i, 0);
+
+                    if (!iInterpolatorMult.isValid() && nifDst->getLink(iControlledBlock, "Controller") == linkMult) {
+                        if (interpolatorPair.first.isValid()) {
+                            qDebug() << __FUNCTION__ << "Mult interpolator already set";
+
+                            conversionResult = false;
+                        }
+
+                        interpolatorPair.first = getBlockDst(iControlledBlock, "Interpolator");
+                    } else if (!iInterpolatorColor.isValid() && nifDst->getLink(iControlledBlock, "Controller") == linkColor) {
+                        if (interpolatorPair.second.isValid()) {
+                            qDebug() << __FUNCTION__ << "Color interpolator already set";
+
+                            conversionResult = false;
+                        }
+
+                        interpolatorPair.second = getBlockDst(iControlledBlock, "Interpolator");
+                    }
+                }
+
+                if (interpolatorPair.first.isValid() ^ interpolatorPair.second.isValid()) {
+                    qDebug() << __FUNCTION__ << "No Interpolator Pair";
+
+                    conversionResult = false;
+
+                    return;
+                }
+
+                if (interpolatorPair.first.isValid() && interpolatorPair.second.isValid()) {
+                    interpolatorList.append(interpolatorPair);
+                }
+            }
+        }
+
+        for (QPair<QModelIndex, QModelIndex> pair : interpolatorList) {
+            QModelIndex iInterpolatorDataMult = getIndexDst(getBlockDst(pair.first, "Data"), "Data");
+            QModelIndex iInterpolatorDataColor = getIndexDst(getBlockDst(pair.second, "Data"), "Data");
+
+            // TODO: Process case where color interpolator is not valid
+            if (!iInterpolatorDataMult.isValid() || !iInterpolatorDataColor.isValid()) {
+                continue;
+            }
+
+            QModelIndex iNumKeysMult = getIndexDst(iInterpolatorDataMult, "Num Keys");
+            QModelIndex iNumKeysColor = getIndexDst(iInterpolatorDataColor, "Num Keys");
+
+            QModelIndex iKeysArrayMult = getIndexDst(iInterpolatorDataMult, "Keys");
+            QModelIndex iKeysArrayColor = getIndexDst(iInterpolatorDataColor, "Keys");
+
+            for (uint i = 0; i < uint(nifDst->rowCount(iKeysArrayMult) - 1); i++) {
+                QModelIndex iKey1 = iKeysArrayMult.child(int(i), 0);
+                QModelIndex iKey2 = iKeysArrayMult.child(int(i + 1), 0);
+
+                QModelIndex iValue1 = getIndexDst(iKey1, "Value");
+                QModelIndex iValue2 = getIndexDst(iKey2, "Value");
+
+                float t1 = nifDst->get<float>(iKey1, "Time");
+                float t2 = nifDst->get<float>(iKey2, "Time");
+
+                if (nifDst->get<float>(iValue1) == 0.0f) {
+                    if (nifDst->get<float>(iValue2) == 0.0f) {
+                        if (i > 0) {
+                            iKey1 = interpolatorDataInsertKey(iKeysArrayMult, iNumKeysMult, iKey1.row() + 1, RowToCopy::Before);
+                            iValue1 = getIndexDst(iKey1, "Value");
+
+                            // Update key 2
+                            iKey2 = iKeysArrayMult.child(iKey2.row() + 1, 0);
+                        }
+
+                        iKey2 = interpolatorDataInsertKey(iKeysArrayMult, iNumKeysMult, iKey2.row(), RowToCopy::After);
+                        iValue2 = getIndexDst(iKey2, "Value");
+
+                        nifDst->set<float>(iValue1, 1);
+                        nifDst->set<float>(iValue2, 1);
+
+                        QModelIndex iColorKey1;
+                        QModelIndex iColorKey2;
+
+                        for (int j = 0; j < nifDst->rowCount(iKeysArrayColor); j++) {
+                            QModelIndex iColorKey = iKeysArrayColor.child(j, 0);
+                            float t = nifDst->get<float>(iColorKey, "Time");
+
+                            if (t - t1 <= 0) {
+                                // Get the last t1 key
+                                iColorKey1 = iColorKey;
+                            } else if (t - t1 > 0 && t - t2 < 0) {
+                                // inbetweeners
+                                nifDst->set<Vector3>(iColorKey, "Value", Vector3(1, 1, 1));
+                            } else if (t - t2 >= 0) {
+                                // Get the first t2 key
+                                iColorKey2 = iColorKey;
+
+                                break;
+                            }
+                        }
+
+                        if (iColorKey1.isValid() && iColorKey2.isValid()) {
+                            if (i > 0) {
+                                iColorKey1 = interpolatorDataInsertKey(iKeysArrayColor, iNumKeysColor, iColorKey1.row() + 1, RowToCopy::Before);
+
+                                // Update Color key 2
+                                iColorKey2 = iKeysArrayColor.child(iColorKey2.row() + 1, 0);
+                            }
+
+                            if (nifDst->get<float>(iColorKey1, "Time") - t1 < 0) {
+                                float tBegin = nifDst->get<float>(iColorKey1, "Time");
+                                float tEnd = nifDst->get<float>(iColorKey2, "Time");
+                                float tRange = tEnd - tBegin;
+                                float changeFactor = (t1 - tBegin) / tRange;
+                                Vector3 colorBefore = nifDst->get<Vector3>(iColorKey1, "Value");
+                                Vector3 colorAfter = nifDst->get<Vector3>(iColorKey2, "Value");
+                                Vector3 colorChange = (colorAfter - colorBefore) * changeFactor;
+                                Vector3 color = colorBefore + colorChange;
+
+                                // Set color to white
+                                nifDst->set<float>(iColorKey1, "Time", t1);
+                                nifDst->set<Vector3>(iColorKey1, "Value", color);
+
+                                iColorKey1 = interpolatorDataInsertKey(iKeysArrayColor, iNumKeysColor, iColorKey1.row() + 1, RowToCopy::Before);
+                            }
+
+                            // Set color before to the color right before changing to white and color after to the color at t2
+                            Vector3 colorBefore = nifDst->get<Vector3>(iColorKey1, "Value");
+                            Vector3 colorAfter = nifDst->get<Vector3>(iColorKey2, "Value");
+
+                            // Set color to white
+                            nifDst->set<float>(iColorKey1, "Time", t1);
+                            nifDst->set<Vector3>(iColorKey1, "Value", Vector3(1, 1, 1));
+
+                            // Insert the color key at the end of the white color phase
+                            iColorKey2 = interpolatorDataInsertKey(iKeysArrayColor, iNumKeysColor, iColorKey2.row(), RowToCopy::After);
+
+                            // Set the color key's color to white and it's time to t2
+                            nifDst->set<float>(iColorKey2, "Time", t2);
+                            nifDst->set<Vector3>(iColorKey2, "Value", Vector3(1, 1, 1));
+
+                            // If the color end key is after the mult end key, create a new color with its value being the color at that time in the timeline without white phases.
+                            if (nifDst->get<float>(iColorKey2, "Time") - t2 > 0) {
+                                // t > t2
+                                float t = nifDst->get<float>(iColorKey2, "Time");
+
+                                float keyRange = t2 - t1;
+                                float keyInRange = t - t1;
+                                float changeFactor = keyRange / keyInRange;
+                                Vector3 colorChange = (colorAfter - colorBefore) * changeFactor;
+                                Vector3 color = colorBefore + colorChange;
+
+                                iColorKey2 = interpolatorDataInsertKey(iKeysArrayColor, iNumKeysColor, iColorKey2.row(), RowToCopy::After);
+
+                                nifDst->set<Vector3>(iColorKey2, "Value", color);
+                            }
+                        } else {
+                            qDebug() << __FUNCTION__ << "Missing color key" << iColorKey1 << iColorKey2;
+
+                            conversionResult = false;
+
+                            return;
+                        }
+
+                        i += 2;
+                    }
+                }
+            }
+
+            // Set the final key
+
+            QModelIndex iKey = iKeysArrayMult.child(nifDst->rowCount(iKeysArrayMult) - 1, 0);
+
+            if (nifDst->get<float>(iKey, "Value") == 0.0f) {
+                float t = nifDst->get<float>(iKey, "Time");
+
+                QModelIndex iColorKeyLast;
+
+                for (int i = 0; i < nifDst->rowCount(iKeysArrayColor); i++) {
+                    QModelIndex iColorKey = iKeysArrayColor.child(i, 0);
+
+                    if (nifDst->get<float>(iColorKey, "Time") >= t) {
+                        if (!iColorKeyLast.isValid()) {
+                            iColorKeyLast = iColorKey;
+                        } else {
+                            nifDst->set<Vector3>(iColorKey, "Value", Vector3(1, 1, 1));
+                        }
+                    }
+                }
+
+                if (!iColorKeyLast.isValid()) {
+                    // Add a key with the last color
+                    interpolatorDataInsertKey(iKeysArrayColor, iNumKeysColor, nifDst->rowCount(iKeysArrayColor), RowToCopy::Before);
+                } else if (nifDst->get<float>(iColorKeyLast, "Time") > t) {
+                    // Add a key with the color at the timeline point.
+
+                    QModelIndex iColorKeyBeforeLast = iKeysArrayColor.child(iColorKeyLast.row() - 1, 0);
+
+                    float tBegin = nifDst->get<float>(iColorKeyBeforeLast, "Time");
+                    float tEnd = nifDst->get<float>(iColorKeyBeforeLast, "Time");
+                    float tRange = tEnd - tBegin;
+                    float tInRange = tEnd - t;
+                    float changeFactor = tInRange / tRange;
+
+                    Vector3 iColorBefore = nifDst->get<Vector3>(iColorKeyBeforeLast, "Value");
+                    Vector3 iColorAfter = nifDst->get<Vector3>(iColorKeyLast, "Value");
+                    Vector3 colorChange = (iColorAfter - iColorBefore) * changeFactor;
+                    Vector3 color = iColorBefore + colorChange;
+
+                    iColorKeyLast = interpolatorDataInsertKey(iKeysArrayColor, iNumKeysColor, nifDst->rowCount(iKeysArrayColor), RowToCopy::Before);
+
+                    nifDst->set<Vector3>(iColorKeyLast, "Value", color);
+                }
+
+                iColorKeyLast = interpolatorDataInsertKey(iKeysArrayColor, iNumKeysColor, nifDst->rowCount(iKeysArrayColor), RowToCopy::Before);
+
+                nifDst->set<Vector3>(iColorKeyLast, "Value", Vector3(1, 1, 1));
+            }
+        }
+
+        if (mult == 0.0f) {
+            nifDst->set<float>(iMult, 1);
+            nifDst->set<Color4>(iColor, Color4(1, 1, 1, 1));
+        }
+    }
+
+    enum RowToCopy {
+        Before,
+        After,
+    };
+
+    QModelIndex interpolatorDataInsertKey(QModelIndex iKeys, QModelIndex iNumKeys, int row, RowToCopy rowToCopy) {
+        uint numKeys = nifDst->get<uint>(iNumKeys) + 1;
+        nifDst->set<uint>(iNumKeys, numKeys);
+        nifDst->updateArray(iKeys);
+
+        if (rowToCopy == RowToCopy::Before) {
+            if (row == 0) {
+                qDebug() << __FUNCTION__ << "Cannot insert at 0";
+
+                conversionResult = false;
+
+                return QModelIndex();
+            }
+
+            for (int i = int(numKeys) - 1; i >= row; i--) {
+                Copier c = Copier(iKeys.child(i, 0), iKeys.child(i - 1, 0), nifDst, nifDst);
+
+                c.tree();
+            }
+        } else if (rowToCopy == RowToCopy::After) {
+            for (int i = int(numKeys) - 1; i > row; i--) {
+                Copier c = Copier(iKeys.child(i, 0), iKeys.child(i - 1, 0), nifDst, nifDst);
+
+                c.tree();
+            }
+        }
+
+        return iKeys.child(row, 0);
+    }
+
+    void niControlledBlocksFinalize() {
+        for (QModelIndex iBlock : controlledBlockList) {
+            niMaterialEmittanceFinalize(iBlock);
+        }
+    }
 };
 
 //bool isHighLevelLOD(const QString & fname) {
@@ -5861,7 +6514,56 @@ bool convert(const QString & fname, QList<HighLevelLOD> & highLevelLodList, cons
     return c.getConversionResult();
 }
 
+void search() {
+    const QString path = "D:\\Games\\Fallout 4\\FO4Extracted\\Data\\Meshes";
+    QDirIterator it(path, QStringList() << "*.nif", QDir::Files, QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+        QString fname = it.next();
+
+        NifModel nif = NifModel();
+        if (!nif.loadFromFile(fname)) {
+            fprintf(stderr, "Failed to load nif\n");
+        }
+
+        for (int i = 0; i < nif.getBlockCount(); i++) {
+            QModelIndex iBlock = nif.getBlock(i);
+
+            if (nif.getBlockName(iBlock) != "BSTriShape") {
+                continue;
+            }
+
+            QModelIndex iAlpha = nif.getBlock(nif.getLink(iBlock, "Alpha Property"));
+            QModelIndex iShader = nif.getBlock(nif.getLink(iBlock, "Shader Property"));
+
+            if (!iAlpha.isValid() || !iShader.isValid()) {
+                continue;
+            }
+
+            if (nif.getBlockName(iShader) != "BSLightingShaderProperty") {
+                continue;
+            }
+
+            if (nif.get<int>(iAlpha, "Flags") == 4333) {
+                uint flags = nif.get<uint>(iShader, "Shader Flags 1");
+                if (
+                        !(flags & NifValue::enumOptionValue("Fallout4ShaderPropertyFlags1", "Decal")) &&
+                        !(flags & NifValue::enumOptionValue("Fallout4ShaderPropertyFlags1", "Dynamic_Decal"))) {
+                    qDebug() << fname;
+
+                    break;
+                }
+            }
+        }
+    }
+
+    exit(0);
+}
+
 void convertNif(QString path) {
+    clock_t tStart = clock();
+
+//    search();
+
     QList<QString> failedList;
     QList<HighLevelLOD> highLevelLodList;
 
@@ -5895,6 +6597,8 @@ void convertNif(QString path) {
             qDebug() << s;
         }
     }
+
+    printf("Total time elapsed: %.2fs\n", double(clock() - tStart)/CLOCKS_PER_SEC);
 }
 
 void Copier::setISrc(const QModelIndex &value)
@@ -5965,6 +6669,11 @@ return fileType;
 QList<int> Controller::getClones() const
 {
 return clones;
+}
+
+QList<QString> Controller::getCloneBlockNames() const
+{
+return cloneBlockNames;
 }
 
 int Controller::getOrigin() const
