@@ -10,7 +10,7 @@
     <height>800</height>
    </rect>
   </property>
-  <widget class="QWidget" name="centralwidget" />
+  <widget class="QWidget" name="centralwidget"/>
   <widget class="QToolBar" name="tFile">
    <property name="sizePolicy">
     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -413,7 +413,7 @@ margin-top: -2px;
 }
 
 #statusbar QSizeGrip {
-background: url(&quot;:/img/sizeGrip&quot;) no-repeat;
+background: url(&quot;:/wnd/sizeGrip&quot;) no-repeat;
 width: 10px; height: 10px;
 }
 
