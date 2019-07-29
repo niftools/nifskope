@@ -34,9 +34,15 @@
 
 #include <time.h>
 
-// Set to false to not search for Unused values
-#define FIND_UNUSED true
+/**
+ * Determines whether the Copier class will search for all values under the source model index. Set to true to search
+ * for values.
+ */
+#define FIND_UNUSED false
 
+/**
+ * @brief The ValueState enum describes whether values have been processed, ignored or not been used.
+ */
 enum ValueState
 {
     Unused,
@@ -44,6 +50,9 @@ enum ValueState
     Ignored,
 };
 
+/**
+ * @brief The FileType enum describes a nif's in engine type.
+ */
 enum FileType
 {
     Invalid,
@@ -53,16 +62,27 @@ enum FileType
     LODObjectHigh,
 };
 
+/**
+ * @brief The Progress class is used to determine the progress of nif conversion.
+ * Progress is determined by the number of source blocks which have been processed.
+ */
 class Progress
 {
     uint numBlocksSrc;
     uint numBlocksProcessed;
     uint maxBlocks = 100;
 public:
+    /**
+     * @brief Progress constructor.
+     * @param numBlocksSrc The number of blocks in the source nif
+     */
     Progress(uint numBlocksSrc) : numBlocksSrc(numBlocksSrc) {
         numBlocksProcessed = 0;
     }
 
+    /**
+     * @brief operator ++ increases progress and prints progress on certain conditions.
+     */
     void operator++(int) {
         numBlocksProcessed++;
 
@@ -72,6 +92,9 @@ public:
     }
 };
 
+/**
+ * @brief The Copier class is used to copy values from one model index to another.
+ */
 class Copier
 {
     QModelIndex iDst;
@@ -80,7 +103,18 @@ class Copier
     NifModel * nifSrc;
     std::map<QModelIndex, ValueState> usedValues;
 public:
-    Copier(QModelIndex iDst, QModelIndex iSrc, NifModel * nifDst, NifModel * nifSrc) : iDst(iDst), iSrc(iSrc), nifDst(nifDst), nifSrc(nifSrc) {
+    /**
+     * @brief Set up the Copier to copy from the source model index to destination model index.
+     * @param iDst   Destination model index belonging to the destination nif
+     * @param iSrc   Source model index belonging to the source nif
+     * @param nifDst Destination nif
+     * @param nifSrc Source nif
+     */
+    Copier(QModelIndex iDst, QModelIndex iSrc, NifModel * nifDst, NifModel * nifSrc)
+          : iDst(iDst),
+            iSrc(iSrc),
+            nifDst(nifDst),
+            nifSrc(nifSrc) {
         if (!iDst.isValid() && iDst != QModelIndex()) {
             qDebug() << __FILE__ << __LINE__ << "Invalid Destination. Source:" << nifSrc->getBlockName(iSrc);
         }
@@ -92,36 +126,46 @@ public:
         usedValues = std::map<QModelIndex, ValueState>();
 
         if (FIND_UNUSED) {
-            checkValueUse(iSrc, usedValues);
+            makeValueList(iSrc, usedValues);
         }
     }
 
+    /**
+     * Print the list of unused values on destruction.
+     */
     ~Copier() {
         printUnused();
     }
 
-    void checkValueUse(const QModelIndex iSrc, std::map<QModelIndex, ValueState> & usedValues) {
+    /**
+     * @brief Recursively find all children of the given model index and mark them as unused.
+     * @param iSrc       Source model index
+     * @param usedValues Map of values to their use state
+     */
+    void makeValueList(const QModelIndex iSrc, std::map<QModelIndex, ValueState> & usedValues) {
         if (!FIND_UNUSED) {
             return;
         }
 
+        /** Loop over the children of the source model index to find values. */
         for (int r = 0; r < nifSrc->rowCount(iSrc); r++) {
             QModelIndex iLink = iSrc.child(r, 0);
 
-            // TODO: Change this to more efficient method
-            if (!nifSrc->getIndex(iSrc, nifSrc->getBlockName(iLink)).isValid()) {
+            /**
+             * TODO: Change this to more efficient method.
+             * Check wether the value can be obtained by name.
+             */
+            if (
+                    !nifSrc->getIndex(iSrc, nifSrc->getBlockName(iLink)).isValid() ||
+                    iLink != nifSrc->getIndex(iSrc, nifSrc->getBlockName(iLink))) {
                 continue;
             }
 
-            if (iLink != nifSrc->getIndex(iSrc, nifSrc->getBlockName(iLink))) {
-                continue;
-            }
-//            if (r > 0 && nifSrc->getBlockName(iLink) == nifSrc->getBlockName(iSrc.child(r - 1, 0))) {
-//                continue;
-//            }
-
+            /**
+             * If the value is an array, find values in its children. Else, add it to the map.
+             */
             if (nifSrc->rowCount(iLink) > 0) {
-                checkValueUse(iLink, usedValues);
+                makeValueList(iLink, usedValues);
             } else {
                 NifValue v = nifSrc->getValue(iLink);
                 if (v.isValid()) {
@@ -131,6 +175,9 @@ public:
         }
     }
 
+    /**
+     * @brief printUnused prints all unused values from the source model index.
+     */
     void printUnused() {
         for (std::map<QModelIndex, ValueState>::iterator it= usedValues.begin(); it!=usedValues.end(); ++it) {
             if (it->second == ValueState::Unused) {
@@ -139,13 +186,24 @@ public:
         }
     }
 
+    /**
+     * @brief setStatus sets the use status of a value.
+     * @param iSource Source model index
+     * @param status  Use status
+     * @return True if the status has been successfully set.
+     */
     bool setStatus(QModelIndex iSource, ValueState status) {
+        if (!FIND_UNUSED) {
+            return true;
+        }
+
         if (!iSource.isValid()) {
             qDebug() << __FUNCTION__ << "Invalid in" << nifSrc->getBlockName(iSrc);
 
             return false;
         }
 
+        /** If the source value is an array, get its first child instead. */
         if (nifSrc->isArray(iSource)) {
             if (nifSrc->rowCount(iSource) > 0) {
                 iSource = iSource.child(0, 0);
@@ -154,19 +212,25 @@ public:
             }
         }
 
-        if (FIND_UNUSED) {
-            if (usedValues.count(iSource) != 0) {
-                usedValues[iSource] = status;
-            } else {
-                qDebug() << "Key" << nifSrc->getBlockName(iSource) << "not found in" << nifSrc->getBlockName(iSrc);
+        /** Set the status. */
+        if (usedValues.count(iSource) != 0) {
+            usedValues[iSource] = status;
+        } else {
+            qDebug() << "Key" << nifSrc->getBlockName(iSource) << "not found in" << nifSrc->getBlockName(iSrc);
 
-                return false;
-            }
+            return false;
         }
 
         return true;
     }
 
+    /**
+     * @brief setStatus calls setStatus to set the status of a value by name.
+     * @param iSource Parent source model index
+     * @param status  Use status
+     * @param name    Name of child
+     * @return True if the status has been successfully set.
+     */
     bool setStatus(const QModelIndex iSource, ValueState status, const QString & name) {
         if (!setStatus(nifSrc->getIndex(iSource, name), status)) {
             qDebug() << __FUNCTION__ << name << "Invalid";
@@ -177,32 +241,70 @@ public:
         return true;
     }
 
+    /**
+     * @brief ignore sets a value's status to 'Ignored'.
+     * @param iSource Source model index
+     * @return True if the status has been successfully set.
+     */
     bool ignore(const QModelIndex iSource) {
         return setStatus(iSource, ValueState::Ignored);
     }
 
+    /**
+     * @brief ignore sets a value's status to 'Ignored'.
+     * @param iSource Source model index
+     * @param name    Name of child
+     * @return True if the status has been successfully set.
+     */
     bool ignore(QModelIndex iSource, const QString & name) {
         return setStatus(iSource, ValueState::Ignored, name);
     }
 
+    /**
+     * @brief ignore sets a value's status to 'Ignored'.
+     * @param  name Name of child
+     * @return True if the status has been successfully set.
+     */
     bool ignore(const QString & name) {
         return setStatus(iSrc, ValueState::Ignored, name);
     }
 
+    /**
+     * @brief processed sets a value's status to 'Processed'.
+     * @param iSource Source model index
+     * @return True if the status has been successfully set.
+     */
     bool processed(const QModelIndex iSource) {
         return setStatus(iSource, ValueState::Processed);
     }
 
+    /**
+     * @brief processed sets a value's status to 'Processed'.
+     * @param iSource Source model index
+     * @param name    Name of child
+     * @return True if the status has been successfully set.
+     */
     bool processed(QModelIndex iSource, const QString & name) {
         return setStatus(iSource, ValueState::Processed, name);
     }
 
+    /**
+     * @brief processed sets a value's status to 'Processed'.
+     * @param name    Name of child
+     * @return True if the status has been successfully set.
+     */
     bool processed(const QString & name) {
         return setStatus(iSrc, ValueState::Processed, name);
     }
 
-
-    template<typename T> T getVal(NifModel * nif, const QModelIndex iSource) {
+    template<typename T>
+    /**
+     * @brief getVal gets the value at the given model index as type T.
+     * @param nif     Nif of the given model index
+     * @param iSource Value's model index
+     * @return Value as T
+     */
+    T getVal(NifModel * nif, const QModelIndex iSource) {
         if (!iSource.isValid()) {
             qDebug() << "Invalid QModelIndex";
         }
@@ -226,34 +328,86 @@ public:
         return val.get<T>();
     }
 
-    template<typename T> T getVal(NifModel * nif, const QModelIndex iSource, const QString & name) {
+    template<typename T>
+    /**
+     * @brief Overload to get the value by name.
+     * @param nif     Nif of the given model index
+     * @param iSource Value's parent model index
+     * @param name    Name of value
+     * @return Value as T
+     */
+    T getVal(NifModel * nif, const QModelIndex iSource, const QString & name) {
         return getVal<T>(nif, nif->getIndex(iSource, name));
     }
 
-    template<typename T> T getSrc(const QModelIndex iSource) {
+    template<typename T>
+    /**
+     * @brief getSrc calls getVal to get a value from the class source nif only.
+     * @param iSource Value's model index
+     * @return Value as T
+     */
+    T getSrc(const QModelIndex iSource) {
         return getVal<T>(nifSrc, iSource);
     }
 
-    template<typename T> T getDst(const QModelIndex iSource) {
+    template<typename T>
+    /**
+     * @brief getDst calls getVal to get a value from the class destination nif only.
+     * @param iSource Value's model index
+     * @return Value as T
+     */
+    T getDst(const QModelIndex iSource) {
         return getVal<T>(nifDst, iSource);
     }
 
-    template<typename T> T getSrc(const QString & name) {
+    template<typename T>
+    /**
+     * @brief Overload to get the value by name with the class source model index as the parent.
+     * @param name Name of value
+     * @return Value as T
+     */
+    T getSrc(const QString & name) {
         return getVal<T>(nifSrc, iSrc, name);
     }
 
-    template<typename T> T getDst(const QString & name) {
+    template<typename T>
+    /**
+     * @brief Overload to get the value by name with the class destination model index as the parent.
+     * @param name Name of value
+     * @return Value as T
+     */
+    T getDst(const QString & name) {
         return getVal<T>(nifDst, iDst, name);
     }
 
-    template<typename T> T getSrc(const QModelIndex iSource, const QString & name) {
+    template<typename T>
+    /**
+     * @brief Overload to get the value by name.
+     * @param iSource Source model index
+     * @param name    Name of value
+     * @return Value as T
+     */
+    T getSrc(const QModelIndex iSource, const QString & name) {
         return getVal<T>(nifSrc, iSource, name);
     }
 
-    template<typename T> T getDst(const QModelIndex iSource, const QString & name) {
+    template<typename T>
+    /**
+     * @brief Overload to get the value by name.
+     * @param iSource Source model index
+     * @param name    Name of value
+     * @return Value as T
+     */
+    T getDst(const QModelIndex iSource, const QString & name) {
         return getVal<T>(nifDst, iSource, name);
     }
 
+    /**
+     * @brief copyValue copies the value at the source model index to the destination model index.
+     * @param iTarget Target model index
+     * @param iSource Source model index
+     * @return True if successful
+     */
     bool copyValue(const QModelIndex iTarget, const QModelIndex iSource) {
         NifValue val = nifSrc->getValue(iSource);
 
@@ -263,6 +417,7 @@ public:
             return false;
         }
 
+        /** Make sure strings are copied as strings. */
         if (
                 val.type() == NifValue::tStringIndex ||
                 val.type() == NifValue::tSizedString ||
@@ -271,10 +426,11 @@ public:
                 val.type() == NifValue::tHeaderString ||
                 val.type() == NifValue::tLineString ||
                 val.type() == NifValue::tChar8String) {
-            // Make sure the entire string is copied, not the index.
             return copyValue<QString>(iTarget, iSource);
+        /** Copy flags as their raw data. */
         } else if (val.type() == NifValue::tFlags) {
             return copyValue<uint>(iTarget, iSource);
+        /** Copy normally */
         } else if (!nifDst->setValue(iTarget, val)) {
             qDebug() << "Failed to set value on" << nifDst->getBlockName(iTarget);
 
@@ -288,7 +444,19 @@ public:
         return true;
     }
 
-    bool copyValue(const QModelIndex iTarget, const QModelIndex iSource, const QString & nameDst, const QString & nameSrc) {
+    /**
+     * @brief Overload to copy values by name.
+     * @param iTarget Target parent model index
+     * @param iSource Source parent model index
+     * @param nameDst Name of value in target
+     * @param nameSrc Name of value in source
+     * @return True if successful
+     */
+    bool copyValue(
+            const QModelIndex iTarget,
+            const QModelIndex iSource,
+            const QString & nameDst,
+            const QString & nameSrc) {
         QModelIndex iDstNew = nifDst->getIndex(iTarget, nameDst);
         QModelIndex iSrcNew = nifSrc->getIndex(iSource, nameSrc);
 
@@ -307,21 +475,45 @@ public:
         return copyValue(iDstNew, iSrcNew);
     }
 
+    /**
+     * @brief Overload to copy values by name.
+     * @param iTarget Target parent model index
+     * @param iSource Source parent model index
+     * @param name    Name of value in target and source
+     * @return True if successful
+     */
     bool copyValue(const QModelIndex iTarget, const QModelIndex iSource, const QString & name) {
         return copyValue(iTarget, iSource, name, name);
     }
 
+    /**
+     * @brief Overload to copy values by name in the class destination and source model indices.
+     * @param nameDst Name of value in class target
+     * @param nameSrc Name of value in class source
+     * @return True if successful
+     */
     bool copyValue(const QString & nameDst, const QString & nameSrc) {
         return copyValue(iDst, iSrc, nameDst, nameSrc);
     }
 
+    /**
+     * @brief Overload to copy values by name in the class destination and source model indices.
+     * @param name Name of value in class target and source
+     * @return True if successful
+     */
     bool copyValue(const QString & name) {
         return copyValue(name, name);
     }
 
-
-    template<typename TDst, typename TSrc> bool copyValue(const QModelIndex iTarget, const QModelIndex iSource) {
-        if (!nifDst->set<TDst>( iTarget, nifSrc->get<TSrc>( iSource ) )) {
+    template<typename TDst, typename TSrc>
+    /**
+     * @brief Overload to copy values as type TSrc to type TDst.
+     * @param iTarget Target model index
+     * @param iSource Source model index
+     * @return True if successful
+     */
+    bool copyValue(const QModelIndex iTarget, const QModelIndex iSource) {
+        if (!nifDst->set<TDst>(iTarget, nifSrc->get<TSrc>(iSource))) {
             qDebug() << "Failed to set value on" << nifDst->getBlockName(iTarget);
 
             return false;
@@ -334,15 +526,34 @@ public:
         return true;
     }
 
-    template<typename T> bool copyValue(const QModelIndex iTarget, const QModelIndex iSource) {
+    template<typename T>
+    /**
+     * @brief Overload to copy values as type T.
+     * @param iTarget Target model index
+     * @param iSource Source model index
+     * @return True if successful
+     */
+    bool copyValue(const QModelIndex iTarget, const QModelIndex iSource) {
         return copyValue<T, T>(iTarget, iSource);
     }
 
-    template<typename TDst, typename TSrc> bool copyValue() {
+    template<typename TDst, typename TSrc>
+    /**
+     * @brief Overload to copy from class source model index to class destination model index.
+     * @return True if successful
+     */
+    bool copyValue() {
         return copyValue<TDst, TSrc>(iDst, iSrc);
     }
 
-    template<typename TDst, typename TSrc> bool copyValue(const QString & nameDst, const QString & nameSrc) {
+    template<typename TDst, typename TSrc>
+    /**
+     * @brief Overload to copy values by name in the class destination and source model indices.
+     * @param nameDst Name of value in class target
+     * @param nameSrc Name of value in class source
+     * @return True if successful
+     */
+    bool copyValue(const QString & nameDst, const QString & nameSrc) {
         QModelIndex iDstNew = nifDst->getIndex(iDst, nameDst);
         QModelIndex iSrcNew = nifSrc->getIndex(iSrc, nameSrc);
 
@@ -357,30 +568,64 @@ public:
         return copyValue<TDst, TSrc>(iDstNew, iSrcNew);
     }
 
-    template<typename TDst, typename TSrc> bool copyValue(const QString & name) {
+    template<typename TDst, typename TSrc>
+    /**
+     * @brief Overload to copy values by name in the class destination and source model indices.
+     * @param name Name of value in class target and source
+     * @return True if successful
+     */
+    bool copyValue(const QString & name) {
         return copyValue<TDst, TSrc>(name, name);
     }
 
-    template<typename T> bool copyValue() {
+    template<typename T>
+    /**
+     * @brief Overload to copy from class source model index to class destination model index.
+     * @return True if successful
+     */
+    bool copyValue() {
         return copyValue<T, T>();
     }
 
-    template<typename T> bool copyValue(const QString & nameDst, const QString & nameSrc) {
+    template<typename T>
+    /**
+     * @brief Overload to copy values by name in the class destination and source model indices.
+     * @param nameDst Name of value in class target
+     * @param nameSrc Name of value in class source
+     * @return True if successful
+     */
+    bool copyValue(const QString & nameDst, const QString & nameSrc) {
         return copyValue<T, T>(nameDst, nameSrc);
     }
 
-    template<typename T> bool copyValue(const QString & name) {
+    template<typename T>
+    /**
+     * @brief Overload to copy values by name in the class destination and source model indices.
+     * @param name Name of value in class target and source
+     * @return True if successful
+     */
+    bool copyValue(const QString & name) {
         return copyValue<T, T>(name, name);
     }
 
     // Traverse all child nodes
+    /**
+     * @brief tree copies the value and all child values from the given source model index to the given destination
+     *        model index.
+     * @param iDst Destination model index
+     * @param iSrc Source model index
+     * @return True if successful
+     */
     bool tree(const QModelIndex iDst, const QModelIndex iSrc) {
+        /** Copy the value as an array. */
         if (nifSrc->isArray(iSrc)) {
             array(iDst, iSrc);
+        /** Recursively copy values. */
         } else if (nifSrc->rowCount(iSrc) > 0) {
             for (int i = 0; i < nifSrc->rowCount(iSrc); i++) {
                 tree(iDst.child(i, 0), iSrc.child(i, 0));
             }
+        /** Copy the value normally */
         } else if (!copyValue(iDst, iSrc)) {
             arrayError("Failed to copy value.");
 
@@ -390,15 +635,24 @@ public:
         return true;
     }
 
+    /**
+     * @brief Overload to call tree with the class destination model index and the class source model index.
+     * @return True if successful
+     */
     bool tree() {
         return tree(iDst, iSrc);
     }
 
-    // Copy arrays
+    /**
+     * @brief array copies value arrays.
+     * @param iDst Destination model index
+     * @param iSrc Source model index
+     * @return True if successful
+     */
     bool array(const QModelIndex iDst, const QModelIndex iSrc) {
         int rows = nifSrc->rowCount(iSrc);
 
-        // Make sure the target array is initialized.
+        /** Make sure the target array is initialized. */
         nifDst->updateArray(iDst);
 
         if (rows != nifDst->rowCount(iDst)) {
@@ -407,6 +661,7 @@ public:
             return false;
         }
 
+        /** Copy the values */
         for (int i = 0; i < rows; i++) {
             tree(iDst.child(i, 0), iSrc.child(i, 0));
         }
@@ -414,20 +669,41 @@ public:
         return true;
     }
 
+    /**
+     * @brief Overload to copy arrays by name.
+     * @param nameDst Name of array in destination model index
+     * @param nameSrc Name of array in source model index
+     * @return True if successful
+     */
     bool array(const QString & nameDst, const QString & nameSrc) {
         return array(nifDst->getIndex(iDst, nameDst), nifSrc->getIndex(iSrc, nameSrc));
     }
 
+    /**
+     * @brief Overload to copy arrays by name.
+     * @param name Name of array in destination and source model indices
+     * @return True if successful
+     */
     bool array(const QString & name) {
         return array(name, name);
     }
 
+    /** iDst setter */
     void setIDst(const QModelIndex &value);
-    void setISrc(const QModelIndex &value);
 
+    /** iSrc setter */
+    void setISrc(const QModelIndex &value);
 private:
+    /**
+     * @brief arrayError makes an error message for failed array copying.
+     * @param msg Message
+     */
     void arrayError(const QString msg = "") {
-        qDebug() << "Array Copy error:" << msg << "Source:" << nifSrc->getBlockName(iSrc) << "Destination:" << nifDst->getBlockName(iDst);
+        qDebug() << "Array Copy error:"
+                 << msg << "Source:"
+                 << nifSrc->getBlockName(iSrc)
+                 << "Destination:"
+                 << nifDst->getBlockName(iDst);
     }
 };
 
@@ -2801,20 +3077,29 @@ private:
             c.copyValue<float>("Max Angular Velocity");
             c.copyValue<float>("Penetration Depth");
 
-            c.copyValue<int>("Motion System");
-            if (nifSrc->get<uint>(iSrc, "Motion System") == enumOptionValue("hkMotionType", "MO_SYS_FIXED")) {
+            if (nifSrc->get<float>(iSrc, "Mass") == 0.0f) {
                 nifDst->set<uint>(iDst, "Motion System", enumOptionValue("hkMotionType", "MO_SYS_INVALID"));
-            }
+                nifDst->set<bool>(iDst, "Enable Deactivation", false);
+                nifDst->set<uint>(iDst, "Quality Type", enumOptionValue("hkQualityType", "MO_QUAL_FIXED"));
 
-            // Deactivator Type
-            if (nifSrc->get<int>(iSrc, "Solver Deactivation") > 1) {
-                nifDst->set<bool>(iDst, "Enable Deactivation", true);
-                c.copyValue<int>("Solver Deactivation");
-            } else {
+                c.processed("Motion System");
                 c.processed("Solver Deactivation");
-            }
+                c.processed("Quality Type");
+            } else {
+                if (c.getSrc<int>("Motion System") == int(enumOptionValue("hkMotionType", "MO_SYS_FIXED"))) {
+                    nifDst->set<uint>(iDst, "Motion System", enumOptionValue("hkMotionType", "MO_SYS_INVALID"));
+                } else {
+                    c.copyValue<int>("Motion System");
+                }
 
-            c.copyValue<int>("Quality Type");
+                // Deactivator Type
+                if (c.getSrc<int>("Solver Deactivation") > 1) {
+                    nifDst->set<bool>(iDst, "Enable Deactivation", true);
+                    c.copyValue<int>("Solver Deactivation");
+                }
+
+                c.copyValue<int>("Quality Type");
+            }
 
             c.copyValue("Collision Response");
             c.copyValue("Collision Response 2");
@@ -4207,111 +4492,107 @@ private:
         }
     }
 
-    void bsShaderFlags(QModelIndex iBSTriShapeDst, QModelIndex iShaderPropertyDst, uint shaderFlags1Src, uint shaderFlags2Src) {
-        if (iShaderPropertyDst.isValid()) {
-            uint flags1Dst = nifDst->get<uint>(iShaderPropertyDst, "Shader Flags 1");
-
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Specular");
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Skinned");
-            // LowDetail
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Vertex_Alpha");
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "GreyscaleToPalette_Color", "Unknown_1");
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "GreyscaleToPalette_Alpha", "Single_Pass");
-            // Empty
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Environment_Mapping");
-            if (bsShaderFlags1IsSet(shaderFlags1Src, "Environment_Mapping")) {
-                if (bsShaderTypeGet(getIndexDst(iShaderPropertyDst, "Skyrim Shader Type")).compare("Default") != 0) {
-                    qDebug() << __FUNCTION__ "Shader Type already set";
-
-                    conversionResult = false;
-                }
-
-                bsShaderTypeSet(getIndexDst(iShaderPropertyDst, "Skyrim Shader Type"), "Environment Map");
-            }
-
-            // Alpha_Texture
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Cast_Shadows", "Unknown_2");
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Face", "FaceGen");
-            // Parallax_Shader_Index_15
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Model_Space_Normals", "Unknown_3");
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Non_Projective_Shadows");
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Landscape", "Unknown_4");
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Refraction");
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Fire_Refraction");
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Eye_Environment_Mapping");
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Hair");
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Screendoor_Alpha_Fade", "Dynamic_Alpha");
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Localmap_Hide_Secret");
-            // Window_Environment_Mapping
-            // Tree_Billboard
-            // Shadow_Frustum
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Multiple_Textures");
-            // Remappable_Textures
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Decal", "Decal_Single_Pass");
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Dynamic_Decal", "Dynamic_Decal_Single_Pass");
-            // Parallax_Occulsion
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "External_Emittance");
-            // Shadow_Map
-            bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "ZBuffer_Test");
-
-            uint flags2Dst = nifDst->get<uint>(iShaderPropertyDst, "Shader Flags 2");
-
-            bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "ZBuffer_Write");
-            bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "LOD_Landscape");
-            bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "LOD_Objects", "LOD_Building");
-            bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "No_Fade");
-            // Refraction_Tint
-            bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "Vertex_Colors");
-            // Unknown 1
-            // 1st_Light_is_Point_Light
-            // 2nd_Light
-            // 3rd_Light
-            bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "Grass_Vertex_Lighting", "Vertex_Lighting");
-            bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "Grass_Uniform_Scale", "Uniform_Scale");
-            bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "Grass_Fit_Slope", "Fit_Slope");
-            bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "Grass_Billboard", "Billboard_and_Envmap_Light_Fade");
-            bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "No_LOD_Land_Blend");
-            // Envmap_Light_Fade
-            bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "Wireframe");
-            // VATS_Selection
-            if (!bsShaderFlags2IsSet(shaderFlags2Src, "Show_in_Local_Map")) {
-                setFallout4ShaderFlag2(flags2Dst, "Hide_On_Local_Map");
-            }
-            bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "Premult_Alpha");
-            // Skip_Normal_Maps
-            // Alpha_Decal
-            // No_Transparecny_Multisampling
-            // Unknown 2
-            // Unknown 3
-            // Unknown 4
-            // Unknown 5
-            // Unknown 6
-            // Unknown 7
-            // Unknown 8
-            // Unknown 9
-            // Unknown 10
-
-            if (nifDst->getBlockName(iShaderPropertyDst).compare("BSEffectShaderProperty") == 0) {
-                bsShaderFlags1Add(flags1Dst, "Use_Falloff");
-                bsShaderFlags2Add(flags2Dst, "Double_Sided");
-            }
-
-            nifDst->set<uint>(iShaderPropertyDst, "Shader Flags 1", flags1Dst);
-            nifDst->set<uint>(iShaderPropertyDst, "Shader Flags 2", flags2Dst);
-
-            if (bsShaderFlags2IsSet(shaderFlags2Src, "LOD_Landscape")) {
-                bLODLandscape = true;
-            }
-
-            if (bsShaderFlags2IsSet(shaderFlags2Src, "LOD_Building")) {
-                bLODBuilding = true;
-            }
+    void bsShaderFlags(QModelIndex iShaderPropertyDst, uint shaderFlags1Src, uint shaderFlags2Src) {
+        if (!iShaderPropertyDst.isValid()) {
+            return;
         }
 
-        QModelIndex iNiAlphaPropertyDst = getBlockDst(iBSTriShapeDst, "Alpha Property");
+        uint flags1Dst = nifDst->get<uint>(iShaderPropertyDst, "Shader Flags 1");
 
-        if (!iNiAlphaPropertyDst.isValid()) {
-            return;
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Specular");
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Skinned");
+        // LowDetail
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Vertex_Alpha");
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "GreyscaleToPalette_Color", "Unknown_1");
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "GreyscaleToPalette_Alpha", "Single_Pass");
+        // Empty
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Environment_Mapping");
+        if (bsShaderFlags1IsSet(shaderFlags1Src, "Environment_Mapping")) {
+            if (bsShaderTypeGet(getIndexDst(iShaderPropertyDst, "Skyrim Shader Type")).compare("Default") != 0) {
+                qDebug() << __FUNCTION__ "Shader Type already set";
+
+                conversionResult = false;
+            }
+
+            bsShaderTypeSet(getIndexDst(iShaderPropertyDst, "Skyrim Shader Type"), "Environment Map");
+        }
+
+        // Alpha_Texture
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Cast_Shadows", "Unknown_2");
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Face", "FaceGen");
+        // Parallax_Shader_Index_15
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Model_Space_Normals", "Unknown_3");
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Non_Projective_Shadows");
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Landscape", "Unknown_4");
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Refraction");
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Fire_Refraction");
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Eye_Environment_Mapping");
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Hair");
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Screendoor_Alpha_Fade", "Dynamic_Alpha");
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Localmap_Hide_Secret");
+        // Window_Environment_Mapping
+        // Tree_Billboard
+        // Shadow_Frustum
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Multiple_Textures");
+        // Remappable_Textures
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Decal", "Decal_Single_Pass");
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "Dynamic_Decal", "Dynamic_Decal_Single_Pass");
+        // Parallax_Occulsion
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "External_Emittance");
+        // Shadow_Map
+        bsShaderFlags1Set(shaderFlags1Src, flags1Dst, "ZBuffer_Test");
+
+        uint flags2Dst = nifDst->get<uint>(iShaderPropertyDst, "Shader Flags 2");
+
+        bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "ZBuffer_Write");
+        bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "LOD_Landscape");
+        bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "LOD_Objects", "LOD_Building");
+        bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "No_Fade");
+        // Refraction_Tint
+        bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "Vertex_Colors");
+        // Unknown 1
+        // 1st_Light_is_Point_Light
+        // 2nd_Light
+        // 3rd_Light
+        bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "Grass_Vertex_Lighting", "Vertex_Lighting");
+        bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "Grass_Uniform_Scale", "Uniform_Scale");
+        bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "Grass_Fit_Slope", "Fit_Slope");
+        bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "Grass_Billboard", "Billboard_and_Envmap_Light_Fade");
+        bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "No_LOD_Land_Blend");
+        // Envmap_Light_Fade
+        bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "Wireframe");
+        // VATS_Selection
+        if (!bsShaderFlags2IsSet(shaderFlags2Src, "Show_in_Local_Map")) {
+            setFallout4ShaderFlag2(flags2Dst, "Hide_On_Local_Map");
+        }
+        bsShaderFlags2Set(shaderFlags2Src, flags2Dst, "Premult_Alpha");
+        // Skip_Normal_Maps
+        // Alpha_Decal
+        // No_Transparecny_Multisampling
+        // Unknown 2
+        // Unknown 3
+        // Unknown 4
+        // Unknown 5
+        // Unknown 6
+        // Unknown 7
+        // Unknown 8
+        // Unknown 9
+        // Unknown 10
+
+        if (nifDst->getBlockName(iShaderPropertyDst).compare("BSEffectShaderProperty") == 0) {
+            bsShaderFlags1Add(flags1Dst, "Use_Falloff");
+            bsShaderFlags2Add(flags2Dst, "Double_Sided");
+        }
+
+        nifDst->set<uint>(iShaderPropertyDst, "Shader Flags 1", flags1Dst);
+        nifDst->set<uint>(iShaderPropertyDst, "Shader Flags 2", flags2Dst);
+
+        if (bsShaderFlags2IsSet(shaderFlags2Src, "LOD_Landscape")) {
+            bLODLandscape = true;
+        }
+
+        if (bsShaderFlags2IsSet(shaderFlags2Src, "LOD_Building")) {
+            bLODBuilding = true;
         }
     }
 
@@ -4402,8 +4683,6 @@ private:
         }
 
         setHandled(iDst, iSrc);
-
-        c.printUnused();
     }
 
     QModelIndex getShaderProperty(QModelIndex iSrc) {
@@ -4432,7 +4711,9 @@ private:
                 // TODO: Set falloff opacity to 1 on all unless falloff flags is set in source and always set use_falloff flag
                 // TODO: Set Double sided on always
                 iResult = nifDst->insertNiBlock("BSEffectShaderProperty");
-            } else if (type == "BSShaderPPLightingProperty") {
+            } else if (
+                    type == "BSShaderPPLightingProperty" ||
+                    type == "TallGrassShaderProperty") {
                 iResult = nifDst->insertNiBlock("BSLightingShaderProperty");
 
                 nifDst->set<float>(iResult, "Specular Strength", 0);
@@ -4471,7 +4752,7 @@ private:
         QVector<qint32> links = nifSrc->getLinkArray(iSrc, "Properties");
         QString dstType = nifDst->getBlockName(iDst);
         QModelIndex iNiAlphaPropertyDst;
-        QModelIndex iBSShaderLightingPropertySrc;
+        QModelIndex iShaderPropertySrc;
 
         for (int link:links) {
             QModelIndex iPropertySrc = nifSrc->getBlock(link);
@@ -4503,14 +4784,14 @@ private:
                 if (type == "BSShaderPPLightingProperty" || type == "BSShaderNoLightingProperty") {
                     bSShaderLightingProperty(iShaderPropertyDst, iPropertySrc, nifSrc->get<QString>(iSrc, "Name"));
 
-                    iBSShaderLightingPropertySrc = iPropertySrc;
+                    iShaderPropertySrc = iPropertySrc;
                 } else if (type == "TileShaderProperty" ||
                            type == "TallGrassShaderProperty" ||
                            type == "SkyShaderProperty" ||
                            type == "WaterShaderProperty") {
                     shaderProperty(iShaderPropertyDst, iPropertySrc, type, nifSrc->get<QString>(iSrc, "Name"));
 
-                    iBSShaderLightingPropertySrc = iPropertySrc;
+                    iShaderPropertySrc = iPropertySrc;
                 } else if (type == "NiMaterialProperty") {
                     niMaterialProperty(iShaderPropertyDst, iPropertySrc, nifSrc->get<QString>(iSrc, "Name"));
                 } else if (type == "NiTexturingProperty") {
@@ -4527,11 +4808,14 @@ private:
             }
         }
 
-        if (iNiAlphaPropertyDst.isValid() || iBSShaderLightingPropertySrc.isValid()) {
-            bsShaderFlags(iDst, iShaderPropertyDst, nifSrc->get<uint>(iBSShaderLightingPropertySrc, "Shader Flags"), nifSrc->get<uint>(iBSShaderLightingPropertySrc, "Shader Flags 2"));
+        if (iNiAlphaPropertyDst.isValid() || iShaderPropertySrc.isValid()) {
+            bsShaderFlags(
+                    iShaderPropertyDst,
+                    nifSrc->get<uint>(iShaderPropertySrc, "Shader Flags"),
+                    nifSrc->get<uint>(iShaderPropertySrc, "Shader Flags 2"));
         }
 
-        if (!iBSShaderLightingPropertySrc.isValid()) {
+        if (!iShaderPropertySrc.isValid()) {
             QModelIndex iEmissive = getIndexDst(iShaderPropertyDst, "Emissive Color");
             Color4 colorEmmissive = nifDst->get<Color4>(iEmissive);
 
@@ -4539,7 +4823,22 @@ private:
             nifDst->set<Color4>(iEmissive, colorEmmissive);
         }
 
-        //
+        if (iNiAlphaPropertyDst.isValid() && iShaderPropertySrc.isValid()) {
+            niAlphaPropertyFinalize(iNiAlphaPropertyDst, iShaderPropertyDst);
+        }
+    }
+
+    void niAlphaPropertyFinalize(QModelIndex iAlphaPropertyDst, QModelIndex iShaderPropertyDst) {
+        if (nifDst->getBlockName(iShaderPropertyDst) == "BSLightingShaderProperty") {
+            QModelIndex iAlphaFlags = getIndexDst(iAlphaPropertyDst, "Flags");
+            uint alphaFlags = nifDst->get<uint>(iAlphaFlags);
+
+            // Disable Blending
+            alphaFlags &= uint(~1);
+
+            nifDst->set<uint>(iAlphaFlags, alphaFlags);
+        }
+
     }
 
     void shaderProperty(QModelIndex iDst, QModelIndex iSrc, const QString & type, const QString & sequenceBlockName) {
@@ -4555,8 +4854,15 @@ private:
         c.processed("Shader Flags");
         c.processed("Shader Flags 2");
 
-        if (type != "WaterShaderProperty") {
-            nifDst->set<QString>(iDst, "Source Texture", updateTexturePath(nifSrc->get<QString>(iSrc, "File Name")));
+        if (
+                type != "WaterShaderProperty" &&
+                type != "TallGrassShaderProperty") {
+            if (!nifDst->set<QString>(iDst, "Source Texture", updateTexturePath(nifSrc->get<QString>(iSrc, "File Name")))) {
+                qDebug() << __FUNCTION__ << "Failed to set source texture on:" << nifDst->getBlockName(iDst);
+
+                conversionResult = false;
+            }
+
             c.processed("File Name");
         }
 
@@ -4576,6 +4882,14 @@ private:
             }
 
             c.processed("Environment Map Scale");
+        } else if (type == "TallGrassShaderProperty") {
+            QModelIndex iTextureSetDst = nifDst->insertNiBlock("BSShaderTextureSet");
+            QModelIndex iTextureArray = getIndexDst(iTextureSetDst, "Textures");
+
+            nifDst->set<int>(iTextureSetDst, "Num Textures", 10);
+            nifDst->updateArray(iTextureArray);
+            nifDst->set<QString>(iTextureArray.child(0, 0), updateTexturePath(c.getSrc<QString>("File Name")));
+            setLink(iDst, "Texture Set", iTextureSetDst);
         } else {
             c.copyValue("Environment Map Scale");
         }
@@ -6543,8 +6857,10 @@ void search() {
                 continue;
             }
 
-            if (nif.get<int>(iAlpha, "Flags") == 4333) {
+            // Check whether enable blending is set
+            if (nif.get<int>(iAlpha, "Flags") & 1) {
                 uint flags = nif.get<uint>(iShader, "Shader Flags 1");
+
                 if (
                         !(flags & NifValue::enumOptionValue("Fallout4ShaderPropertyFlags1", "Decal")) &&
                         !(flags & NifValue::enumOptionValue("Fallout4ShaderPropertyFlags1", "Dynamic_Decal"))) {
@@ -6553,6 +6869,17 @@ void search() {
                     break;
                 }
             }
+
+//            if (nif.get<int>(iAlpha, "Flags") == 4333) {
+//                uint flags = nif.get<uint>(iShader, "Shader Flags 1");
+//                if (
+//                        !(flags & NifValue::enumOptionValue("Fallout4ShaderPropertyFlags1", "Decal")) &&
+//                        !(flags & NifValue::enumOptionValue("Fallout4ShaderPropertyFlags1", "Dynamic_Decal"))) {
+//                    qDebug() << fname;
+
+//                    break;
+//                }
+//            }
         }
     }
 
@@ -6560,9 +6887,9 @@ void search() {
 }
 
 void convertNif(QString path) {
-    clock_t tStart = clock();
-
 //    search();
+
+    clock_t tStart = clock();
 
     QList<QString> failedList;
     QList<HighLevelLOD> highLevelLodList;
