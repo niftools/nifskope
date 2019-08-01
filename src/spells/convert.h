@@ -2,8 +2,21 @@
 #define SPELL_CONVERT_H
 
 #include "spellbook.h"
+#include <QThread>
+#include <QMutex>
 
 //! \file convert.h spToFO42
+
+template <typename T>
+class ListWrapper
+{
+public:
+    ListWrapper(QList<T> & list) : list(list) {}
+    void append(T s);
+private:
+    QList<T> & list;
+    QMutex mu;
+};
 
 //! Convert to Fallout 4
 //class spToFO42 final : public Spell

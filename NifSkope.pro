@@ -5,7 +5,7 @@
 TEMPLATE = app
 TARGET   = NifSkope
 
-QT += xml opengl network widgets
+QT += xml opengl network widgets concurrent
 
 # Require Qt 5.7 or higher
 contains(QT_VERSION, ^5\\.[0-6]\\..*) {

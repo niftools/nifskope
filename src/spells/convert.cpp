@@ -6,15 +6,16 @@
  * Fix Camera movement affecting LOD lighting which is possibly due to second LOD textures
  *
  * TODO:
- * Fix extreme light reflection of objects which is possibly due to specularity.
- *
- * TODO:
  * Change LOD Water shader to non transparent.
  *
  * TODO:
  * Check if UV Transform controllers transform in the right direction
+ *
+ * TODO:
+ * Set Effect Lighting on always except for shadernolightingproperties
  */
 
+#include "convert.h"
 #include "stripify.h"
 #include "blocks.h"
 #include "half.h"
@@ -29,6 +30,8 @@
 #include <QRegularExpression>
 #include <QSettings>
 #include <QDirIterator>
+#include <QThread>
+#include <QtConcurrent>
 
 #include <algorithm> // std::stable_sort
 
@@ -39,6 +42,8 @@
  * for values.
  */
 #define FIND_UNUSED false
+
+#define RUN_CONCURRENT true
 
 /**
  * @brief The ValueState enum describes whether values have been processed, ignored or not been used.
@@ -3160,7 +3165,8 @@ private:
                 c.processed(iConstraintsSrc.child(0, 0));
             }
 
-            c.copyValue<ushort, uint>("Body Flags");
+//            c.copyValue<ushort, uint>("Body Flags");
+            c.copyValue<ushort, uint>(getIndexDst(iDst, "Body Flags"), getIndexSrc(iSrc, "Body Flags"));
         } else if (type == "bhkSimpleShapePhantom") {
             // TODO: Scale?
             c.copyValue("Transform");
@@ -4402,8 +4408,16 @@ private:
         return bsShaderFlagsIsSet(shaderFlags, "BSShaderFlags", optionName);
     }
 
+    bool bsShaderFlags1IsSet(QModelIndex iShader, QString optionName) {
+        return bsShaderFlagsIsSet(nifSrc->get<uint>(iShader, "Shader Flags"), "BSShaderFlags", optionName);
+    }
+
     bool bsShaderFlags2IsSet(uint shaderFlags, QString optionName) {
         return bsShaderFlagsIsSet(shaderFlags, "BSShaderFlags2", optionName);
+    }
+
+    bool bsShaderFlags2IsSet(QModelIndex iShader, QString optionName) {
+        return bsShaderFlagsIsSet(nifSrc->get<uint>(iShader, "Shader Flags 2"), "BSShaderFlags2", optionName);
     }
 
     void bsShaderFlagsSet(
@@ -4492,6 +4506,8 @@ private:
         }
     }
 
+    // NOTE: Finalized in Properties()
+    // TODO: Set emit flag when appropriate. Creation kit currently notifies sometimes when not set.
     void bsShaderFlags(QModelIndex iShaderPropertyDst, uint shaderFlags1Src, uint shaderFlags2Src) {
         if (!iShaderPropertyDst.isValid()) {
             return;
@@ -4634,10 +4650,11 @@ private:
 
         c.ignore("Shader Flags 2");
 
-        QString blockName = nifDst->getBlockName(iDst);
+        const QString blockName = nifDst->getBlockName(iDst);
+        const QString shaderTypeSrc = nifSrc->getBlockName(iSrc);
 
         if (blockName == "BSLightingShaderProperty") {
-            if (nifSrc->getBlockName(iSrc) == "BSShaderPPLightingProperty") {
+            if (shaderTypeSrc == "BSShaderPPLightingProperty") {
                 QModelIndex iTextureSetSrc = nifSrc->getBlock(nifSrc->getLink(iSrc, "Texture Set"));
                 QModelIndex iTextureSet = copyBlock(iDst, iTextureSetSrc);
                 c.ignore("Texture Set");
@@ -4652,7 +4669,7 @@ private:
                     c.ignore("Parallax Max Passes");
                     c.ignore("Parallax Scale");
                 }
-            } else {
+            } else if (shaderTypeSrc == "BSShaderNoLightingProperty") {
 //                QString fileNameSrc = nifSrc->string(iSrc, QString("File Name"));
                 QString fileNameSrc = c.getSrc<QString>("File Name");
 
@@ -4666,19 +4683,67 @@ private:
                 }
             }
         } else if (blockName == "BSEffectShaderProperty") {
-            c.ignore("File Name");
+            if (shaderTypeSrc == "BSShaderPPLightingProperty") {
+                QModelIndex iTextureSetSrc = getBlockSrc(iSrc, "Texture Set");
 
-            if (nifSrc->getUserVersion2() == 34) {
-                // Does not appear to be used
-                c.ignore("Falloff Start Angle");
-                c.ignore("Falloff Stop Angle");
-                c.ignore("Falloff Start Opacity");
-                c.ignore("Falloff Stop Opacity");
+                if (iTextureSetSrc.isValid()) {
+                    if (nifSrc->get<int>(iTextureSetSrc, "Num Textures") < 6) {
+                        qDebug() << __FUNCTION__ << "Texture set too small";
+
+                        conversionResult = false;
+
+                        return;
+                    }
+
+                    QModelIndex iTexturesArraySrc = getIndexSrc(iTextureSetSrc, "Textures");
+
+                    const QString textureMain =
+                            updateTexturePath(nifSrc->get<QString>(iTexturesArraySrc.child(0, 0)));
+                    const QString textureNormal =
+                            updateTexturePath(nifSrc->get<QString>(iTexturesArraySrc.child(1, 0)));
+                    // TODO: Glow map and Height/Parallax map.
+                    const QString textureEnvironment =
+                            updateTexturePath(nifSrc->get<QString>(iTexturesArraySrc.child(4, 0)));
+                    const QString textureEnvMask =
+                            updateTexturePath(nifSrc->get<QString>(iTexturesArraySrc.child(5, 0)));
+
+                    nifDst->set<QString>(iDst, "Source Texture", textureMain);
+                    nifDst->set<QString>(iDst, "Normal Texture", textureNormal);
+                    nifDst->set<QString>(iDst, "Env Map Texture", textureEnvironment);
+                    nifDst->set<QString>(iDst, "Env Mask Texture", textureEnvMask);
+
+                    setHandled(iDst, iTextureSetSrc);
+                }
+
+                c.processed("Texture Set");
+
+                c.ignore("Refraction Strength");
+                c.ignore("Refraction Fire Period");
+                c.ignore("Parallax Max Passes");
+                c.ignore("Parallax Scale");
+
+                // Needs to be set after material is processed
+                nifDst->set<Color4>(iDst, "Emissive Color", Color4(1, 1, 1, 1));
 
                 nifDst->set<float>(iDst, "Falloff Start Angle", 1);
                 nifDst->set<float>(iDst, "Falloff Stop Angle", 1);
                 nifDst->set<float>(iDst, "Falloff Start Opacity", 1);
                 nifDst->set<float>(iDst, "Falloff Stop Opacity", 1);
+            } else if (shaderTypeSrc == "BSShaderNoLightingProperty") {
+                c.ignore("File Name");
+
+                if (nifSrc->getUserVersion2() == 34) {
+                    // Does not appear to be used
+                    c.ignore("Falloff Start Angle");
+                    c.ignore("Falloff Stop Angle");
+                    c.ignore("Falloff Start Opacity");
+                    c.ignore("Falloff Stop Opacity");
+
+                    nifDst->set<float>(iDst, "Falloff Start Angle", 1);
+                    nifDst->set<float>(iDst, "Falloff Stop Angle", 1);
+                    nifDst->set<float>(iDst, "Falloff Start Opacity", 1);
+                    nifDst->set<float>(iDst, "Falloff Stop Opacity", 1);
+                }
             }
         }
 
@@ -4693,27 +4758,44 @@ private:
             QModelIndex linkNode = nifSrc->getBlock(links[i]);
             QString type = nifSrc->getBlockName(linkNode);
 
-//            if (type == "BSShaderNoLightingProperty") {
-//                iResult = nifDst->insertNiBlock("BSLightingShaderProperty");
-
-//                nifDst->set<float>(iResult, "Specular Strength", 0);
-
-//                nifDst->set<qint32>(iResult, "Shader Flags 1", 0);
-//                nifDst->set<qint32>(iResult, "Shader Flags 2", 0);
-
-//                bsShaderFlags1Add(iResult, "Own_Emit");
-//                bsShaderFlags2Add(iResult, "Double_Sided");
-
-//                return iResult;
-//            }
-
             if (type == "BSShaderNoLightingProperty") {
                 // TODO: Set falloff opacity to 1 on all unless falloff flags is set in source and always set use_falloff flag
                 // TODO: Set Double sided on always
                 iResult = nifDst->insertNiBlock("BSEffectShaderProperty");
-            } else if (
-                    type == "BSShaderPPLightingProperty" ||
-                    type == "TallGrassShaderProperty") {
+            } else if (type == "BSShaderPPLightingProperty") {
+                bool bAlphaBlending = false;
+                bool isDecal = false;
+
+                for (int j = 0; j < links.count(); j++) {
+                    QModelIndex iAlphaBlockSrc = nifSrc->getBlock(links[j]);
+
+                    if (nifSrc->getBlockName(iAlphaBlockSrc) != "NiAlphaProperty") {
+                        continue;
+                    }
+
+                    if (nifSrc->get<int>(iAlphaBlockSrc, "Flags") & 1) {
+                        bAlphaBlending = true;
+                    }
+                }
+
+                if (
+                        bsShaderFlags1IsSet(linkNode, "Decal_Single_Pass") ||
+                        bsShaderFlags1IsSet(linkNode, "Dynamic_Decal_Single_Pass")) {
+                    isDecal = true;
+                }
+
+                /**
+                 * NOTE: Couldn't find a way to have alpha blending on a BSLightingShaderProperty and not have the shape
+                 *       turn invisible unless a decal flag was set.
+                 */
+                if (bAlphaBlending && !isDecal) {
+                    iResult = nifDst->insertNiBlock("BSEffectShaderProperty");
+                } else {
+                    iResult = nifDst->insertNiBlock("BSLightingShaderProperty");
+
+                    nifDst->set<float>(iResult, "Specular Strength", 0);
+                }
+            } else if (type == "TallGrassShaderProperty") {
                 iResult = nifDst->insertNiBlock("BSLightingShaderProperty");
 
                 nifDst->set<float>(iResult, "Specular Strength", 0);
@@ -4824,7 +4906,12 @@ private:
         }
 
         if (iNiAlphaPropertyDst.isValid() && iShaderPropertySrc.isValid()) {
-            niAlphaPropertyFinalize(iNiAlphaPropertyDst, iShaderPropertyDst);
+            if (
+                    nifSrc->getBlockName(iShaderPropertySrc) == "BSShaderPPLightingProperty" &&
+                    nifDst->getBlockName(iShaderPropertyDst) == "BSEffectShaderProperty") {
+                bsShaderFlags2Add(iShaderPropertyDst, "Effect_Lighting");
+                nifDst->set<Color4>(iShaderPropertyDst, "Emissive Color", Color4(1, 1, 1, 1));
+            }
         }
     }
 
@@ -4833,10 +4920,15 @@ private:
             QModelIndex iAlphaFlags = getIndexDst(iAlphaPropertyDst, "Flags");
             uint alphaFlags = nifDst->get<uint>(iAlphaFlags);
 
-            // Disable Blending
-            alphaFlags &= uint(~1);
+            if (alphaFlags & 1) {
+                bsShaderFlags1Add(iShaderPropertyDst, "Decal");
+                bsShaderFlags1Add(iShaderPropertyDst, "Dynamic_Decal");
+            }
 
-            nifDst->set<uint>(iAlphaFlags, alphaFlags);
+//            // Disable Blending
+//            alphaFlags &= uint(~1);
+
+//            nifDst->set<uint>(iAlphaFlags, alphaFlags);
         }
 
     }
@@ -5935,7 +6027,12 @@ private:
                     return;
                 }
 
-                setLink(iLinkBlock, "Alpha Property", nifDst->insertNiBlock("NiAlphaProperty"));
+                QModelIndex iNiAlphaProperty = nifDst->insertNiBlock("NiAlphaProperty");
+
+                nifDst->set<uint>(iNiAlphaProperty, "Flags", 4844);
+                nifDst->set<int>(iNiAlphaProperty, "Threshold", 128);
+
+                setLink(iLinkBlock, "Alpha Property", iNiAlphaProperty);
 
                 // TODO: Set shader type
             } else {
@@ -6663,7 +6760,7 @@ void combineHighLevelLODs(QList<HighLevelLOD> & list, QList<QString> & failedLis
  * @param isLOD
  * @param isLODObject
  */
-FileProperties getFileType(const QString & fnameSrc, QString & fnameDst, QList<HighLevelLOD> & highLevelLodList) {
+FileProperties getFileType(const QString & fnameSrc, QString & fnameDst, ListWrapper<HighLevelLOD> & highLevelLodList) {
     QString fileName = QFileInfo(fnameSrc).fileName();
     QStringList fileNameParts = fileName.split('.');
     QDir dirSrc = QFileInfo(fnameSrc).dir();
@@ -6749,7 +6846,7 @@ FileProperties getFileType(const QString & fnameSrc, QString & fnameDst, QList<H
     return FileProperties(FileType::LODLandscape, fnameDst, sLevel.toInt(), sXCoord.toInt(), sYCoord.toInt());
 }
 
-bool convert(const QString & fname, QList<HighLevelLOD> & highLevelLodList, const QString & root = "") {
+bool convert(const QString & fname, ListWrapper<HighLevelLOD> & highLevelLodList, const QString & root = "") {
     clock_t tStart = clock();
 
     qDebug() << "Processing: " + fname;
@@ -6886,25 +6983,122 @@ void search() {
     exit(0);
 }
 
+void search2() {
+    const QString path = "E:\\SteamLibrary\\steamapps\\common\\Fallout New Vegas\\Data\\meshes";
+    QDirIterator it(path, QStringList() << "*.nif", QDir::Files, QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+        QString fname = it.next();
+
+        NifModel nif = NifModel();
+        if (!nif.loadFromFile(fname)) {
+            fprintf(stderr, "Failed to load nif\n");
+        }
+
+        for (int i = 0; i < nif.getBlockCount(); i++) {
+            QModelIndex iBlock = nif.getBlock(i);
+            QModelIndex iProperties = nif.getIndex(iBlock, "Properties");
+
+            if (!iProperties.isValid()) {
+                continue;
+            }
+
+            QModelIndex iAlpha;
+            QModelIndex iShader;
+
+            for (int j = 0; j < nif.rowCount(iProperties); j++) {
+                QModelIndex iLinkBlock = nif.getBlock(nif.getLink(iProperties.child(j, 0)));
+
+                if (nif.getBlockName(iLinkBlock) == "BSShaderPPLightingProperty") {
+                    iShader = iLinkBlock;
+                }
+
+                if (nif.getBlockName(iLinkBlock) == "NiAlphaProperty") {
+                    iAlpha = iLinkBlock;
+                }
+            }
+
+            if (!iAlpha.isValid() || !iShader.isValid()) {
+                continue;
+            }
+
+            // Check whether enable blending is set
+            if (nif.get<int>(iAlpha, "Flags") & 1) {
+                uint flags = nif.get<uint>(iShader, "Shader Flags 1");
+
+                if (
+                        !(flags & NifValue::enumOptionValue("BSShaderFlags", "Decal_Single_Pass")) &&
+                        !(flags & NifValue::enumOptionValue("BSShaderFlags2", "Dynamic_Decal_Single_Pass"))) {
+                    qDebug() << fname;
+
+                    break;
+                }
+            }
+
+//            if (nif.get<int>(iAlpha, "Flags") == 4333) {
+//                uint flags = nif.get<uint>(iShader, "Shader Flags 1");
+//                if (
+//                        !(flags & NifValue::enumOptionValue("Fallout4ShaderPropertyFlags1", "Decal")) &&
+//                        !(flags & NifValue::enumOptionValue("Fallout4ShaderPropertyFlags1", "Dynamic_Decal"))) {
+//                    qDebug() << fname;
+
+//                    break;
+//                }
+//            }
+        }
+    }
+
+    exit(0);
+}
+
+void convert(
+        const QString & fname,
+        ListWrapper<HighLevelLOD> & highLevelLodList,
+        ListWrapper<QString> & failedList,
+        const QString & path = "") {
+    if (!convert(fname, highLevelLodList, path)) {
+        failedList.append(fname);
+    }
+}
+
+template <typename T>
+void ListWrapper<T>::append(T s)
+{
+    QMutexLocker locker(&mu);
+    list.append(s);
+}
+
 void convertNif(QString path) {
-//    search();
+//    testConverterController();
+
+//    return;
 
     clock_t tStart = clock();
 
     QList<QString> failedList;
     QList<HighLevelLOD> highLevelLodList;
 
+    ListWrapper<QString> listWrapperFailed = ListWrapper<QString>(failedList);
+    ListWrapper<HighLevelLOD> listWrapperHLLODs = ListWrapper<HighLevelLOD>(highLevelLodList);
+
     if (QFileInfo(path).isFile()) {
-        if (!convert(path, highLevelLodList)) {
-            failedList.append(path);
-        }
+        convert(path, listWrapperHLLODs, listWrapperFailed);
     } else if (QDir(path).exists()) {
         QDirIterator it(path, QStringList() << "*.nif", QDir::Files, QDirIterator::Subdirectories);
-        while (it.hasNext()) {
-            QString fname = it.next();
+        QStringList fileList;
 
-            if (!convert(fname, highLevelLodList, path)) {
-                failedList.append(fname);
+        if (RUN_CONCURRENT) {
+            while (it.hasNext()) {
+                fileList.append(it.next());
+            }
+
+            QtConcurrent::blockingMap(
+                        fileList,
+                        [&](QString & elem) {
+                            convert(elem, listWrapperHLLODs, listWrapperFailed, path);
+                        });
+        } else {
+            while (it.hasNext()) {
+                convert(it.next(), listWrapperHLLODs, listWrapperFailed, path);
             }
         }
     } else {
