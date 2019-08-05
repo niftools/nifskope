@@ -245,6 +245,7 @@ SOURCES += \
 	src/spells/color.cpp \
     src/spells/convert/convert.cpp \
     src/spells/convert/copier.cpp \
+    src/spells/convert/emittance.cpp \
     src/spells/convert/lod.cpp \
     src/spells/convert/progress.cpp \
 	src/spells/flags.cpp \

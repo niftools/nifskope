@@ -1,4 +1,5 @@
 #include "progress.h"
+#include "convert.h"
 
 Progress::Progress(uint numBlocksSrc, ProgressReceiver &receiver, QString fileName)
     : numBlocksSrc(numBlocksSrc),

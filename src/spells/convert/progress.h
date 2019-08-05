@@ -1,7 +1,6 @@
 #ifndef PROGRESS_H
 #define PROGRESS_H
 
-#include "convert.h"
 #include "ui/conversiondialog.h"
 
 /**
