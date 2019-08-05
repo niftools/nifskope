@@ -2629,37 +2629,37 @@ QModelIndex Converter::bhkTransformShape(QModelIndex iSrc, QModelIndex &parent, 
 
 bool Converter::bhkUpdateScale(bool &bScaleSet, float &radius, const float newRadius) {
     if (newRadius == 0.0f) {
-            qDebug() << "Radius of 0";
+        qDebug() << "Radius of 0";
 
-            conversionResult = false;
+        conversionResult = false;
 
-            return  false;
-        }
+        return  false;
+    }
 
-        if (!bScaleSet) {
-            radius = newRadius;
-            bScaleSet = true;
+    if (!bScaleSet) {
+        radius = newRadius;
+        bScaleSet = true;
 
-            return true;
-        } else if (radius - newRadius != 0.0f) {
-            qDebug() << __FUNCTION__ << "Different radii:" << radius << "and" << newRadius << ", cannot scale rigidBody";
+        return true;
+    } else if (radius - newRadius != 0.0f) {
+        qDebug() << __FUNCTION__ << "Different radii:" << radius << "and" << newRadius << ", cannot scale rigidBody";
 
-            conversionResult = false;
-        }
+        conversionResult = false;
+    }
 
-        return false;
+    return false;
 }
 
 QModelIndex Converter::bhkBoxShape(QModelIndex iSrc, int row, bool &bScaleSet, float &radius) {
     QModelIndex iDst = copyBlock(QModelIndex(), iSrc, row);
 
-        nifDst->set<uint>(iDst, "Material", matMap.convert(nifSrc->getIndex(iSrc, "Material")));
+    bhkUpdateScale(bScaleSet, radius, nifSrc->get<float>(iSrc, "Radius"));
 
-        if (bhkUpdateScale(bScaleSet, radius, nifSrc->get<float>(iSrc, "Radius"))) {
-            nifDst->set<Vector3>(iDst, "Dimensions", nifSrc->get<Vector3>(iSrc, "Dimensions") * radius);
-        }
+    nifDst->set<uint>(iDst, "Material", matMap.convert(nifSrc->getIndex(iSrc, "Material")));
+    nifDst->set<Vector3>(iDst, "Dimensions", nifSrc->get<Vector3>(iSrc, "Dimensions") * radius);
+    nifDst->set<float>(iDst, "Radius", 0);
 
-        return iDst;
+    return iDst;
 }
 
 QModelIndex Converter::bhkCapsuleShape(QModelIndex iSrc, int row, bool &bScaleSet, float &radius) {
