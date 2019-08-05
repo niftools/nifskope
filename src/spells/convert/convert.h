@@ -166,94 +166,15 @@ public:
     bool getBLODBuilding() const;
 
 private:
-    void loadMatMap();
+    /*******************************************************************************************************************
+     * Block Conversion Functions
+     ******************************************************************************************************************/
 
-    void loadLayerMap();
-
-    // From blocks.cpp
-    //! The string names which can appear in the block root
-    QStringList rootStringList =
-    {
-        "Name",
-        "Modifier Name",   // NiPSysModifierCtlr
-        "File Name",       // NiSourceTexture
-        "String Data",     // NiStringExtraData
-        "Extra Data Name", // NiExtraDataController
-        "Accum Root Name", // NiSequence
-        "Look At Name",    // NiLookAtInterpolator
-        "Driven Name",     // NiLookAtEvaluator
-        "Emitter Name",    // NiPSEmitterCtlr
-        "Force Name",      // NiPSForceCtlr
-        "Mesh Name",       // NiPhysXMeshDesc
-        "Shape Name",      // NiPhysXShapeDesc
-        "Actor Name",      // NiPhysXActorDesc
-        "Joint Name",      // NiPhysXJointDesc
-        "Wet Material",    // BSLightingShaderProperty FO4+
-        "Behaviour Graph File", // BSBehaviorGraphExtraData
-    };
-
-    // From blocks.cpp
-    const char * MIME_SEP = "˂"; // This is Unicode U+02C2
-    const char * STR_BL = "nifskope˂niblock˂%1˂%2";
-
-    //! Set strings array
-    void setStringsArray( const QModelIndex & parentDst, const QModelIndex & parentSrc, const QString & arr, const QString & name = {} );
-
-    //! Set "Name" et al. for NiObjectNET, NiExtraData, NiPSysModifier, etc.
-    void setNiObjectRootStrings( const QModelIndex & iBlockDst, const QModelIndex & iBlockSrc);
-
-    //! Set strings for NiMesh
-    void setStringsNiMesh( const QModelIndex & iBlockDst, const QModelIndex & iBlockSrc );
-
-    void  setStringsNiSequence( const QModelIndex & iBlockDst, const QModelIndex & iBlockSrc );
-
-    // From blocks.cpp
-    QPair<QString, QString> acceptFormat( const QString & format, const NifModel * nif );
-
-    // Based on spCopyBlock from blocks.cpp
-    QModelIndex copyBlock(const QModelIndex & iDst, const QModelIndex & iSrc, int row = -1, bool bMap = true);
-
-    template <typename T> void copyValue( const QModelIndex & iDst, const QModelIndex & iSrc, const QString & name ) {
-        nifDst->set<T>( iDst, name, nifSrc->get<T>( iSrc, name ) );
-    }
-
-    template <typename T> void copyValue( const QModelIndex & iDst, const QModelIndex & iSrc ) {
-        nifDst->set<T>( iDst, nifSrc->get<T>( iSrc ) );
-    }
-
-    QModelIndex getHandled(const QModelIndex iSrc);
-
-    QModelIndex getHandled(const int blockNumber);
-
-    bool isHandled(const int blockNumber);
-
-    bool isHandled(const QModelIndex iSrc);
-
-    bool setHandled(const QModelIndex iDst,  const QModelIndex iSrc);
-
-    void ignoreBlock(const QModelIndex iSrc, bool ignoreChildBlocks);
-
-    void ignoreBlock(const QModelIndex iSrc, const QString & name, bool ignoreChildBlocks);
-
-    void niPSysData(const QModelIndex iDst, const QModelIndex iSrc);
-
-    std::tuple<QModelIndex, QModelIndex> copyLink(QModelIndex iDst, QModelIndex iSrc, const QString & name = "");
-
-    void reLinkExec();
-
-    void reLink(QModelIndex iDst, QModelIndex iSrc);
-
-    void reLink(QModelIndex iDst, QModelIndex iSrc, const QString & name);
-
-    void reLinkArray(QModelIndex iArrayDst, QModelIndex iArraySrc, const QString arrayName = "", const QString & name = "");
-
-    void reLinkRec(const QModelIndex iDst);
-
-    void niAVDefaultObjectPalette(QModelIndex iDst, QModelIndex iSrc);
-
-    void niInterpolator(QModelIndex iDst, QModelIndex iSrc, const QString & name = "Interpolator");
+    QModelIndex bsFadeNode( QModelIndex iNode);
 
     QModelIndex niControllerSequence(QModelIndex iSrc);
+
+    void niInterpolator(QModelIndex iDst, QModelIndex iSrc, const QString & name = "Interpolator");
 
     /**
      * @brief niControllerSequences
@@ -263,49 +184,20 @@ private:
      */
     void niControllerSequences(QModelIndex iDst, QModelIndex iSrc);
 
-    Controller & getController(int blockNumber);
+    QModelIndex niController(
+            QModelIndex iDst,
+            QModelIndex iSrc,
+            Copier & c,
+            const QString & name = "Controller",
+            const QString & blockName = "",
+            const int target = -1);
 
-    // TODO: Function needs to take entire controller chain into account.
-    void niInterpolatorFinalizeEmissive(QModelIndex iController, QModelIndex iInterpolator);
-
-    void niControllerSequencesFinalize();
-
-    QString getControllerType(QString dstType);
-
-    std::tuple<QModelIndex, QString> getControllerType(QString dstType, const QString & name);
-
-
-    QModelIndex niController(QModelIndex iDst, QModelIndex iSrc, Copier & c, const QString & name = "Controller", const QString & blockName = "", const int target = -1);
-
-    QModelIndex niController(QModelIndex iDst, QModelIndex iSrc, const QString & name = "Controller", const QString & blockName = "", const int target = -1);
-
-    QModelIndex niControllerSetLink(QModelIndex iDst, const QString & name, QModelIndex iControllerDst);
-
-    uint enumOptionValue(const QString & enumName, const QString & optionName);
-
-    std::tuple<QModelIndex, QString> getController(const QString & dstType, const QString & valueType, const QString & controlledValueEffect, const QString & controlledValueLighting);
-
-    std::tuple<QModelIndex, QString> getController(const QString & dstType, const QString & valueType, const QString & controlledValue);
-
-    void ignoreController(QModelIndex iSrc);
-
-    // TODO: Find best way to process blocks sharing the same controllers but with different controllers down the chain
-    QModelIndex niControllerCopy(QModelIndex iDst, QModelIndex iSrc, QString name = "Controller", const QString & blockName = "", const int target = -1);
-
-    void collisionObjectCopy(QModelIndex iDst, QModelIndex iSrc, const QString & name = "Collision Object");
-
-    QModelIndex insertNiBlock(const QString & name);
-
-    QModelIndex getIndexSrc(QModelIndex parent, const QString & name);
-
-    QModelIndex getIndexDst(QModelIndex parent, const QString & name);
-
-    void scaleVector4(QModelIndex iVector4, float scale);
-
-    // bhkConvexVerticesShape
-    void collapseScale(QModelIndex iNode, float scale);
-
-    void collapseScaleRigidBody(QModelIndex iNode, float scale);
+    QModelIndex niController(
+            QModelIndex iDst,
+            QModelIndex iSrc,
+            const QString & name = "Controller",
+            const QString & blockName = "",
+            const int target = -1);
 
     /**
      * @brief bhkPackedNiTriStripsShapeAlt
@@ -316,10 +208,6 @@ private:
      */
     QModelIndex bhkPackedNiTriStripsShapeAlt(QModelIndex iSrc, QModelIndex iRigidBodyDst, int row);
 
-    void setMax(float & val, float comparison);
-
-    void setMin(float & val, float comparison);
-
     // TODO:
     // Fix collision between chunks.
     // Handle scaling and out of bounds.
@@ -328,22 +216,11 @@ private:
 
     QModelIndex bhkPackedNiTriStripsShape(QModelIndex iSrc, int row, bool & bScaleSet, float & radius);
 
-    bool inRange(int low, int high, int x);
-
-    /**
-     * @brief vertexRange
-     * Handle vertices connected to a vertex in a sub shape but not in the sub shape range.
-     * @param iVerticesSrc
-     * @param vertexList
-     * @param vertexMap
-     * @param bInRange
-     * @param index
-     */
-    void vertexRange(const QModelIndex iVerticesSrc, QVector<Vector3> & vertexList, QMap<int, int> & vertexMap, bool bInRange, int index);
-
-    void setVertex(QModelIndex iPoint1, QModelIndex iPoint2, QMap<int, int> & vertexMap, int firstIndex, int index);
-
-    QModelIndex bhkPackedNiTriStripsShapeDataSubShapeTriangles(QModelIndex iSubShapeSrc, QModelIndex iDataSrc, int firstVertIndex, int row);
+    QModelIndex bhkPackedNiTriStripsShapeDataSubShapeTriangles(
+            QModelIndex iSubShapeSrc,
+            QModelIndex iDataSrc,
+            int firstVertIndex,
+            int row);
 
     QModelIndex bhkPackedNiTriStripsShapeData(QModelIndex iSrc, QModelIndex iBhkNiTriStripsShapeDst, int row);
 
@@ -357,20 +234,14 @@ private:
 
     QModelIndex bhkSphereShape(QModelIndex iSrc, int row, bool & bScaleSet, float & radius);
 
-    QModelIndex bhkConvexTransformShape(QModelIndex iSrc, QModelIndex & parent, int row, bool & bScaleSet, float & radius);
+    QModelIndex bhkConvexTransformShape(
+            QModelIndex iSrc,
+            QModelIndex & parent,
+            int row,
+            bool & bScaleSet,
+            float & radius);
 
     QModelIndex bhkTransformShape(QModelIndex iSrc, QModelIndex & parent, int row, bool & bScaleSet, float & radius);
-
-
-
-    /**
-     * @brief bhkUpdateScale
-     * @param bScaleSet
-     * @param radius
-     * @param newRadius
-     * @return True if newly set, else false
-     */
-    bool bhkUpdateScale(bool & bScaleSet, float & radius, const float newRadius);
 
     QModelIndex bhkBoxShape(QModelIndex iSrc, int row, bool & bScaleSet, float & radius);
 
@@ -387,19 +258,7 @@ private:
 
     QModelIndex bhkConvexVerticesShape(QModelIndex iSrc, int row, bool & bScaleSet, float & radius);
 
-    QModelIndex getBlockSrc(QModelIndex iLink);
-
-    QModelIndex getBlockSrc(QModelIndex iSrc, const QString & name);
-
-    QModelIndex getBlockDst(QModelIndex iLink);
-
-    QModelIndex getBlockDst(QModelIndex iDst, const QString & name);
-
     QModelIndex bhkListShape(QModelIndex iSrc, QModelIndex & parent, int row, bool & bScaleSet, float & radius);
-
-    bool setLink(QModelIndex iDst, QModelIndex iTarget);
-
-    bool setLink(QModelIndex iDst, const QString & name, QModelIndex iTarget);
 
     void niTexturingProperty(QModelIndex iDst, QModelIndex iSrc, const QString & sequenceBlockName);
 
@@ -415,38 +274,30 @@ private:
 
     QModelIndex niPSysCollider(QModelIndex iSrc);
 
-    QModelIndex niPSysColliderCopy(QModelIndex iSrc);
-
-//    QModelIndex niBillBoardNode(QModelIndex iDst, QModelIndex iSrc) {
-////        Copier c = Copier(fadeNode)
-//    }
-
     QModelIndex bsFurnitureMarker(QModelIndex iSrc);
-
-    void extraDataList(QModelIndex iDst, QModelIndex iSrc);
-
-    void extraDataList(QModelIndex iDst, QModelIndex iSrc, Copier & c);
-
-    QModelIndex bsFadeNode( QModelIndex iNode);
-
-    void bsSegmentedTriShapeSegments(QModelIndex iDst, QModelIndex iSrc, Copier & c);
-
-    bool hasProperty(QModelIndex iSrc, const QString & name);
 
     QModelIndex bsSegmentedTriShape(QModelIndex iSrc);
 
     QModelIndex bsMultiBound(QModelIndex iSrc);
 
-    void materialData(QModelIndex iSrc, Copier & c);
-
     QModelIndex bsStripParticleSystem(QModelIndex iSrc);
 
     QModelIndex bsStripPSysData(QModelIndex iSrc);
 
+    /**
+     * @brief niCamera
+     * Source block type: NiCamera
+     * @param iSrc
+     * @return
+     */
     QModelIndex niCamera(QModelIndex iSrc);
 
-    void niTriShapeMaterialData(QModelIndex iDst, QModelIndex iSrc, Copier & c);
-
+    /**
+     * @brief niTriShape converts 'NiTriShape' blocks.
+     * Source block type: NiTriShape
+     * @param iSrc
+     * @return
+     */
     QModelIndex niTriShape(QModelIndex iSrc);
 
     QModelIndex niTriShapeAlt(QModelIndex iSrc);
@@ -454,20 +305,18 @@ private:
     // NOTE: Apply after vertices have been created for example by niTriShapeDataAlt()
     QModelIndex niSkinInstance(QModelIndex iBSTriShapeDst, QModelIndex iShaderPropertyDst, QModelIndex iSrc);
 
-    // Has no visible effect source. Maybe just bounding spheres but also has rotation.
-    void niSkinDataSkinTransform(QModelIndex iBoneDst, QModelIndex iSkinTransformSrc,  QModelIndex iSkinTransformGlobalSrc);
-
+    /**
+     * @brief niSkinData
+     * Source block type: NiSkinData
+     * @param iBSTriShapeDst
+     * @param iSrc
+     * @return
+     */
     QModelIndex niSkinData(QModelIndex iBSTriShapeDst, QModelIndex iSrc);
-
-    void niTriShapeDataArray(const QString & name, bool bHasArray, Copier & c);
-
-    void niTriShapeDataArray(QModelIndex iSrc, const QString & name, const QString & boolName, Copier & c, bool isFlag = false);
 
     QModelIndex niTriShapeData(QModelIndex iSrc);
 
     QModelIndex niPointLight(QModelIndex iSrc);
-
-    QString updateTexturePath(QString fname);
 
     /**
      * Insert prefix after 'textures\'.
@@ -475,6 +324,133 @@ private:
      * @param iDst
      */
     void bsShaderTextureSet(QModelIndex iDst, QModelIndex iSrc);
+
+    void bSShaderLightingProperty(QModelIndex iDst, QModelIndex iSrc, const QString & sequenceBlockName);
+
+    void shaderProperty(QModelIndex iDst, QModelIndex iSrc, const QString & type, const QString & sequenceBlockName);
+
+    QModelIndex niTriStrips( QModelIndex iSrc);
+
+    // Up to and including num triangles
+    void niTriData(QModelIndex iDst, QModelIndex iSrc, Copier & c);
+
+    void niTriStripsData( QModelIndex iSrc, QModelIndex iDst );
+
+    void niTriShapeDataAlt(QModelIndex iDst, QModelIndex iSrc);
+
+    /*******************************************************************************************************************
+     * Block Conversion utility functions
+     ******************************************************************************************************************/
+
+    void niPSysData(const QModelIndex iDst, const QModelIndex iSrc);
+
+    void niAVDefaultObjectPalette(QModelIndex iDst, QModelIndex iSrc);
+
+    Controller & getController(int blockNumber);
+
+    QString getControllerType(QString dstType);
+
+    std::tuple<QModelIndex, QString> getControllerType(QString dstType, const QString & name);
+
+    QModelIndex niControllerSetLink(QModelIndex iDst, const QString & name, QModelIndex iControllerDst);
+
+    std::tuple<QModelIndex, QString> getController(
+            const QString & dstType,
+            const QString & valueType,
+            const QString & controlledValueEffect,
+            const QString & controlledValueLighting);
+
+    std::tuple<QModelIndex, QString> getController(
+            const QString & dstType,
+            const QString & valueType,
+            const QString & controlledValue);
+
+    void ignoreController(QModelIndex iSrc);
+
+    // TODO: Find best way to process blocks sharing the same controllers but with different controllers down the chain
+    QModelIndex niControllerCopy(
+            QModelIndex iDst,
+            QModelIndex iSrc,
+            QString name = "Controller",
+            const QString & blockName = "",
+            const int target = -1);
+
+    void collisionObjectCopy(QModelIndex iDst, QModelIndex iSrc, const QString & name = "Collision Object");
+
+    void scaleVector4(QModelIndex iVector4, float scale);
+
+    // bhkConvexVerticesShape
+    void collapseScale(QModelIndex iNode, float scale);
+
+    void collapseScaleRigidBody(QModelIndex iNode, float scale);
+
+    void setMax(float & val, float comparison);
+
+    void setMin(float & val, float comparison);
+
+    bool inRange(int low, int high, int x);
+
+    /**
+     * @brief vertexRange
+     * Handle vertices connected to a vertex in a sub shape but not in the sub shape range.
+     * @param iVerticesSrc
+     * @param vertexList
+     * @param vertexMap
+     * @param bInRange
+     * @param index
+     */
+    void vertexRange(
+            const QModelIndex iVerticesSrc,
+            QVector<Vector3> & vertexList,
+            QMap<int, int> & vertexMap,
+            bool bInRange,
+            int index);
+
+    void setVertex(QModelIndex iPoint1, QModelIndex iPoint2, QMap<int, int> & vertexMap, int firstIndex, int index);
+
+    /**
+     * @brief bhkUpdateScale
+     * @param bScaleSet
+     * @param radius
+     * @param newRadius
+     * @return True if newly set, else false
+     */
+    bool bhkUpdateScale(bool & bScaleSet, float & radius, const float newRadius);
+
+    QModelIndex niPSysColliderCopy(QModelIndex iSrc);
+
+//    QModelIndex niBillBoardNode(QModelIndex iDst, QModelIndex iSrc) {
+////        Copier c = Copier(fadeNode)
+//    }
+
+    void extraDataList(QModelIndex iDst, QModelIndex iSrc);
+
+    void extraDataList(QModelIndex iDst, QModelIndex iSrc, Copier & c);
+
+    void bsSegmentedTriShapeSegments(QModelIndex iDst, QModelIndex iSrc, Copier & c);
+
+    bool hasProperty(QModelIndex iSrc, const QString & name);
+
+    void materialData(QModelIndex iSrc, Copier & c);
+
+    void niTriShapeMaterialData(QModelIndex iDst, QModelIndex iSrc, Copier & c);
+
+    // Has no visible effect source. Maybe just bounding spheres but also has rotation.
+    void niSkinDataSkinTransform(
+            QModelIndex iBoneDst,
+            QModelIndex iSkinTransformSrc,
+            QModelIndex iSkinTransformGlobalSrc);
+
+    void niTriShapeDataArray(const QString & name, bool bHasArray, Copier & c);
+
+    void niTriShapeDataArray(
+            QModelIndex iSrc,
+            const QString & name,
+            const QString & boolName,
+            Copier & c,
+            bool isFlag = false);
+
+    QString updateTexturePath(QString fname);
 
     void setFallout4ShaderFlag(uint & flags, const QString & enumName, const QString & optionName);
 
@@ -539,8 +515,6 @@ private:
     // TODO: Use enumOption
     int getFlagsBSShaderFlags1(QModelIndex iDst, QModelIndex iNiTriStripsData, QModelIndex iBSShaderPPLightingProperty);
 
-    void bSShaderLightingProperty(QModelIndex iDst, QModelIndex iSrc, const QString & sequenceBlockName);
-
     QModelIndex getShaderProperty(QModelIndex iSrc);
 
     QModelIndex getShaderPropertySrc(QModelIndex iSrc);
@@ -549,21 +523,22 @@ private:
 
     void niAlphaPropertyFinalize(QModelIndex iAlphaPropertyDst, QModelIndex iShaderPropertyDst);
 
-    void shaderProperty(QModelIndex iDst, QModelIndex iSrc, const QString & type, const QString & sequenceBlockName);
-
     void properties(QModelIndex iSrc, QModelIndex shaderProperty, QModelIndex iDst, Copier & c);
 
     void properties(QModelIndex iDst, QModelIndex iSrc);
 
     void properties(QModelIndex iDst, QModelIndex iSrc, Copier & c);
 
-    QModelIndex niTriStrips( QModelIndex iSrc);
-
     BSVertexDesc bsVectorFlags(QModelIndex iDst, QModelIndex iSrc);
 
     bool bsVectorFlagSet(QModelIndex iSrc, const QString & flagName);
 
-    template<typename T> QVector<T> niTriDataGetArray(QModelIndex iSrc, Copier & c, const QString & boolName, const QString & name, bool isFlag = false) {
+    template<typename T> QVector<T> niTriDataGetArray(
+            QModelIndex iSrc,
+            Copier & c,
+            const QString & boolName,
+            const QString & name,
+            bool isFlag = false) {
         bool isSet = false;
 
         if (!isFlag) {
@@ -592,26 +567,17 @@ private:
 
     QVector<Vector2> niTriDataGetUVSets(QModelIndex iSrc, Copier & c);
 
-    bool checkHalfFloat(float f);
-
-    bool checkHalfVector3(HalfVector3 v);
-
-    bool checkHalfVector2(HalfVector2 v);
-
-    float hfloatScale(float hf, float scale);
-
-    // Up to and including num triangles
-    void niTriData(QModelIndex iDst, QModelIndex iSrc, Copier & c);
-
-    void niTriStripsData( QModelIndex iSrc, QModelIndex iDst );
-
-    void niTriShapeDataAlt(QModelIndex iDst, QModelIndex iSrc);
-
-    void unhandledBlocks();
+    /*******************************************************************************************************************
+     * LOD Conversion functions
+     ******************************************************************************************************************/
 
     void lodLandscapeTranslationZero(QModelIndex iTranslation);
 
-    void lODLandscapeShape(const qint32 link, const QModelIndex iLink, const QModelIndex iLinkBlock, QModelIndex & iWater);
+    void lODLandscapeShape(
+            const qint32 link,
+            const QModelIndex iLink,
+            const QModelIndex iLinkBlock,
+            QModelIndex & iWater);
 
     void lODLandscape();
 
@@ -656,6 +622,82 @@ private:
     // TODO: Combine High level LODs
     void lODObjects();
 
+    /*******************************************************************************************************************
+     * Conversion utility functions
+     ******************************************************************************************************************/
+
+    QModelIndex getHandled(const QModelIndex iSrc);
+
+    QModelIndex getHandled(const int blockNumber);
+
+    bool isHandled(const int blockNumber);
+
+    bool isHandled(const QModelIndex iSrc);
+
+    bool setHandled(const QModelIndex iDst,  const QModelIndex iSrc);
+
+    void ignoreBlock(const QModelIndex iSrc, bool ignoreChildBlocks);
+
+    void ignoreBlock(const QModelIndex iSrc, const QString & name, bool ignoreChildBlocks);
+
+    // Based on spCopyBlock from blocks.cpp
+    QModelIndex copyBlock(const QModelIndex & iDst, const QModelIndex & iSrc, int row = -1, bool bMap = true);
+
+    std::tuple<QModelIndex, QModelIndex> copyLink(QModelIndex iDst, QModelIndex iSrc, const QString & name = "");
+
+    void reLinkExec();
+
+    void reLink(QModelIndex iDst, QModelIndex iSrc);
+
+    void reLink(QModelIndex iDst, QModelIndex iSrc, const QString & name);
+
+    void reLinkArray(
+            QModelIndex iArrayDst,
+            QModelIndex iArraySrc,
+            const QString arrayName = "",
+            const QString & name = "");
+
+    void reLinkRec(const QModelIndex iDst);
+
+    uint enumOptionValue(const QString & enumName, const QString & optionName);
+
+    QModelIndex insertNiBlock(const QString & name);
+
+    QModelIndex getIndexSrc(QModelIndex parent, const QString & name);
+
+    QModelIndex getIndexDst(QModelIndex parent, const QString & name);
+
+    QModelIndex getBlockSrc(QModelIndex iLink);
+
+    QModelIndex getBlockSrc(QModelIndex iSrc, const QString & name);
+
+    QModelIndex getBlockDst(QModelIndex iLink);
+
+    QModelIndex getBlockDst(QModelIndex iDst, const QString & name);
+
+    bool setLink(QModelIndex iDst, QModelIndex iTarget);
+
+    bool setLink(QModelIndex iDst, const QString & name, QModelIndex iTarget);
+
+    bool checkHalfFloat(float f);
+
+    bool checkHalfVector3(HalfVector3 v);
+
+    bool checkHalfVector2(HalfVector2 v);
+
+    float hfloatScale(float hf, float scale);
+
+    void unhandledBlocks();
+
+    /*******************************************************************************************************************
+     * Conversion finalization funtions
+     ******************************************************************************************************************/
+
+    // TODO: Function needs to take entire controller chain into account.
+    void niInterpolatorFinalizeEmissive(QModelIndex iController, QModelIndex iInterpolator);
+
+    void niControllerSequencesFinalize();
+
     QModelIndex niInterpolatorMultToColor(QModelIndex iInterpolatorMult, Vector3 colorVector);
 
     void niMaterialEmittanceFinalize(const QModelIndex iBlock);
@@ -668,18 +710,59 @@ private:
     QModelIndex interpolatorDataInsertKey(QModelIndex iKeys, QModelIndex iNumKeys, int row, RowToCopy rowToCopy);
 
     void niControlledBlocksFinalize();
+
+    /*******************************************************************************************************************
+     * Initialization
+     ******************************************************************************************************************/
+
+    void loadMatMap();
+    void loadLayerMap();
+
+    /*******************************************************************************************************************
+     * Copy Block functions from blocks.cpp
+     ******************************************************************************************************************/
+
+    //! The string names which can appear in the block root
+    QStringList rootStringList =
+    {
+        "Name",
+        "Modifier Name",   // NiPSysModifierCtlr
+        "File Name",       // NiSourceTexture
+        "String Data",     // NiStringExtraData
+        "Extra Data Name", // NiExtraDataController
+        "Accum Root Name", // NiSequence
+        "Look At Name",    // NiLookAtInterpolator
+        "Driven Name",     // NiLookAtEvaluator
+        "Emitter Name",    // NiPSEmitterCtlr
+        "Force Name",      // NiPSForceCtlr
+        "Mesh Name",       // NiPhysXMeshDesc
+        "Shape Name",      // NiPhysXShapeDesc
+        "Actor Name",      // NiPhysXActorDesc
+        "Joint Name",      // NiPhysXJointDesc
+        "Wet Material",    // BSLightingShaderProperty FO4+
+        "Behaviour Graph File", // BSBehaviorGraphExtraData
+    };
+
+    const char * MIME_SEP = "˂"; // This is Unicode U+02C2
+    const char * STR_BL = "nifskope˂niblock˂%1˂%2";
+
+    //! Set strings array
+    void setStringsArray(
+            const QModelIndex & parentDst,
+            const QModelIndex & parentSrc,
+            const QString & arr,
+            const QString & name = {});
+
+    //! Set "Name" et al. for NiObjectNET, NiExtraData, NiPSysModifier, etc.
+    void setNiObjectRootStrings( const QModelIndex & iBlockDst, const QModelIndex & iBlockSrc);
+
+    //! Set strings for NiMesh
+    void setStringsNiMesh( const QModelIndex & iBlockDst, const QModelIndex & iBlockSrc );
+
+    void  setStringsNiSequence( const QModelIndex & iBlockDst, const QModelIndex & iBlockSrc );
+
+    QPair<QString, QString> acceptFormat( const QString & format, const NifModel * nif );
 };
-
-//! Convert to Fallout 4
-//class spToFO42 final : public Spell
-//{
-//public:
-//    QString name() const override final { return Spell::tr( "Convert to Fallout 4" ); }
-//    QString page() const override final { return Spell::tr( "Batch" ); }
-
-//    bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final;
-//    QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final;
-//};
 
 void convertNif(QString fname);
 

@@ -57,11 +57,6 @@
 
 static QMutex mu;
 
-//bool isHighLevelLOD(const QString & fname) {
-//    QString fileName = QFileInfo(fname).fileName();
-//    QStringList fileNameParts = fileName.split('.');
-//}
-
 bool checkLODFields(const QString & sLevel, const QString & sXCoord, const QString & sYCoord) {
     bool ok = false;
 
