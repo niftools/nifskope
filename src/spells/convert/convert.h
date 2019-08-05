@@ -7,6 +7,20 @@
 
 //! \file convert.h spToFO42
 
+#define RUN_CONCURRENT true
+
+/**
+ * @brief The FileType enum describes a nif's in engine type.
+ */
+enum FileType
+{
+    Invalid,
+    Standard,
+    LODLandscape,
+    LODObject,
+    LODObjectHigh,
+};
+
 template <typename T>
 class ListWrapper
 {
@@ -15,7 +29,7 @@ public:
     void append(T s);
 private:
     QList<T> & list;
-    QMutex mu;
+    QMutex listMu;
 };
 
 //! Convert to Fallout 4
@@ -30,6 +44,5 @@ private:
 //};
 
 void convertNif(QString fname);
-
 
 #endif // SPELL_CONVERT_H

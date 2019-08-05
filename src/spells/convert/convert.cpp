@@ -13,12 +13,23 @@
  *
  * TODO:
  * Set Effect Lighting on always except for shadernolightingproperties
+ *
+ * TODO:
+ * Mutex when loading file
+ *
+ * TODO:
+ * Mutex when saving file?
+ *
+ * TODO:
+ * Create array of thread ids and make the index the bar index
  */
 
 #include "convert.h"
-#include "stripify.h"
-#include "blocks.h"
+#include "../stripify.h"
+#include "../blocks.h"
 #include "half.h"
+#include "copier.h"
+#include "progress.h"
 
 #include <QApplication>
 #include <QBuffer>
@@ -37,698 +48,27 @@
 
 #include <time.h>
 
-/**
- * Determines whether the Copier class will search for all values under the source model index. Set to true to search
- * for values.
- */
-#define FIND_UNUSED false
-
-#define RUN_CONCURRENT true
-
-/**
- * @brief The ValueState enum describes whether values have been processed, ignored or not been used.
- */
-enum ValueState
-{
-    Unused,
-    Processed,
-    Ignored,
-};
-
-/**
- * @brief The FileType enum describes a nif's in engine type.
- */
-enum FileType
-{
-    Invalid,
-    Standard,
-    LODLandscape,
-    LODObject,
-    LODObjectHigh,
-};
-
-/**
- * @brief The Progress class is used to determine the progress of nif conversion.
- * Progress is determined by the number of source blocks which have been processed.
- */
-class Progress
-{
-    uint numBlocksSrc;
-    uint numBlocksProcessed;
-    uint maxBlocks = 100;
-public:
-    /**
-     * @brief Progress constructor.
-     * @param numBlocksSrc The number of blocks in the source nif
-     */
-    Progress(uint numBlocksSrc) : numBlocksSrc(numBlocksSrc) {
-        numBlocksProcessed = 0;
-    }
-
-    /**
-     * @brief operator ++ increases progress and prints progress on certain conditions.
-     */
-    void operator++(int) {
-        numBlocksProcessed++;
-
-        if (numBlocksProcessed % maxBlocks == 0) {
-            printf("%d\tof %d\tblocks processed\n", numBlocksProcessed, numBlocksSrc);
-        }
-    }
-};
-
-/**
- * @brief The Copier class is used to copy values from one model index to another.
- */
-class Copier
-{
-    QModelIndex iDst;
-    QModelIndex iSrc;
-    NifModel * nifDst;
-    NifModel * nifSrc;
-    std::map<QModelIndex, ValueState> usedValues;
-public:
-    /**
-     * @brief Set up the Copier to copy from the source model index to destination model index.
-     * @param iDst   Destination model index belonging to the destination nif
-     * @param iSrc   Source model index belonging to the source nif
-     * @param nifDst Destination nif
-     * @param nifSrc Source nif
-     */
-    Copier(QModelIndex iDst, QModelIndex iSrc, NifModel * nifDst, NifModel * nifSrc)
-          : iDst(iDst),
-            iSrc(iSrc),
-            nifDst(nifDst),
-            nifSrc(nifSrc) {
-        if (!iDst.isValid() && iDst != QModelIndex()) {
-            qDebug() << __FILE__ << __LINE__ << "Invalid Destination. Source:" << nifSrc->getBlockName(iSrc);
-        }
-
-        if (!iSrc.isValid() && iSrc != QModelIndex()) {
-            qDebug() << __FILE__ << __LINE__ << "Invalid Source. Destination:" << nifDst->getBlockName(iDst);
-        }
-
-        usedValues = std::map<QModelIndex, ValueState>();
-
-        if (FIND_UNUSED) {
-            makeValueList(iSrc, usedValues);
-        }
-    }
-
-    /**
-     * Print the list of unused values on destruction.
-     */
-    ~Copier() {
-        printUnused();
-    }
-
-    /**
-     * @brief Recursively find all children of the given model index and mark them as unused.
-     * @param iSrc       Source model index
-     * @param usedValues Map of values to their use state
-     */
-    void makeValueList(const QModelIndex iSrc, std::map<QModelIndex, ValueState> & usedValues) {
-        if (!FIND_UNUSED) {
-            return;
-        }
-
-        /** Loop over the children of the source model index to find values. */
-        for (int r = 0; r < nifSrc->rowCount(iSrc); r++) {
-            QModelIndex iLink = iSrc.child(r, 0);
-
-            /**
-             * TODO: Change this to more efficient method.
-             * Check wether the value can be obtained by name.
-             */
-            if (
-                    !nifSrc->getIndex(iSrc, nifSrc->getBlockName(iLink)).isValid() ||
-                    iLink != nifSrc->getIndex(iSrc, nifSrc->getBlockName(iLink))) {
-                continue;
-            }
-
-            /**
-             * If the value is an array, find values in its children. Else, add it to the map.
-             */
-            if (nifSrc->rowCount(iLink) > 0) {
-                makeValueList(iLink, usedValues);
-            } else {
-                NifValue v = nifSrc->getValue(iLink);
-                if (v.isValid()) {
-                    usedValues[iLink] = ValueState::Unused;
-                }
-            }
-        }
-    }
-
-    /**
-     * @brief printUnused prints all unused values from the source model index.
-     */
-    void printUnused() {
-        for (std::map<QModelIndex, ValueState>::iterator it= usedValues.begin(); it!=usedValues.end(); ++it) {
-            if (it->second == ValueState::Unused) {
-                qDebug() << "Unused:" << nifSrc->getBlockName(it->first) << "from" << nifSrc->getBlockName(iSrc);
-            }
-        }
-    }
-
-    /**
-     * @brief setStatus sets the use status of a value.
-     * @param iSource Source model index
-     * @param status  Use status
-     * @return True if the status has been successfully set.
-     */
-    bool setStatus(QModelIndex iSource, ValueState status) {
-        if (!FIND_UNUSED) {
-            return true;
-        }
-
-        if (!iSource.isValid()) {
-            qDebug() << __FUNCTION__ << "Invalid in" << nifSrc->getBlockName(iSrc);
-
-            return false;
-        }
-
-        /** If the source value is an array, get its first child instead. */
-        if (nifSrc->isArray(iSource)) {
-            if (nifSrc->rowCount(iSource) > 0) {
-                iSource = iSource.child(0, 0);
-            } else {
-                return true;
-            }
-        }
-
-        /** Set the status. */
-        if (usedValues.count(iSource) != 0) {
-            usedValues[iSource] = status;
-        } else {
-            qDebug() << "Key" << nifSrc->getBlockName(iSource) << "not found in" << nifSrc->getBlockName(iSrc);
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * @brief setStatus calls setStatus to set the status of a value by name.
-     * @param iSource Parent source model index
-     * @param status  Use status
-     * @param name    Name of child
-     * @return True if the status has been successfully set.
-     */
-    bool setStatus(const QModelIndex iSource, ValueState status, const QString & name) {
-        if (!setStatus(nifSrc->getIndex(iSource, name), status)) {
-            qDebug() << __FUNCTION__ << name << "Invalid";
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * @brief ignore sets a value's status to 'Ignored'.
-     * @param iSource Source model index
-     * @return True if the status has been successfully set.
-     */
-    bool ignore(const QModelIndex iSource) {
-        return setStatus(iSource, ValueState::Ignored);
-    }
-
-    /**
-     * @brief ignore sets a value's status to 'Ignored'.
-     * @param iSource Source model index
-     * @param name    Name of child
-     * @return True if the status has been successfully set.
-     */
-    bool ignore(QModelIndex iSource, const QString & name) {
-        return setStatus(iSource, ValueState::Ignored, name);
-    }
-
-    /**
-     * @brief ignore sets a value's status to 'Ignored'.
-     * @param  name Name of child
-     * @return True if the status has been successfully set.
-     */
-    bool ignore(const QString & name) {
-        return setStatus(iSrc, ValueState::Ignored, name);
-    }
-
-    /**
-     * @brief processed sets a value's status to 'Processed'.
-     * @param iSource Source model index
-     * @return True if the status has been successfully set.
-     */
-    bool processed(const QModelIndex iSource) {
-        return setStatus(iSource, ValueState::Processed);
-    }
-
-    /**
-     * @brief processed sets a value's status to 'Processed'.
-     * @param iSource Source model index
-     * @param name    Name of child
-     * @return True if the status has been successfully set.
-     */
-    bool processed(QModelIndex iSource, const QString & name) {
-        return setStatus(iSource, ValueState::Processed, name);
-    }
-
-    /**
-     * @brief processed sets a value's status to 'Processed'.
-     * @param name    Name of child
-     * @return True if the status has been successfully set.
-     */
-    bool processed(const QString & name) {
-        return setStatus(iSrc, ValueState::Processed, name);
-    }
-
-    template<typename T>
-    /**
-     * @brief getVal gets the value at the given model index as type T.
-     * @param nif     Nif of the given model index
-     * @param iSource Value's model index
-     * @return Value as T
-     */
-    T getVal(NifModel * nif, const QModelIndex iSource) {
-        if (!iSource.isValid()) {
-            qDebug() << "Invalid QModelIndex";
-        }
-
-        NifValue val = nif->getValue(iSource);
-
-        if (!val.isValid()) {
-            qDebug() << "Invalid value";
-        }
-
-        if (!val.ask<T>()) {
-            qDebug() << "Invalid type";
-        }
-
-        if (FIND_UNUSED) {
-            if (nif == nifSrc) {
-                usedValues[iSource] = ValueState::Processed;
-            }
-        }
-
-        return val.get<T>();
-    }
-
-    template<typename T>
-    /**
-     * @brief Overload to get the value by name.
-     * @param nif     Nif of the given model index
-     * @param iSource Value's parent model index
-     * @param name    Name of value
-     * @return Value as T
-     */
-    T getVal(NifModel * nif, const QModelIndex iSource, const QString & name) {
-        return getVal<T>(nif, nif->getIndex(iSource, name));
-    }
-
-    template<typename T>
-    /**
-     * @brief getSrc calls getVal to get a value from the class source nif only.
-     * @param iSource Value's model index
-     * @return Value as T
-     */
-    T getSrc(const QModelIndex iSource) {
-        return getVal<T>(nifSrc, iSource);
-    }
-
-    template<typename T>
-    /**
-     * @brief getDst calls getVal to get a value from the class destination nif only.
-     * @param iSource Value's model index
-     * @return Value as T
-     */
-    T getDst(const QModelIndex iSource) {
-        return getVal<T>(nifDst, iSource);
-    }
-
-    template<typename T>
-    /**
-     * @brief Overload to get the value by name with the class source model index as the parent.
-     * @param name Name of value
-     * @return Value as T
-     */
-    T getSrc(const QString & name) {
-        return getVal<T>(nifSrc, iSrc, name);
-    }
-
-    template<typename T>
-    /**
-     * @brief Overload to get the value by name with the class destination model index as the parent.
-     * @param name Name of value
-     * @return Value as T
-     */
-    T getDst(const QString & name) {
-        return getVal<T>(nifDst, iDst, name);
-    }
-
-    template<typename T>
-    /**
-     * @brief Overload to get the value by name.
-     * @param iSource Source model index
-     * @param name    Name of value
-     * @return Value as T
-     */
-    T getSrc(const QModelIndex iSource, const QString & name) {
-        return getVal<T>(nifSrc, iSource, name);
-    }
-
-    template<typename T>
-    /**
-     * @brief Overload to get the value by name.
-     * @param iSource Source model index
-     * @param name    Name of value
-     * @return Value as T
-     */
-    T getDst(const QModelIndex iSource, const QString & name) {
-        return getVal<T>(nifDst, iSource, name);
-    }
-
-    /**
-     * @brief copyValue copies the value at the source model index to the destination model index.
-     * @param iTarget Target model index
-     * @param iSource Source model index
-     * @return True if successful
-     */
-    bool copyValue(const QModelIndex iTarget, const QModelIndex iSource) {
-        NifValue val = nifSrc->getValue(iSource);
-
-        if (!val.isValid()) {
-            qDebug() << "Invalid Value";
-
-            return false;
-        }
-
-        /** Make sure strings are copied as strings. */
-        if (
-                val.type() == NifValue::tStringIndex ||
-                val.type() == NifValue::tSizedString ||
-                val.type() == NifValue::tText ||
-                val.type() == NifValue::tShortString ||
-                val.type() == NifValue::tHeaderString ||
-                val.type() == NifValue::tLineString ||
-                val.type() == NifValue::tChar8String) {
-            return copyValue<QString>(iTarget, iSource);
-        /** Copy flags as their raw data. */
-        } else if (val.type() == NifValue::tFlags) {
-            return copyValue<uint>(iTarget, iSource);
-        /** Copy normally */
-        } else if (!nifDst->setValue(iTarget, val)) {
-            qDebug() << "Failed to set value on" << nifDst->getBlockName(iTarget);
-
-            return false;
-        }
-
-        if (FIND_UNUSED) {
-            usedValues[iSource] = ValueState::Processed;
-        }
-
-        return true;
-    }
-
-    /**
-     * @brief Overload to copy values by name.
-     * @param iTarget Target parent model index
-     * @param iSource Source parent model index
-     * @param nameDst Name of value in target
-     * @param nameSrc Name of value in source
-     * @return True if successful
-     */
-    bool copyValue(
-            const QModelIndex iTarget,
-            const QModelIndex iSource,
-            const QString & nameDst,
-            const QString & nameSrc) {
-        QModelIndex iDstNew = nifDst->getIndex(iTarget, nameDst);
-        QModelIndex iSrcNew = nifSrc->getIndex(iSource, nameSrc);
-
-        if (!iDstNew.isValid()) {
-            qDebug() << "Dst: Invalid value name" << nameDst << "in block type" << nifDst->getBlockName(iDst);
-
-            return false;
-        }
-
-        if (!iSrcNew.isValid()) {
-            qDebug() << "Src: Invalid value name" << nameSrc << "in block type" << nifSrc->getBlockName(iSrc);
-
-            return false;
-        }
-
-        return copyValue(iDstNew, iSrcNew);
-    }
-
-    /**
-     * @brief Overload to copy values by name.
-     * @param iTarget Target parent model index
-     * @param iSource Source parent model index
-     * @param name    Name of value in target and source
-     * @return True if successful
-     */
-    bool copyValue(const QModelIndex iTarget, const QModelIndex iSource, const QString & name) {
-        return copyValue(iTarget, iSource, name, name);
-    }
-
-    /**
-     * @brief Overload to copy values by name in the class destination and source model indices.
-     * @param nameDst Name of value in class target
-     * @param nameSrc Name of value in class source
-     * @return True if successful
-     */
-    bool copyValue(const QString & nameDst, const QString & nameSrc) {
-        return copyValue(iDst, iSrc, nameDst, nameSrc);
-    }
-
-    /**
-     * @brief Overload to copy values by name in the class destination and source model indices.
-     * @param name Name of value in class target and source
-     * @return True if successful
-     */
-    bool copyValue(const QString & name) {
-        return copyValue(name, name);
-    }
-
-    template<typename TDst, typename TSrc>
-    /**
-     * @brief Overload to copy values as type TSrc to type TDst.
-     * @param iTarget Target model index
-     * @param iSource Source model index
-     * @return True if successful
-     */
-    bool copyValue(const QModelIndex iTarget, const QModelIndex iSource) {
-        if (!nifDst->set<TDst>(iTarget, nifSrc->get<TSrc>(iSource))) {
-            qDebug() << "Failed to set value on" << nifDst->getBlockName(iTarget);
-
-            return false;
-        }
-
-        if (FIND_UNUSED) {
-            usedValues[iSource] = ValueState::Processed;
-        }
-
-        return true;
-    }
-
-    template<typename T>
-    /**
-     * @brief Overload to copy values as type T.
-     * @param iTarget Target model index
-     * @param iSource Source model index
-     * @return True if successful
-     */
-    bool copyValue(const QModelIndex iTarget, const QModelIndex iSource) {
-        return copyValue<T, T>(iTarget, iSource);
-    }
-
-    template<typename TDst, typename TSrc>
-    /**
-     * @brief Overload to copy from class source model index to class destination model index.
-     * @return True if successful
-     */
-    bool copyValue() {
-        return copyValue<TDst, TSrc>(iDst, iSrc);
-    }
-
-    template<typename TDst, typename TSrc>
-    /**
-     * @brief Overload to copy values by name in the class destination and source model indices.
-     * @param nameDst Name of value in class target
-     * @param nameSrc Name of value in class source
-     * @return True if successful
-     */
-    bool copyValue(const QString & nameDst, const QString & nameSrc) {
-        QModelIndex iDstNew = nifDst->getIndex(iDst, nameDst);
-        QModelIndex iSrcNew = nifSrc->getIndex(iSrc, nameSrc);
-
-        if (!iDstNew.isValid()) {
-            qDebug() << "Dst: Invalid value name" << nameDst << "in block type" << nifDst->getBlockName(iDst);
-        }
-
-        if (!iSrcNew.isValid()) {
-            qDebug() << "Src: Invalid value name" << nameSrc << "in block type" << nifSrc->getBlockName(iSrc);
-        }
-
-        return copyValue<TDst, TSrc>(iDstNew, iSrcNew);
-    }
-
-    template<typename TDst, typename TSrc>
-    /**
-     * @brief Overload to copy values by name in the class destination and source model indices.
-     * @param name Name of value in class target and source
-     * @return True if successful
-     */
-    bool copyValue(const QString & name) {
-        return copyValue<TDst, TSrc>(name, name);
-    }
-
-    template<typename T>
-    /**
-     * @brief Overload to copy from class source model index to class destination model index.
-     * @return True if successful
-     */
-    bool copyValue() {
-        return copyValue<T, T>();
-    }
-
-    template<typename T>
-    /**
-     * @brief Overload to copy values by name in the class destination and source model indices.
-     * @param nameDst Name of value in class target
-     * @param nameSrc Name of value in class source
-     * @return True if successful
-     */
-    bool copyValue(const QString & nameDst, const QString & nameSrc) {
-        return copyValue<T, T>(nameDst, nameSrc);
-    }
-
-    template<typename T>
-    /**
-     * @brief Overload to copy values by name in the class destination and source model indices.
-     * @param name Name of value in class target and source
-     * @return True if successful
-     */
-    bool copyValue(const QString & name) {
-        return copyValue<T, T>(name, name);
-    }
-
-    // Traverse all child nodes
-    /**
-     * @brief tree copies the value and all child values from the given source model index to the given destination
-     *        model index.
-     * @param iDst Destination model index
-     * @param iSrc Source model index
-     * @return True if successful
-     */
-    bool tree(const QModelIndex iDst, const QModelIndex iSrc) {
-        /** Copy the value as an array. */
-        if (nifSrc->isArray(iSrc)) {
-            array(iDst, iSrc);
-        /** Recursively copy values. */
-        } else if (nifSrc->rowCount(iSrc) > 0) {
-            for (int i = 0; i < nifSrc->rowCount(iSrc); i++) {
-                tree(iDst.child(i, 0), iSrc.child(i, 0));
-            }
-        /** Copy the value normally */
-        } else if (!copyValue(iDst, iSrc)) {
-            arrayError("Failed to copy value.");
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * @brief Overload to call tree with the class destination model index and the class source model index.
-     * @return True if successful
-     */
-    bool tree() {
-        return tree(iDst, iSrc);
-    }
-
-    /**
-     * @brief array copies value arrays.
-     * @param iDst Destination model index
-     * @param iSrc Source model index
-     * @return True if successful
-     */
-    bool array(const QModelIndex iDst, const QModelIndex iSrc) {
-        int rows = nifSrc->rowCount(iSrc);
-
-        /** Make sure the target array is initialized. */
-        nifDst->updateArray(iDst);
-
-        if (rows != nifDst->rowCount(iDst)) {
-            arrayError("Mismatched arrays.");
-
-            return false;
-        }
-
-        /** Copy the values */
-        for (int i = 0; i < rows; i++) {
-            tree(iDst.child(i, 0), iSrc.child(i, 0));
-        }
-
-        return true;
-    }
-
-    /**
-     * @brief Overload to copy arrays by name.
-     * @param nameDst Name of array in destination model index
-     * @param nameSrc Name of array in source model index
-     * @return True if successful
-     */
-    bool array(const QString & nameDst, const QString & nameSrc) {
-        return array(nifDst->getIndex(iDst, nameDst), nifSrc->getIndex(iSrc, nameSrc));
-    }
-
-    /**
-     * @brief Overload to copy arrays by name.
-     * @param name Name of array in destination and source model indices
-     * @return True if successful
-     */
-    bool array(const QString & name) {
-        return array(name, name);
-    }
-
-    /** iDst setter */
-    void setIDst(const QModelIndex &value);
-
-    /** iSrc setter */
-    void setISrc(const QModelIndex &value);
-private:
-    /**
-     * @brief arrayError makes an error message for failed array copying.
-     * @param msg Message
-     */
-    void arrayError(const QString msg = "") {
-        qDebug() << "Array Copy error:"
-                 << msg << "Source:"
-                 << nifSrc->getBlockName(iSrc)
-                 << "Destination:"
-                 << nifDst->getBlockName(iDst);
-    }
-};
+// UI
+#include "ui/conversiondialog.h"
+#include <QProgressDialog>
+#include <QProgressBar>
+#include <QVBoxLayout>
+#include <QLabel>
+
+static QMutex mu;
 
 class FileProperties
 {
-private:
-    FileType fileType;
-    QString fnameDst;
-    int lodLevel = 0;
-    int lodXCoord = 0;
-    int lodYCoord = 0;
 public:
-    FileProperties(FileType fileType, QString fnameDst, int lodLevel, int lodXCoord, int lodYCoord)
+    FileProperties(FileType fileType, QString fnameDst, QString fnameSrc, int lodLevel, int lodXCoord, int lodYCoord)
         : fileType(fileType),
           fnameDst(fnameDst),
+          fnameSrc(fnameSrc),
           lodLevel(lodLevel),
           lodXCoord(lodXCoord),
           lodYCoord(lodYCoord) {}
 
-    FileProperties(FileType fileType, QString fnameDst) : fileType(fileType), fnameDst(fnameDst) {}
+    FileProperties(FileType fileType, QString fnameDst, QString fnameSrc) : fileType(fileType), fnameDst(fnameDst), fnameSrc(fnameSrc) {}
 
     FileProperties() : fileType(FileType::Invalid) {}
 
@@ -736,6 +76,15 @@ public:
     int getLodLevel() const;
     int getLodXCoord() const;
     int getLodYCoord() const;
+    QString getFnameSrc() const;
+
+private:
+    FileType fileType;
+    QString fnameDst;
+    QString fnameSrc;
+    int lodLevel = 0;
+    int lodXCoord = 0;
+    int lodYCoord = 0;
 };
 
 class EnumMap : public QMap<QString, QString>
@@ -833,7 +182,8 @@ class Converter
 
     NifModel * nifSrc;
     NifModel * nifDst;
-    bool * handledBlocks;
+
+    QVector<bool> handledBlocks;
 
     std::map<int, int> indexMap = std::map<int, int>();
     QVector<std::tuple<int, QModelIndex>> linkList = QVector<std::tuple<int, QModelIndex>>();
@@ -842,6 +192,8 @@ class Converter
     EnumMap layerMap = EnumMap("Fallout3Layer", "Fallout4Layer", nifSrc);
 
     QList<QModelIndex> niControllerSequenceList;
+    QList<Controller> controllerList;
+    QList<QModelIndex> controlledBlockList;
 
     bool conversionResult = true;
     bool bLODLandscape = false;
@@ -850,15 +202,13 @@ class Converter
     Progress progress;
     FileProperties fileProps;
 
-    QList<Controller> controllerList;
-    QList<QModelIndex> controlledBlockList;
 public:
-    Converter(NifModel * nifSrc, NifModel * nifDst, FileProperties fileProps)
+    Converter(NifModel * nifSrc, NifModel * nifDst, FileProperties fileProps, ProgressReceiver & receiver)
             : nifSrc(nifSrc),
               nifDst(nifDst),
-              progress(Progress(uint(nifSrc->getBlockCount()))),
+              progress(Progress(uint(nifSrc->getBlockCount()), receiver, fileProps.getFnameSrc())),
               fileProps(fileProps) {
-        handledBlocks = new bool[uint(nifSrc->getBlockCount())];
+        handledBlocks = QVector<bool>(nifSrc->getBlockCount(), true);
 
         loadMatMap();
         loadLayerMap();
@@ -1531,6 +881,9 @@ private:
     }
 
     QModelIndex niControllerSequence(QModelIndex iSrc) {
+        // Ignore the progress because the block is finalized later.
+        progress.ignoreNextIncrease();
+
         QModelIndex iDst = copyBlock(QModelIndex(), iSrc);
 
         niControllerSequenceList.append(iDst);
@@ -1734,6 +1087,8 @@ private:
                     }
                 }
             }
+
+            progress++;
         }
     }
 
@@ -1784,10 +1139,10 @@ private:
     }
 
     QModelIndex niController(QModelIndex iDst, QModelIndex iSrc, const QString & name = "Controller", const QString & blockName = "", const int target = -1) {
-        if (nifSrc->getLink(iSrc, name) != -1) {
-            if (!controlledBlockList.contains(iDst)) {
-                controlledBlockList.append(iDst);
-            }
+        if (nifSrc->getLink(iSrc, name) != -1 && !controlledBlockList.contains(iDst)) {
+            controlledBlockList.append(iDst);
+        } else {
+            progress++;
         }
 
         return niControllerCopy(iDst, iSrc, name, blockName, target);
@@ -3290,6 +2645,8 @@ private:
     }
 
     void niTexturingProperty(QModelIndex iDst, QModelIndex iSrc, const QString & sequenceBlockName) {
+        // This block might be a controlled block in which case it will be finalized later.
+        progress.ignoreNextIncrease();
         setHandled(iDst, iSrc);
 
         Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
@@ -3359,6 +2716,9 @@ private:
 
         c.ignore("Name");
         c.ignore("Num Extra Data List");
+
+        // This block might be a controlled block in which case it will be finalized later.
+        progress.ignoreNextIncrease();
         niController(iDst, iSrc, c, "Controller", sequenceBlockName);
 
         if (
@@ -3403,6 +2763,8 @@ private:
     QModelIndex niParticleSystem(QModelIndex iSrc) {
         QModelIndex iDst = nifDst->insertNiBlock("NiParticleSystem");
 
+        // This block might be a controlled block in which case it will be finalized later.
+        progress.ignoreNextIncrease();
         setHandled(iDst, iSrc);
 
         Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
@@ -3605,7 +2967,8 @@ private:
             c.ignore(getIndexSrc(iNode, "Children").child(0, 0));
         }
 
-
+        // This block might be a controlled block in which case it will be finalized later.
+        progress.ignoreNextIncrease();
         setHandled(fadeNode, iNode);
 
         c.copyValue("Name");
@@ -3755,7 +3118,11 @@ private:
 
         c.copyValue("Name");
         extraDataList(iDst, iSrc, c);
+
+        // This block might be a controlled block in which case it will be finalized later.
+        progress.ignoreNextIncrease();
         niController(iDst, iSrc, c, "Controller", nifSrc->get<QString>(iSrc, "Name"));
+
         c.copyValue("Flags");
         c.copyValue("Translation");
         c.copyValue("Rotation");
@@ -3818,7 +3185,11 @@ private:
 
         c.copyValue("Name");
         extraDataList(iDst, iSrc, c);
+
+        // This block might be a controlled block in which case it will be finalized later.
+        progress.ignoreNextIncrease();
         niController(iDst, iSrc, c, "Controller", nifSrc->get<QString>(iSrc, "Name"));
+
         c.copyValue("Flags");
         c.copyValue("Translation");
         c.copyValue("Rotation");
@@ -3889,7 +3260,11 @@ private:
 
         c.copyValue<QString>("Name");
         extraDataList(iDst, iSrc, c);
+
+        // This block might be a controlled block in which case it will be finalized later.
+        progress.ignoreNextIncrease();
         niController(iDst, iSrc, c, "Controller", nifSrc->get<QString>(iSrc, "Name"));
+
         c.copyValue("Flags");
         c.copyValue("Translation");
         c.copyValue("Rotation");
@@ -3946,6 +3321,8 @@ private:
 
         extraDataList(iDst, iSrc, c);
 
+        // This block might be a controlled block in which case it will be finalized later.
+        progress.ignoreNextIncrease();
         niController(iDst, iSrc, c, "Controller", nifSrc->get<QString>(iSrc, "Name"));
 
         c.copyValue("Flags");
@@ -3984,6 +3361,8 @@ private:
 
         extraDataList(iDst, iSrc, c);
 
+        // This block might be a controlled block in which case it will be finalized later.
+        progress.ignoreNextIncrease();
         niController(iDst, iSrc, c, "Controller", nifSrc->get<QString>(iSrc, "Name"));
 
         c.copyValue("Flags");
@@ -4156,7 +3535,9 @@ private:
 
                     if (weightCounts[vertexIndex] >= 4) {
                         // TODO: conversionResult = false;
-                        qDebug() << "Too many boneweights for one vertex. Blocknr.:" << nifSrc->getBlockNumber(iSrc);
+                        if (!RUN_CONCURRENT) {
+                            qDebug() << "Too many boneweights for one vertex. Blocknr.:" << nifSrc->getBlockNumber(iSrc);
+                        }
 
                         continue;
                     }
@@ -4293,6 +3674,8 @@ private:
 
         extraDataList(iDst, iSrc, c);
 
+        // This block might be a controlled block in which case it will be finalized later.
+        progress.ignoreNextIncrease();
         niController(iDst, iSrc, c, "Controller", nifSrc->get<QString>(iSrc, "Name"));
 
         c.copyValue("Flags");
@@ -4638,7 +4021,11 @@ private:
 
         c.ignore("Name");
         c.ignore("Num Extra Data List");
+
+        // This block might be a controlled block in which case it will be finalized later.
+        progress.ignoreNextIncrease();
         niController(iDst, iSrc, c, "Controller", sequenceBlockName);
+
         c.ignore("Flags");
         c.ignore("Shader Type");
         c.ignore("Shader Flags");
@@ -4938,7 +4325,11 @@ private:
 
         c.ignore("Name");
         extraDataList(iDst, iSrc, c);
+
+        // This block might be a controlled block in which case it will be finalized later.
+        progress.ignoreNextIncrease();
         niController(iDst, iSrc, c, "Controller", sequenceBlockName);
+
         c.ignore("Flags");
         c.ignore("Shader Type");
 
@@ -5071,6 +4462,9 @@ private:
 
     QModelIndex niTriStrips( QModelIndex iSrc) {
         const QModelIndex iDst = nifDst->insertNiBlock( "BSTriShape" );
+
+        // This block might be a controlled block in which case it will be finalized later.
+        progress.ignoreNextIncrease();
         setHandled(iDst, iSrc);
 
         Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
@@ -5515,7 +4909,7 @@ private:
     void unhandledBlocks() {
         for ( int i = 0; i < nifSrc->getBlockCount(); i++ ) {
             if (handledBlocks[i]) {
-                printf("Unhandled block: %d:\t%s\n", i, nifSrc->getBlockName(nifSrc->getBlock( i )).toUtf8().constData());
+                qDebug() << "Unhandled block:" << i << "\t" << nifSrc->getBlockName(nifSrc->getBlock(i));
 
                 conversionResult = false;
             }
@@ -6550,6 +5944,7 @@ private:
     void niControlledBlocksFinalize() {
         for (QModelIndex iBlock : controlledBlockList) {
             niMaterialEmittanceFinalize(iBlock);
+            progress++;
         }
     }
 };
@@ -6638,7 +6033,7 @@ public:
     QString getWorldspace() const;
 };
 
-void combineHighLevelLODs(QList<HighLevelLOD> & list, QList<QString> & failedList, const QString & pathDst) {
+void combineHighLevelLODs(QList<HighLevelLOD> & list, QList<QString> & failedList, const QString & pathDst, ProgressReceiver & receiver) {
     int maxX = 0;
     int maxY = 0;
     int minX = 0;
@@ -6707,7 +6102,7 @@ void combineHighLevelLODs(QList<HighLevelLOD> & list, QList<QString> & failedLis
 
                         // Convert
 
-                        Converter c = Converter(&nif, &nifCombined, FileProperties(FileType::Standard, "", 0, 0, 0));
+                        Converter c = Converter(&nif, &nifCombined, FileProperties(FileType::Standard, "", lod.getFname(), 0, 0, 0), receiver);
 
                         c.convert();
 
@@ -6789,7 +6184,7 @@ FileProperties getFileType(const QString & fnameSrc, QString & fnameDst, ListWra
     }
 
     if (!isLOD) {
-        return FileProperties(FileType::Standard, fnameDst);
+        return FileProperties(FileType::Standard, fnameDst, fnameSrc);
     }
 
     int coordStartIndex = 2;
@@ -6823,7 +6218,7 @@ FileProperties getFileType(const QString & fnameSrc, QString & fnameDst, ListWra
     if (bHighLevel) {
         highLevelLodList.append(HighLevelLOD(fnameSrc, sWorldSpace, sXCoord.toInt(), sYCoord.toInt()));
 
-        return FileProperties(FileType::LODObjectHigh, "");
+        return FileProperties(FileType::LODObjectHigh, "", fnameSrc);
     } else {
         fnameDst +=
                 "Terrain\\" +
@@ -6840,16 +6235,55 @@ FileProperties getFileType(const QString & fnameSrc, QString & fnameDst, ListWra
     }
 
     if (isLODObject) {
-        return FileProperties(FileType::LODObject, fnameDst);
+        return FileProperties(FileType::LODObject, fnameDst, fnameSrc);
     }
 
-    return FileProperties(FileType::LODLandscape, fnameDst, sLevel.toInt(), sXCoord.toInt(), sYCoord.toInt());
+    return FileProperties(FileType::LODLandscape, fnameDst, fnameSrc, sLevel.toInt(), sXCoord.toInt(), sYCoord.toInt());
 }
 
-bool convert(const QString & fname, ListWrapper<HighLevelLOD> & highLevelLodList, const QString & root = "") {
+NifModel * makeNif() {
+    NifModel * newNif = new NifModel();
+
+    QModelIndex iHeader = newNif->getHeader();
+    QModelIndex iVersion = newNif->getIndex(iHeader, "Version");
+    NifValue version = newNif->getValue(newNif->getIndex(iHeader, "Version"));
+    version.setFileVersion(0x14020007);
+    newNif->setValue(iVersion, version);
+    newNif->set<int>(iHeader, "User Version", 12);
+    newNif->set<int>(iHeader, "User Version 2", 130);
+    newNif->updateHeader();
+
+    newNif->saveToFile("E:\\SteamLibrary\\steamapps\\common\\Fallout 4\\Data\\Meshes\\test\\template.nif");
+
+    return newNif;
+}
+
+void loadNif(NifModel & nif, const QString & fname) {
+    if (!nif.loadFromFile(fname)) {
+        qDebug() << "Failed to load nif" << fname;
+    }
+}
+
+bool saveNif(NifModel & nif, const QString & fname) {
+//    qDebug() << QThread::currentThreadId() << "Destination: " + fname;
+
+    QMutexLocker locker(&mu);
+
+    QDir().mkpath(QFileInfo(fname).path());
+
+    if (!nif.saveToFile(fname)) {
+        qDebug() << "Failed to save nif";
+
+        return false;
+    }
+
+    return true;
+}
+
+bool convert(const QString & fname, ListWrapper<HighLevelLOD> & highLevelLodList, ProgressReceiver & receiver, const QString & root = "") {
     clock_t tStart = clock();
 
-    qDebug() << "Processing: " + fname;
+    qDebug() << QThread::currentThreadId() <<  "Processing: " + fname;
 
     // Get File Type and destination path.
 
@@ -6879,19 +6313,15 @@ bool convert(const QString & fname, ListWrapper<HighLevelLOD> & highLevelLodList
 
     // Load
 
-    NifModel nif = NifModel();
-    if (!nif.loadFromFile(fname)) {
-        fprintf(stderr, "Failed to load nif\n");
-    }
+    NifModel nif;
+    loadNif(nif, fname);
 
-    NifModel newNif = NifModel();
-    if (!newNif.loadFromFile("D:\\Games\\Fallout New Vegas\\FNVFo4 Converted\\test\\template.nif")) {
-        fprintf(stderr, "Failed to load template\n");
-    }
+    NifModel newNif;
+    loadNif(newNif, "D:\\Games\\Fallout New Vegas\\FNVFo4 Converted\\test\\template.nif");
 
     // Convert
 
-    Converter c = Converter(&nif, &newNif, fileProps);
+    Converter c = Converter(&nif, &newNif, fileProps, receiver);
 
     c.convert();
 
@@ -6910,17 +6340,15 @@ bool convert(const QString & fname, ListWrapper<HighLevelLOD> & highLevelLodList
         return false;
     }
 
-    qDebug() << "Destination: " + fnameDst;
-
-    QDir().mkpath(QFileInfo(fnameDst).path());
-
-    if (!newNif.saveToFile(fnameDst)) {
-        fprintf(stderr, "Failed to save nif\n");
-
+    if (!saveNif(newNif, fnameDst)) {
         return false;
     }
 
-    printf("Time taken: %.2fs\n", double(clock() - tStart)/CLOCKS_PER_SEC);
+    // TODO: Emit done signal to clear progress bar here
+
+    if (!RUN_CONCURRENT) {
+        printf("Time taken: %.2fs\n", double(clock() - tStart)/CLOCKS_PER_SEC);
+    }
 
     return c.getConversionResult();
 }
@@ -7054,8 +6482,9 @@ void convert(
         const QString & fname,
         ListWrapper<HighLevelLOD> & highLevelLodList,
         ListWrapper<QString> & failedList,
+        ProgressReceiver & receiver,
         const QString & path = "") {
-    if (!convert(fname, highLevelLodList, path)) {
+    if (!convert(fname, highLevelLodList, receiver, path)) {
         failedList.append(fname);
     }
 }
@@ -7063,16 +6492,21 @@ void convert(
 template <typename T>
 void ListWrapper<T>::append(T s)
 {
-    QMutexLocker locker(&mu);
+    QMutexLocker locker(&this->listMu);
     list.append(s);
 }
 
 void convertNif(QString path) {
-//    testConverterController();
+////    testConverterController();
+
+//    ConversionDialog w;
+////    w.show();
+//    w.exec();
 
 //    return;
 
     clock_t tStart = clock();
+    bool bProcessHLLODs = true;
 
     QList<QString> failedList;
     QList<HighLevelLOD> highLevelLodList;
@@ -7080,25 +6514,49 @@ void convertNif(QString path) {
     ListWrapper<QString> listWrapperFailed = ListWrapper<QString>(failedList);
     ListWrapper<HighLevelLOD> listWrapperHLLODs = ListWrapper<HighLevelLOD>(highLevelLodList);
 
+    // Progress dialog
+    QFutureWatcher<void> futureWatcher;
+    ProgressGrid dialog(futureWatcher);
+    ProgressReceiver receiver = ProgressReceiver(&dialog);
+
     if (QFileInfo(path).isFile()) {
-        convert(path, listWrapperHLLODs, listWrapperFailed);
+        convert(path, listWrapperHLLODs, listWrapperFailed, receiver);
     } else if (QDir(path).exists()) {
         QDirIterator it(path, QStringList() << "*.nif", QDir::Files, QDirIterator::Subdirectories);
         QStringList fileList;
 
         if (RUN_CONCURRENT) {
+            // Prepare the file list.
             while (it.hasNext()) {
                 fileList.append(it.next());
             }
 
-            QtConcurrent::blockingMap(
-                        fileList,
-                        [&](QString & elem) {
-                            convert(elem, listWrapperHLLODs, listWrapperFailed, path);
-                        });
+            qRegisterMetaType<Qt::HANDLE>("Qt::HANDLE");
+
+            // Start the conversion.
+            futureWatcher.setFuture(QtConcurrent::map(
+                    fileList,
+                    [&](QString & elem) {
+                        convert(elem, listWrapperHLLODs, listWrapperFailed, receiver, path);
+
+                        if (futureWatcher.future().isCanceled()) {
+                            return;
+                        }
+                    }));
+
+            // Display the dialog and start the event loop.
+            dialog.exec();
+
+            futureWatcher.waitForFinished();
+
+            if (futureWatcher.future().isCanceled()) {
+                bProcessHLLODs = false;
+
+                qDebug() << "Canceled";
+            }
         } else {
             while (it.hasNext()) {
-                convert(it.next(), listWrapperHLLODs, listWrapperFailed, path);
+                convert(it.next(), listWrapperHLLODs, listWrapperFailed, receiver, path);
             }
         }
     } else {
@@ -7107,29 +6565,21 @@ void convertNif(QString path) {
         return;
     }
 
-    if (highLevelLodList.count() > 0) {
-        combineHighLevelLODs(highLevelLodList, failedList, "E:\\SteamLibrary\\steamapps\\common\\Fallout 4\\Data\\Meshes\\test\\");
-    }
+    if (bProcessHLLODs) {
+        if (highLevelLodList.count() > 0) {
+            combineHighLevelLODs(highLevelLodList, failedList, "E:\\SteamLibrary\\steamapps\\common\\Fallout 4\\Data\\Meshes\\test\\", receiver);
+        }
 
-    if (failedList.count() > 0) {
-        qDebug() << "Failed to convert:";
+        if (failedList.count() > 0) {
+            qDebug() << "Failed to convert:";
 
-        for (QString s : failedList) {
-            qDebug() << s;
+            for (QString s : failedList) {
+                qDebug() << s;
+            }
         }
     }
 
     printf("Total time elapsed: %.2fs\n", double(clock() - tStart)/CLOCKS_PER_SEC);
-}
-
-void Copier::setISrc(const QModelIndex &value)
-{
-iSrc = value;
-}
-
-void Copier::setIDst(const QModelIndex &value)
-{
-iDst = value;
 }
 
 bool Converter::getBLODLandscape() const
@@ -7180,6 +6630,11 @@ return lodXCoord;
 int FileProperties::getLodYCoord() const
 {
 return lodYCoord;
+}
+
+QString FileProperties::getFnameSrc() const
+{
+return fnameSrc;
 }
 
 FileType FileProperties::getFileType() const

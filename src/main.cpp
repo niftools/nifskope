@@ -35,7 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "data/nifvalue.h"
 #include "model/nifmodel.h"
 #include "model/kfmmodel.h"
-#include "spells/convert.h"
+#include "spells/convert/convert.h"
 
 #include <QApplication>
 #include <QCommandLineParser>

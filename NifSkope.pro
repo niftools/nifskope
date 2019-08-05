@@ -168,6 +168,9 @@ HEADERS += \
 	src/model/nifproxymodel.h \
 	src/model/undocommands.h \
 	src/spells/blocks.h \
+    src/spells/convert/convert.h \
+    src/spells/convert/copier.h \
+    src/spells/convert/progress.h \
 	src/spells/mesh.h \
 	src/spells/misc.h \
 	src/spells/sanitize.h \
@@ -176,7 +179,7 @@ HEADERS += \
 	src/spells/tangentspace.h \
 	src/spells/texture.h \
 	src/spells/transform.h \
-        src/spells/convert.h \
+    src/ui/conversiondialog.h \
 	src/ui/widgets/colorwheel.h \
 	src/ui/widgets/fileselect.h \
 	src/ui/widgets/floatedit.h \
@@ -240,6 +243,10 @@ SOURCES += \
 	src/spells/blocks.cpp \
 	src/spells/bounds.cpp \
 	src/spells/color.cpp \
+    src/spells/convert/convert.cpp \
+    src/spells/convert/copier.cpp \
+    src/spells/convert/lod.cpp \
+    src/spells/convert/progress.cpp \
 	src/spells/flags.cpp \
 	src/spells/fo3only.cpp \
 	src/spells/havok.cpp \
@@ -259,7 +266,7 @@ SOURCES += \
 	src/spells/tangentspace.cpp \
 	src/spells/texture.cpp \
 	src/spells/transform.cpp \
-        src/spells/convert.cpp \
+    src/ui/conversiondialog.cpp \
 	src/ui/widgets/colorwheel.cpp \
 	src/ui/widgets/fileselect.cpp \
 	src/ui/widgets/floatedit.cpp \
@@ -296,6 +303,7 @@ RESOURCES += \
 FORMS += \
 	src/ui/about_dialog.ui \
 	src/ui/checkablemessagebox.ui \
+	src/ui/conversiondialog.ui \
 	src/ui/nifskope.ui \
 	src/ui/settingsdialog.ui \
 	src/ui/settingsgeneral.ui \
