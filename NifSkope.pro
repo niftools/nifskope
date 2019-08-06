@@ -248,6 +248,7 @@ SOURCES += \
     src/spells/convert/emittance.cpp \
     src/spells/convert/lod.cpp \
     src/spells/convert/progress.cpp \
+    src/spells/convert/skin.cpp \
 	src/spells/flags.cpp \
 	src/spells/fo3only.cpp \
 	src/spells/havok.cpp \

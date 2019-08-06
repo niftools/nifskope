@@ -1,3 +1,14 @@
+/*
+ * TODO:
+ * Fix Camera movement affecting LOD lighting which is possibly due to second LOD textures
+ *
+ * TODO:
+ * Change LOD Water shader to non transparent.
+ *
+ * TODO:
+ * Check if UV Transform controllers transform in the right direction
+ */
+
 #ifndef SPELL_CONVERT_H
 #define SPELL_CONVERT_H
 
@@ -25,26 +36,26 @@ enum FileType
     LODObjectHigh,
 };
 
+/**
+ * @brief The HighLevelLOD class contains info on high level lod files.
+ */
 class HighLevelLOD
 {
-private:
-    const QString fname;
-    const QString worldspace;
-    const int x;
-    const int y;
 public:
+    /**
+     * @brief HighLevelLOD constructor.
+     * @param fname      Filename
+     * @param worldspace Worldspace
+     * @param x          X coordinate
+     * @param y          Y coordinate
+     */
     HighLevelLOD(QString fname, QString worldspace, int x, int y);
 
-//    QString getFileName(const QString & level, const QString & x, const QString & y) {
-//        return pathDst + level + "." + x + "." + y + ".BTO";
-//    }
-
     /**
-     * Return true if both objects belong to the same grid coordinates for the given level.
-     * @brief compare
-     * @param level
-     * @param other
-     * @return
+     * @brief compare determines whether two LODs are in the same grid cell.
+     * @param level LOD level
+     * @param other LOD to compare to
+     * @return True if both objects belong to the same grid coordinates for the given level
      */
     bool compare(int level, int otherX, int otherY);
 
@@ -52,64 +63,146 @@ public:
     int getY() const;
     QString getFname() const;
     QString getWorldspace() const;
+private:
+    const QString fname;
+    const QString worldspace;
+    const int x;
+    const int y;
 };
 
+/**
+ * @brief The Controller class contains info on NiController blocks and any clones.
+ */
 class Controller
 {
-private:
-    // Original Controller blocknumber in destination nif.
-    const int origin;
-    const QString name;
-
-    // TODO: These need to be included in any manager and sequences
-    // TODO: Change QList to Controller List
-    // TODO: Add an interpolator list which contains all interpolators which affect the block
-    QList<int> clones;
-    QList<QString> cloneBlockNames;
-
 public:
+    /**
+     * @brief Controller constructor.
+     * @param origin Original controller block number
+     * @param name   Name of the controlled block
+     */
     Controller(int origin, const QString & name);
 
+    /**
+     * @brief add Adds a clone of the original controller
+     * @param blockNumber New controller block number
+     * @param blockName   New controller controlled block name
+     */
     void add(int blockNumber, const QString & blockName);
 
     int getOrigin() const;
     QList<int> getClones() const;
     QList<QString> getCloneBlockNames() const;
+private:
+    const int origin;
+    const QString name;
+    QList<int> clones;
+    QList<QString> cloneBlockNames;
 };
 
+/**
+ * @brief The EnumMap class is used to convert enum options.
+ */
 class EnumMap : public QMap<QString, QString>
 {
+public:
+    /**
+     * @brief EnumMap constructor.
+     * @param enumTypeSrc Enum type to convert
+     * @param enumTypeDst Enum type to convert to
+     * @param nifSrc      Source nif
+     */
+    EnumMap(QString enumTypeSrc, QString enumTypeDst, NifModel * nifSrc);
+
+    /**
+     * @brief check checks whether the enum map is valid.
+     */
+    void check();
+
+    /**
+     * @brief convert converts the given enum option.
+     * @param option Enum option to convert
+     * @return The new enum option
+     */
+    uint convert(NifValue option);
+
+    /**
+     * @brief convert converts the enum option at the given model index.
+     * @param iSrc Source model index
+     * @return The new enum option
+     */
+    uint convert(QModelIndex iSrc);
+private:
     const QString enumTypeSrc;
     const QString enumTypeDst;
     const NifModel * nifSrc;
-public:
-    EnumMap(QString enumTypeSrc, QString enumTypeDst, NifModel * nifSrc);
-
-    void check();
-
-    uint convert(NifValue option);
-
-    uint convert(QModelIndex iSrc);
 };
 
 template <typename T>
+/**
+ * @brief The ListWrapper class is used to append to lists shared between threads.
+ */
 class ListWrapper
 {
 public:
+    /**
+     * @brief ListWrapper creates a wrapper for the given list.
+     * @param list List
+     */
     ListWrapper(QList<T> & list) : list(list) {}
-    void append(T s);
+
+    /**
+     * @brief append appends the given item to the list.
+     * @param item Item to append
+     */
+    void append(T item);
 private:
     QList<T> & list;
     QMutex listMu;
 };
 
+/**
+ * @brief The FileSaver class is used to save files thread-safely.
+ */
+class FileSaver
+{
+public:
+    /**
+     * @brief save saves the given nif at the given full path.
+     * @param nif   Nif
+     * @param fname Full Path
+     * @return True if successful
+     */
+    bool save(NifModel & nif, const QString & fname);
+private:
+    QMutex saveMu;
+};
+
+/**
+ * @brief The FileProperties class contains info on nif files.
+ */
 class FileProperties
 {
 public:
+    /**
+     * @brief FileProperties constructor
+     * @param fileType  File Type
+     * @param fnameDst  Destination file name
+     * @param fnameSrc  Source file name
+     * @param lodLevel  LOD level
+     * @param lodXCoord LOD x coordinate
+     * @param lodYCoord LOD y coordinate
+     */
     FileProperties(FileType fileType, QString fnameDst, QString fnameSrc, int lodLevel, int lodXCoord, int lodYCoord);
 
+    /**
+     * @brief FileProperties constructor overload.
+     */
     FileProperties(FileType fileType, QString fnameDst, QString fnameSrc);
 
+    /**
+     * @brief FileProperties constructor overload.
+     */
     FileProperties();
 
     FileType getFileType() const;
@@ -127,10 +220,14 @@ private:
     int lodYCoord = 0;
 };
 
+/**
+ * @brief The Converter class is used to convert nifs.
+ */
 class Converter
 {
     // Texture root folder
     #define TEXTURE_ROOT "textures\\"
+
     // Texture folder inside root folder
     #define TEXTURE_FOLDER "new_vegas\\"
 
@@ -168,17 +265,19 @@ public:
 private:
     /*******************************************************************************************************************
      * Block Conversion Functions
+     *
+     * The block conversion functions usually take the model index of the block in the source nif and return the model
+     * index of the converted block in the destination nif.
      ******************************************************************************************************************/
 
-    QModelIndex bsFadeNode( QModelIndex iNode);
+    QModelIndex bsFadeNode(QModelIndex iNode);
 
     QModelIndex niControllerSequence(QModelIndex iSrc);
 
     void niInterpolator(QModelIndex iDst, QModelIndex iSrc, const QString & name = "Interpolator");
 
     /**
-     * @brief niControllerSequences
-     * Handle controller sequences from NiControllerManager blocks.
+     * @brief niControllerSequences handles controller sequences from NiControllerManager blocks.
      * @param iDst
      * @param iSrc
      */

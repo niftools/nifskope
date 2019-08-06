@@ -1,29 +1,3 @@
-/*
- * TODO:
- * Remove vertical faces of LOD Water at LOD edges as these faces can be seen through other LOD Waters.
- *
- * TODO:
- * Fix Camera movement affecting LOD lighting which is possibly due to second LOD textures
- *
- * TODO:
- * Change LOD Water shader to non transparent.
- *
- * TODO:
- * Check if UV Transform controllers transform in the right direction
- *
- * TODO:
- * Set Effect Lighting on always except for shadernolightingproperties
- *
- * TODO:
- * Mutex when loading file
- *
- * TODO:
- * Mutex when saving file?
- *
- * TODO:
- * Create array of thread ids and make the index the bar index
- */
-
 #include "convert.h"
 #include "../stripify.h"
 #include "../blocks.h"
@@ -54,8 +28,6 @@
 #include <QProgressBar>
 #include <QVBoxLayout>
 #include <QLabel>
-
-static QMutex mu;
 
 bool checkLODFields(const QString & sLevel, const QString & sXCoord, const QString & sYCoord) {
     bool ok = false;
@@ -306,21 +278,21 @@ FileProperties getFileType(const QString & fnameSrc, QString & fnameDst, ListWra
     return FileProperties(FileType::LODLandscape, fnameDst, fnameSrc, sLevel.toInt(), sXCoord.toInt(), sYCoord.toInt());
 }
 
-NifModel * makeNif() {
-    NifModel * newNif = new NifModel();
+void makeNif() {
+    NifModel newNif;
 
-    QModelIndex iHeader = newNif->getHeader();
-    QModelIndex iVersion = newNif->getIndex(iHeader, "Version");
-    NifValue version = newNif->getValue(newNif->getIndex(iHeader, "Version"));
+    QModelIndex iHeader = newNif.getHeader();
+    QModelIndex iVersion = newNif.getIndex(iHeader, "Version");
+    NifValue version = newNif.getValue(newNif.getIndex(iHeader, "Version"));
+
+//    newNif.load
     version.setFileVersion(0x14020007);
-    newNif->setValue(iVersion, version);
-    newNif->set<int>(iHeader, "User Version", 12);
-    newNif->set<int>(iHeader, "User Version 2", 130);
-    newNif->updateHeader();
+    newNif.setValue(iVersion, version);
+    newNif.set<int>(iHeader, "User Version", 12);
+    newNif.set<int>(iHeader, "User Version 2", 130);
+    newNif.updateHeader();
 
-    newNif->saveToFile("E:\\SteamLibrary\\steamapps\\common\\Fallout 4\\Data\\Meshes\\test\\template.nif");
-
-    return newNif;
+    newNif.saveToFile("E:\\SteamLibrary\\steamapps\\common\\Fallout 4\\Data\\Meshes\\test\\template.nif");
 }
 
 void loadNif(NifModel & nif, const QString & fname) {
@@ -329,10 +301,9 @@ void loadNif(NifModel & nif, const QString & fname) {
     }
 }
 
-bool saveNif(NifModel & nif, const QString & fname) {
-//    qDebug() << QThread::currentThreadId() << "Destination: " + fname;
-
-    QMutexLocker locker(&mu);
+bool FileSaver::save(NifModel & nif, const QString & fname)
+{
+    QMutexLocker locker(&saveMu);
 
     QDir().mkpath(QFileInfo(fname).path());
 
@@ -350,10 +321,13 @@ bool convert(
         QString fnameDst,
         ListWrapper<HighLevelLOD> & highLevelLodList,
         ProgressReceiver & receiver,
+        FileSaver & saver,
         const QString & root = "") {
     clock_t tStart = clock();
 
     qDebug() << QThread::currentThreadId() <<  "Processing: " + fname;
+
+    fnameDst = QDir(fnameDst).path() + "/";
 
     // Get File Type and destination path.
 
@@ -409,7 +383,7 @@ bool convert(
         return false;
     }
 
-    if (!saveNif(newNif, fnameDst)) {
+    if (!saver.save(nif, fnameDst)) {
         return false;
     }
 
@@ -428,17 +402,18 @@ void convert(
         ListWrapper<HighLevelLOD> & highLevelLodList,
         ListWrapper<QString> & failedList,
         ProgressReceiver & receiver,
+        FileSaver & saver,
         const QString & path = "") {
-    if (!convert(fname, fnameDst, highLevelLodList, receiver, path)) {
+    if (!convert(fname, fnameDst, highLevelLodList, receiver, saver, path)) {
         failedList.append(fname);
     }
 }
 
 template <typename T>
-void ListWrapper<T>::append(T s)
+void ListWrapper<T>::append(T item)
 {
     QMutexLocker locker(&this->listMu);
-    list.append(s);
+    list.append(item);
 }
 
 void Converter::loadMatMap() {
@@ -3072,128 +3047,125 @@ void Converter::extraDataList(QModelIndex iDst, QModelIndex iSrc, Copier &c) {
         extraDataList(iDst, iSrc);
 }
 
-QModelIndex Converter::bsFadeNode(QModelIndex iNode) {
-    QModelIndex linkNode;
-        QModelIndex fadeNode;
-        const QString blockType = nifSrc->getBlockName(iNode);
+QModelIndex Converter::bsFadeNode(QModelIndex iSrc) {
+    const QString blockType = nifSrc->getBlockName(iSrc);
+    QModelIndex iDst = insertNiBlock(blockType);
 
-        fadeNode = insertNiBlock(blockType);
+    Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
 
-        Copier c = Copier(fadeNode, iNode, nifDst, nifSrc);
+    c.ignore("Num Extra Data List");
+    c.ignore("Controller");
+    c.ignore("Num Properties");
+    c.ignore("Collision Object");
+    c.ignore("Num Effects");
 
-        c.ignore("Num Extra Data List");
-        c.ignore("Controller");
-        c.ignore("Num Properties");
-        c.ignore("Collision Object");
-        c.ignore("Num Effects");
+    if (nifSrc->rowCount(getIndexSrc(iSrc, "Children")) > 0) {
+        c.ignore(getIndexSrc(iSrc, "Children").child(0, 0));
+    }
 
-        if (nifSrc->rowCount(getIndexSrc(iNode, "Children")) > 0) {
-            c.ignore(getIndexSrc(iNode, "Children").child(0, 0));
+    // This block might be a controlled block in which case it will be finalized later.
+    progress.ignoreNextIncrease();
+    setHandled(iDst, iSrc);
+
+    c.copyValue("Name");
+
+    extraDataList(iDst, iSrc, c);
+
+    niController(iDst, iSrc, "Controller", nifSrc->get<QString>(iSrc, "Name"));
+
+    c.copyValue("Flags");
+    c.copyValue("Translation");
+    c.copyValue("Rotation");
+    c.copyValue("Scale");
+
+    collisionObjectCopy(iDst, iSrc);
+
+    c.copyValue("Num Children");
+    nifDst->updateArray(iDst, "Children");
+    QVector<qint32> links = nifSrc->getLinkArray(iSrc, "Children");
+    for (int i = 0; i < links.count(); i++) {
+        if (links[i] == -1) {
+            continue;
         }
 
-        // This block might be a controlled block in which case it will be finalized later.
-        progress.ignoreNextIncrease();
-        setHandled(fadeNode, iNode);
+        QModelIndex linkNode = nifSrc->getBlock(links[i]);
+        QModelIndex iChildDst = nifDst->getIndex(iDst, "Children").child(i, 0);
 
-        c.copyValue("Name");
-
-        extraDataList(fadeNode, iNode, c);
-
-        niController(fadeNode, iNode, "Controller", nifSrc->get<QString>(iNode, "Name"));
-
-        c.copyValue("Flags");
-        c.copyValue("Translation");
-        c.copyValue("Rotation");
-        c.copyValue("Scale");
-
-        collisionObjectCopy(fadeNode, iNode);
-
-        c.copyValue("Num Children");
-        nifDst->updateArray(fadeNode, "Children");
-        QVector<qint32> links = nifSrc->getLinkArray(iNode, "Children");
-        for (int i = 0; i < links.count(); i++) {
-            if (links[i] == -1) {
-                continue;
-            }
-
-            linkNode = nifSrc->getBlock(links[i]);
-            QModelIndex iChildDst = nifDst->getIndex(fadeNode, "Children").child(i, 0);
-
-            QString type = nifSrc->getBlockName(linkNode);
-            if (nifSrc->getBlockName(linkNode) == "NiTriStrips") {
-                setLink(iChildDst, niTriStrips(linkNode));
-            } else if (
-                       type == "BSFadeNode" ||
-                       type == "NiNode" ||
-                       type == "BSOrderedNode" ||
-                       type == "NiBillboardNode" ||
-                       type == "BSValueNode" ||
-                       type == "BSDamageStage" ||
-                       type == "BSBlastNode" ||
-                       type == "BSMasterParticleSystem" ||
-                       type == "BSMultiBoundNode" ||
-                       type == "BSDebrisNode") {
-                QModelIndex iFadeNodeChild = bsFadeNode(linkNode);
-                nifDst->setLink(iChildDst, nifDst->getBlockNumber(iFadeNodeChild));
-            } else if (type == "NiParticleSystem") {
-                QModelIndex iNiParticleSystemDst = niParticleSystem(linkNode);
-                nifDst->setLink(iChildDst, nifDst->getBlockNumber(iNiParticleSystemDst));
-            } else if (type == "NiPointLight" || type == "NiAmbientLight") {
-                nifDst->setLink(iChildDst, nifDst->getBlockNumber(niPointLight(linkNode)));
-            } else if (type == "NiCamera") {
-                nifDst->setLink(iChildDst, nifDst->getBlockNumber(niCamera(linkNode)));
-            } else if (type == "NiTriShape") {
-                setLink(iChildDst, niTriShapeAlt(linkNode));
-            } else if (type == "BSStripParticleSystem") {
-                setLink(iChildDst, bsStripParticleSystem(linkNode));
-            } else if (type == "BSSegmentedTriShape") {
-                setLink(iChildDst, bsSegmentedTriShape(linkNode));
-            } else {
-                qDebug() << __FUNCTION__ << "Unknown child type:" << type;
-
-                conversionResult = false;
-            }
-        }
-
-        // TODO: Num Effects
-        // TODO: Effects
-
-        if (blockType == "BSOrderedNode") {
-            c.copyValue("Alpha Sort Bound");
-            c.copyValue("Static Bound");
-        } else if (blockType == "NiBillboardNode") {
-            c.copyValue("Billboard Mode");
-        } else if (blockType == "BSValueNode") {
-            c.copyValue("Value");
-            c.copyValue("Value Node Flags");
+        QString type = nifSrc->getBlockName(linkNode);
+        if (nifSrc->getBlockName(linkNode) == "NiTriStrips") {
+            setLink(iChildDst, niTriStrips(linkNode));
         } else if (
-                   blockType == "BSDamageStage" ||
-                   blockType == "BSBlastNode" ||
-                   blockType == "BSDebrisNode") {
-            c.copyValue("Min");
-            c.copyValue("Max");
-            c.copyValue("Current");
-        } else if (blockType == "BSMasterParticleSystem") {
-            c.copyValue("Max Emitter Objects");
-            c.copyValue("Num Particle Systems");
+                   type == "BSFadeNode" ||
+                   type == "NiNode" ||
+                   type == "BSOrderedNode" ||
+                   type == "NiBillboardNode" ||
+                   type == "BSValueNode" ||
+                   type == "BSDamageStage" ||
+                   type == "BSBlastNode" ||
+                   type == "BSMasterParticleSystem" ||
+                   type == "BSMultiBoundNode" ||
+                   type == "BSDebrisNode") {
+            QModelIndex iFadeNodeChild = bsFadeNode(linkNode);
+            nifDst->setLink(iChildDst, nifDst->getBlockNumber(iFadeNodeChild));
+        } else if (type == "NiParticleSystem") {
+            QModelIndex iNiParticleSystemDst = niParticleSystem(linkNode);
+            nifDst->setLink(iChildDst, nifDst->getBlockNumber(iNiParticleSystemDst));
+        } else if (type == "NiPointLight" || type == "NiAmbientLight") {
+            nifDst->setLink(iChildDst, nifDst->getBlockNumber(niPointLight(linkNode)));
+        } else if (type == "NiCamera") {
+            nifDst->setLink(iChildDst, nifDst->getBlockNumber(niCamera(linkNode)));
+        } else if (type == "NiTriShape") {
+            setLink(iChildDst, niTriShapeAlt(linkNode));
+        } else if (type == "BSStripParticleSystem") {
+            setLink(iChildDst, bsStripParticleSystem(linkNode));
+        } else if (type == "BSSegmentedTriShape") {
+            setLink(iChildDst, bsSegmentedTriShape(linkNode));
+        } else {
+            qDebug() << __FUNCTION__ << "Unknown child type:" << type;
 
-            if (nifSrc->get<int>(iNode, "Num Particle Systems") > 0) {
-                QModelIndex iParticleSystemsSrc = getIndexSrc(iNode, "Particle Systems");
-                QModelIndex iParticleSystemsDst = getIndexDst(fadeNode, "Particle Systems");
-                nifDst->updateArray(iParticleSystemsDst);
-
-                for (int i = 0; i < nifSrc->rowCount(iParticleSystemsSrc); i++) {
-                    reLink(iParticleSystemsDst.child(i, 0), iParticleSystemsSrc.child(i, 0));
-                }
-
-                c.processed(iParticleSystemsSrc.child(0, 0));
-            }
-        } else if (blockType == "BSMultiBoundNode") {
-            setLink(fadeNode, "Multi Bound", bsMultiBound(getBlockSrc(iNode, "Multi Bound")));
-            c.processed("Multi Bound");
+            conversionResult = false;
         }
+    }
 
-        return fadeNode;
+    // TODO: Num Effects
+    // TODO: Effects
+
+    if (blockType == "BSOrderedNode") {
+        c.copyValue("Alpha Sort Bound");
+        c.copyValue("Static Bound");
+    } else if (blockType == "NiBillboardNode") {
+        c.copyValue("Billboard Mode");
+    } else if (blockType == "BSValueNode") {
+        c.copyValue("Value");
+        c.copyValue("Value Node Flags");
+    } else if (
+               blockType == "BSDamageStage" ||
+               blockType == "BSBlastNode" ||
+               blockType == "BSDebrisNode") {
+        c.copyValue("Min");
+        c.copyValue("Max");
+        c.copyValue("Current");
+    } else if (blockType == "BSMasterParticleSystem") {
+        c.copyValue("Max Emitter Objects");
+        c.copyValue("Num Particle Systems");
+
+        if (nifSrc->get<int>(iSrc, "Num Particle Systems") > 0) {
+            QModelIndex iParticleSystemsSrc = getIndexSrc(iSrc, "Particle Systems");
+            QModelIndex iParticleSystemsDst = getIndexDst(iDst, "Particle Systems");
+            nifDst->updateArray(iParticleSystemsDst);
+
+            for (int i = 0; i < nifSrc->rowCount(iParticleSystemsSrc); i++) {
+                reLink(iParticleSystemsDst.child(i, 0), iParticleSystemsSrc.child(i, 0));
+            }
+
+            c.processed(iParticleSystemsSrc.child(0, 0));
+        }
+    } else if (blockType == "BSMultiBoundNode") {
+        setLink(iDst, "Multi Bound", bsMultiBound(getBlockSrc(iSrc, "Multi Bound")));
+        c.processed("Multi Bound");
+    }
+
+    return iDst;
 }
 
 void Converter::bsSegmentedTriShapeSegments(QModelIndex iDst, QModelIndex iSrc, Copier &c) {
@@ -3516,203 +3488,6 @@ QModelIndex Converter::niTriShapeAlt(QModelIndex iSrc) {
         c.ignore(iMaterialDataSrc, "Material Extra Data");
         c.ignore(iMaterialDataSrc, "Active Material");
         c.ignore(iMaterialDataSrc, "Material Needs Update");
-
-        setHandled(iDst, iSrc);
-
-        return iDst;
-}
-
-QModelIndex Converter::niSkinInstance(QModelIndex iBSTriShapeDst, QModelIndex iShaderPropertyDst, QModelIndex iSrc) {
-    if (!iSrc.isValid()) {
-            return QModelIndex();
-        }
-
-        QModelIndex iDst = nifDst->insertNiBlock("BSSkin::Instance");
-
-        Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
-
-        c.ignore("Data");
-        c.ignore("Skin Partition");
-
-        reLink(iDst, iSrc, "Skeleton Root");
-        c.processed("Skeleton Root");
-
-        c.copyValue("Num Bones");
-
-        if (nifSrc->get<int>(iSrc, "Num Bones") > 0) {
-            reLinkArray(iDst, iSrc, "Bones");
-            c.processed(iSrc, "Bones");
-        }
-
-        setLink(iBSTriShapeDst, "Skin", iDst);
-
-        BSVertexDesc vertexFlagsDst = nifDst->get<BSVertexDesc>(iBSTriShapeDst, "Vertex Desc");
-        vertexFlagsDst.SetFlag(VertexFlags::VF_SKINNED);
-        vertexFlagsDst.ResetAttributeOffsets(nifDst->getUserVersion2());
-
-        bool ok;
-
-        // Set shader and vertex flags.
-        nifDst->set<BSVertexDesc>(iBSTriShapeDst, "Vertex Desc", vertexFlagsDst);
-        nifDst->set<uint>(iShaderPropertyDst, "Shader Flags 1",
-                          nifDst->get<uint>(iShaderPropertyDst, "Shader Flags 1") |
-                          NifValue::enumOptionValue("Fallout4ShaderPropertyFlags1", "Skinned", &ok));
-
-        if (!ok) {
-            qDebug() << __FUNCTION__ << "Enum option not found";
-
-            conversionResult = false;
-        }
-
-        ushort numVertices = nifDst->get<ushort>(iBSTriShapeDst, "Num Vertices");
-        uint numTriangles = nifDst->get<uint>(iBSTriShapeDst, "Num Triangles");
-
-        nifDst->updateArray(iBSTriShapeDst, "Vertex Data");
-        nifDst->set<uint>(iBSTriShapeDst, "Data Size", vertexFlagsDst.GetVertexSize() * numVertices + numTriangles * 6);
-
-        setLink(iDst, "Data", niSkinData(iBSTriShapeDst, getBlockSrc(iSrc, "Data")));
-        // TODO: Set bone weights in vertex data
-
-        // Only used for optimization?
-        ignoreBlock(iSrc, "Skin Partition", false);
-
-        if (nifSrc->getBlockName(iSrc) == "BSDismemberSkinInstance") {
-            c.ignore("Num Partitions");
-
-            if (nifSrc->get<int>(iSrc, "Num Partitions") > 0) {
-                c.ignore(getIndexSrc(getIndexSrc(iSrc, "Partitions").child(0, 0), "Part Flag"));
-                c.ignore(getIndexSrc(getIndexSrc(iSrc, "Partitions").child(0, 0), "Body Part"));
-            }
-        }
-
-        setHandled(iDst, iSrc);
-
-        return iDst;
-}
-
-void Converter::niSkinDataSkinTransform(QModelIndex iBoneDst, QModelIndex iSkinTransformSrc, QModelIndex iSkinTransformGlobalSrc) {
-    Matrix skinRotation = nifSrc->get<Matrix>(iSkinTransformGlobalSrc, "Rotation");
-        Vector3 skinTranslation = nifSrc->get<Vector3>(iSkinTransformGlobalSrc, "Translation");
-        float skinScale = nifSrc->get<float>(iSkinTransformGlobalSrc, "Scale");
-
-        Matrix rotation = nifSrc->get<Matrix>(iSkinTransformSrc, "Rotation");
-        for (uint r = 0; r < 3; r++) {
-            for (uint c = 0; c < 3; c++) {
-                rotation(r, c) += skinRotation(r, c);
-            }
-        }
-
-        nifDst->set<Matrix>(iBoneDst, "Rotation", rotation);
-        nifDst->set<Vector3>(iBoneDst, "Translation", nifSrc->get<Vector3>(iSkinTransformSrc, "Translation") + skinTranslation);
-        nifDst->set<float>(iBoneDst, "Scale", nifSrc->get<float>(iSkinTransformSrc, "Scale") * skinScale);
-}
-
-QModelIndex Converter::niSkinData(QModelIndex iBSTriShapeDst, QModelIndex iSrc) {
-    QModelIndex iDst = nifDst->insertNiBlock("BSSkin::BoneData");
-
-        Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
-
-        c.copyValue("Num Bones");
-
-        QModelIndex iBoneListSrc = getIndexSrc(iSrc, "Bone List");
-        QModelIndex iBoneListDst = getIndexDst(iDst, "Bone List");
-
-        // Processed by niSkinDataSkinTransform()
-        QModelIndex iSkinTransformGlobalSrc = getIndexSrc(iSrc, "Skin Transform");
-        c.ignore(iSkinTransformGlobalSrc, "Rotation");
-        c.ignore(iSkinTransformGlobalSrc, "Translation");
-        c.ignore(iSkinTransformGlobalSrc, "Scale");
-
-
-        nifDst->updateArray(iBoneListDst);
-
-        for (int i = 0; i < nifSrc->rowCount(iBoneListSrc); i++) {
-            QModelIndex iBoneDst = iBoneListDst.child(i, 0);
-            QModelIndex iBoneSrc = iBoneListSrc.child(i, 0);
-            QModelIndex iSkinTransformSrc = getIndexSrc(iBoneSrc, "Skin Transform");
-            QModelIndex iBoundingSphereDst = getIndexDst(iBoneDst, "Bounding Sphere");
-
-            c.copyValue(iBoneDst, iSkinTransformSrc, "Rotation");
-            c.copyValue(iBoneDst, iSkinTransformSrc, "Translation");
-            c.copyValue(iBoneDst, iSkinTransformSrc, "Scale");
-            c.copyValue(iBoundingSphereDst, iBoneSrc, "Center", "Bounding Sphere Offset");
-            c.copyValue(iBoundingSphereDst, iBoneSrc, "Radius", "Bounding Sphere Radius");
-        }
-
-        if (nifSrc->get<bool>(iSrc, "Has Vertex Weights")) {
-            QModelIndex iVertexDataArrayDst = getIndexDst(iBSTriShapeDst, "Vertex Data");
-            QMap<ushort, int> weightCounts;
-
-            QModelIndex iBoneListArraySrc = getIndexSrc(iSrc, "Bone List");
-
-            for (int i = 0; i < nifSrc->rowCount(iBoneListArraySrc); i++) {
-                QModelIndex iBoneSrc = iBoneListArraySrc.child(i, 0);
-                QModelIndex iVertexWeightsArraySrc = getIndexSrc(iBoneSrc, "Vertex Weights");
-
-                for (int j = 0; j < nifSrc->rowCount(iVertexWeightsArraySrc); j++) {
-                    QModelIndex iVertexWeightSrc = iVertexWeightsArraySrc.child(j, 0);
-
-                    ushort vertexIndex = nifSrc->get<ushort>(iVertexWeightSrc, "Index");
-                    float vertexWeight = nifSrc->get<float>(iVertexWeightSrc, "Weight");
-
-                    if (weightCounts[vertexIndex] >= 4) {
-                        // TODO: conversionResult = false;
-                        if (!RUN_CONCURRENT) {
-                            qDebug() << "Too many boneweights for one vertex. Blocknr.:" << nifSrc->getBlockNumber(iSrc);
-                        }
-
-                        continue;
-                    }
-
-                    QModelIndex iVertexDataDst = iVertexDataArrayDst.child(vertexIndex, 0);
-                    QModelIndex iBoneWeightsDst = getIndexDst(iVertexDataDst, "Bone Weights");
-                    QModelIndex iBoneIndicesDst = getIndexDst(iVertexDataDst, "Bone Indices");
-
-                    nifDst->updateArray(iBoneWeightsDst);
-                    nifDst->updateArray(iBoneIndicesDst);
-
-                    int weightIndex = weightCounts[vertexIndex];
-
-                    if (!iBoneWeightsDst.child(weightIndex, 0).isValid()) {
-                        qDebug() << __FUNCTION__ << "Bone Weights not found";
-
-                        conversionResult = false;
-
-                        break;
-                    }
-
-                    if (!iBoneIndicesDst.child(weightIndex, 0).isValid()) {
-                        qDebug() << __FUNCTION__ << "Bone Indices not found";
-
-                        conversionResult = false;
-
-                        break;
-                    }
-
-                    nifDst->set<ushort>(iBoneIndicesDst.child(weightIndex, 0), ushort(i));
-                    nifDst->set<float>(iBoneWeightsDst.child(weightIndex, 0), vertexWeight);
-
-                    weightCounts[vertexIndex]++;
-                }
-            }
-
-            if (nifSrc->rowCount(iBoneListArraySrc) > 0) {
-                c.processed(iBoneListArraySrc.child(0, 0), "Num Vertices");
-
-                for (int i = 0; i < nifSrc->rowCount(iBoneListArraySrc); i++) {
-                    QModelIndex iVertexWeightsArraySrc = getIndexSrc(iBoneListArraySrc.child(i, 0), "Vertex Weights");
-
-                    if (nifSrc->rowCount(iVertexWeightsArraySrc) > 0) {
-                        c.processed(iVertexWeightsArraySrc.child(0, 0), "Index");
-                        c.processed(iVertexWeightsArraySrc.child(0, 0), "Weight");
-
-                        break;
-                    }
-                }
-            }
-        }
-
-        c. processed("Has Vertex Weights");
 
         setHandled(iDst, iSrc);
 
@@ -5203,13 +4978,14 @@ void convertNif(const QString pathDst, QString pathSrc) {
     }
 
     clock_t tStart = clock();
-    bool bProcessHLLODs = true;
+    bool isCanceled = false;
 
     QList<QString> failedList;
     QList<HighLevelLOD> highLevelLodList;
 
     ListWrapper<QString> listWrapperFailed = ListWrapper<QString>(failedList);
     ListWrapper<HighLevelLOD> listWrapperHLLODs = ListWrapper<HighLevelLOD>(highLevelLodList);
+    FileSaver saver;
 
     // Progress dialog
     QFutureWatcher<void> futureWatcher;
@@ -5217,7 +4993,7 @@ void convertNif(const QString pathDst, QString pathSrc) {
     ProgressReceiver receiver = ProgressReceiver(&dialog);
 
     if (QFileInfo(pathSrc).isFile()) {
-        convert(pathSrc, pathDst, listWrapperHLLODs, listWrapperFailed, receiver);
+        convert(pathSrc, pathDst, listWrapperHLLODs, listWrapperFailed, receiver, saver);
     } else if (QDir(pathSrc).exists() && pathSrc != "") {
         QDirIterator it(pathSrc, QStringList() << "*.nif", QDir::Files, QDirIterator::Subdirectories);
         QStringList fileList;
@@ -5234,7 +5010,7 @@ void convertNif(const QString pathDst, QString pathSrc) {
             futureWatcher.setFuture(QtConcurrent::map(
                     fileList,
                     [&](QString & elem) {
-                        convert(elem, pathDst, listWrapperHLLODs, listWrapperFailed, receiver, pathSrc);
+                        convert(elem, pathDst, listWrapperHLLODs, listWrapperFailed, receiver, saver, pathSrc);
 
                         if (futureWatcher.future().isCanceled()) {
                             return;
@@ -5247,18 +5023,13 @@ void convertNif(const QString pathDst, QString pathSrc) {
             futureWatcher.waitForFinished();
 
             if (futureWatcher.future().isCanceled()) {
-                bProcessHLLODs = false;
+                isCanceled = true;
 
                 qDebug() << "Canceled";
-            } else {
-                QMessageBox msgBox;
-
-                msgBox.setText("Done");
-                msgBox.exec();
             }
         } else {
             while (it.hasNext()) {
-                convert(it.next(), pathDst, listWrapperHLLODs, listWrapperFailed, receiver, pathSrc);
+                convert(it.next(), pathDst, listWrapperHLLODs, listWrapperFailed, receiver, saver, pathSrc);
             }
         }
     } else {
@@ -5267,19 +5038,37 @@ void convertNif(const QString pathDst, QString pathSrc) {
         return;
     }
 
-    if (bProcessHLLODs) {
-        if (highLevelLodList.count() > 0) {
-            combineHighLevelLODs(highLevelLodList, failedList, pathDst, receiver);
-        }
+    if (isCanceled) {
+        return;
+    }
 
-        if (failedList.count() > 0) {
-            qDebug() << "Failed to convert:";
+    // Make sure the progress dialog doesn't appear after this point.
+    futureWatcher.finished();
 
-            for (QString s : failedList) {
-                qDebug() << s;
-            }
+    if (highLevelLodList.count() > 0) {
+        QLabel label("Processing High Level LODs");
+
+        label.setAlignment(Qt::AlignCenter);
+        label.setMinimumSize(200, 50);
+        label.setWindowFlags(Qt::CustomizeWindowHint | Qt::WindowTitleHint);
+
+        label.show();
+
+        combineHighLevelLODs(highLevelLodList, failedList, pathDst, receiver);
+    }
+
+    if (failedList.count() > 0) {
+        qDebug() << "Failed to convert:";
+
+        for (QString s : failedList) {
+            qDebug() << s;
         }
     }
 
     qDebug("Total time elapsed: %.2fs", double(clock() - tStart)/CLOCKS_PER_SEC);
+
+    QMessageBox msgBox;
+
+    msgBox.setText("Done");
+    msgBox.exec();
 }
