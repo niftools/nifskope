@@ -3057,6 +3057,15 @@ void NifModel::updateModel( UpdateType value )
 		emit linksChanged();
 }
 
+void NifModel::setCfg(const QString & version, int userVersion, int userVersion2)
+{
+    cfg.startupVersion = version;
+    cfg.userVersion = userVersion;
+    cfg.userVersion2 = userVersion2;
+
+    clear();
+}
+
 
 /*
  *  NifModelEval

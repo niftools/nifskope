@@ -298,8 +298,10 @@ public:
 	//! Undo Stack for changes to NifModel
 	QUndoStack * undoStack = nullptr;
 
+    void setCfg(const QString & version, int userVersion, int userVersion2);
+
 public slots:
-	void updateSettings();
+    void updateSettings();
 
 signals:
 	void linksChanged();

@@ -119,9 +119,7 @@ void combineHighLevelLODs(QList<HighLevelLOD> & list, QList<QString> & failedLis
             for (int x = minXNew; x <= maxX; x += level) {
                 for (int y = minYNew; y <= maxY; y += level) {
                     NifModel nifCombined = NifModel();
-                    if (!nifCombined.loadFromFile("D:\\Games\\Fallout New Vegas\\FNVFo4 Converted\\test\\template.nif")) {
-                        fprintf(stderr, "Failed to load template\n");
-                    }
+                    nifCombined.setCfg("20.2.0.7", 12, 130);
 
                     for (HighLevelLOD lod : filteredList) {
                         if (!lod.compare(level, x, y)) {
@@ -278,23 +276,6 @@ FileProperties getFileType(const QString & fnameSrc, QString & fnameDst, ListWra
     return FileProperties(FileType::LODLandscape, fnameDst, fnameSrc, sLevel.toInt(), sXCoord.toInt(), sYCoord.toInt());
 }
 
-void makeNif() {
-    NifModel newNif;
-
-    QModelIndex iHeader = newNif.getHeader();
-    QModelIndex iVersion = newNif.getIndex(iHeader, "Version");
-    NifValue version = newNif.getValue(newNif.getIndex(iHeader, "Version"));
-
-//    newNif.load
-    version.setFileVersion(0x14020007);
-    newNif.setValue(iVersion, version);
-    newNif.set<int>(iHeader, "User Version", 12);
-    newNif.set<int>(iHeader, "User Version 2", 130);
-    newNif.updateHeader();
-
-    newNif.saveToFile("E:\\SteamLibrary\\steamapps\\common\\Fallout 4\\Data\\Meshes\\test\\template.nif");
-}
-
 void loadNif(NifModel & nif, const QString & fname) {
     if (!nif.loadFromFile(fname)) {
         qDebug() << "Failed to load nif" << fname;
@@ -360,7 +341,14 @@ bool convert(
     loadNif(nif, fname);
 
     NifModel newNif;
-    loadNif(newNif, "D:\\Games\\Fallout New Vegas\\FNVFo4 Converted\\test\\template.nif");
+    newNif.setCfg("20.2.0.7", 12, 130);
+
+    QModelIndex iHeader = newNif.getHeader();
+    newNif.set<int>(iHeader, "User Version", 12);
+    newNif.set<int>(iHeader, "User Version 2", 130);
+    newNif.updateHeader();
+
+    qDebug() << newNif.get<int>(iHeader, "User Version 2");
 
     // Convert
 
@@ -383,9 +371,10 @@ bool convert(
         return false;
     }
 
-    if (!saver.save(nif, fnameDst)) {
+    if (!saver.save(newNif, fnameDst)) {
         return false;
     }
+    qDebug() << newNif.get<int>(iHeader, "User Version 2");
 
     // TODO: Emit done signal to clear progress bar here
 
@@ -4971,6 +4960,9 @@ void convertNif() {
 }
 
 void convertNif(const QString pathDst, QString pathSrc) {
+//    makeNif();
+//    return;
+
     if (pathDst == "" || !QDir(pathDst).exists()) {
         qDebug() << "Invalid destination";
 
