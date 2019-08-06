@@ -112,8 +112,10 @@ int main( int argc, char * argv[] )
 		parser.addOption( portOption );
 
         // Add convert option
-        QCommandLineOption convertOption( {"c", "convert"}, "Convert to Fallout 4", "fname", "");
+        QCommandLineOption convertOption( {"c", "convert"}, "Convert to Fallout 4");
         parser.addOption( convertOption );
+        parser.addPositionalArgument("destination", QCoreApplication::translate("main", "Destination directory."));
+        parser.addPositionalArgument("source", QCoreApplication::translate("main", "Source directory to convert."));
 
 		// Process options
 		parser.process( *a );
@@ -123,8 +125,20 @@ int main( int argc, char * argv[] )
 			port = parser.value( portOption ).toInt();
 
         // Convert to Fallout 4
-        if ( parser.isSet( convertOption ) ) {
-            convertNif(parser.value(convertOption));
+        if (parser.isSet( convertOption)) {
+            if (parser.positionalArguments().count() == 0) {
+                convertNif();
+
+                return 0;
+            }
+
+            if (parser.positionalArguments().count() != 2) {
+                qDebug() << "Invalid syntax";
+
+                parser.showHelp(1);
+            }
+
+            convertNif(parser.positionalArguments()[0], parser.positionalArguments()[1]);
 
             return 0;
         }

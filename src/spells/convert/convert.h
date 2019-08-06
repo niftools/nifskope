@@ -764,6 +764,8 @@ private:
     QPair<QString, QString> acceptFormat( const QString & format, const NifModel * nif );
 };
 
-void convertNif(QString fname);
+void convertNif();
+
+void convertNif(const QString pathDst, QString pathSrc);
 
 #endif // SPELL_CONVERT_H

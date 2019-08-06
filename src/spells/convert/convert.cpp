@@ -345,14 +345,18 @@ bool saveNif(NifModel & nif, const QString & fname) {
     return true;
 }
 
-bool convert(const QString & fname, ListWrapper<HighLevelLOD> & highLevelLodList, ProgressReceiver & receiver, const QString & root = "") {
+bool convert(
+        const QString & fname,
+        QString fnameDst,
+        ListWrapper<HighLevelLOD> & highLevelLodList,
+        ProgressReceiver & receiver,
+        const QString & root = "") {
     clock_t tStart = clock();
 
     qDebug() << QThread::currentThreadId() <<  "Processing: " + fname;
 
     // Get File Type and destination path.
 
-    QString fnameDst = "E:\\SteamLibrary\\steamapps\\common\\Fallout 4\\Data\\Meshes\\test\\";
     FileProperties fileProps = getFileType(fname, fnameDst, highLevelLodList);
     int fileType = fileProps.getFileType();
 
@@ -418,138 +422,14 @@ bool convert(const QString & fname, ListWrapper<HighLevelLOD> & highLevelLodList
     return c.getConversionResult();
 }
 
-void search() {
-    const QString path = "D:\\Games\\Fallout 4\\FO4Extracted\\Data\\Meshes";
-    QDirIterator it(path, QStringList() << "*.nif", QDir::Files, QDirIterator::Subdirectories);
-    while (it.hasNext()) {
-        QString fname = it.next();
-
-        NifModel nif = NifModel();
-        if (!nif.loadFromFile(fname)) {
-            fprintf(stderr, "Failed to load nif\n");
-        }
-
-        for (int i = 0; i < nif.getBlockCount(); i++) {
-            QModelIndex iBlock = nif.getBlock(i);
-
-            if (nif.getBlockName(iBlock) != "BSTriShape") {
-                continue;
-            }
-
-            QModelIndex iAlpha = nif.getBlock(nif.getLink(iBlock, "Alpha Property"));
-            QModelIndex iShader = nif.getBlock(nif.getLink(iBlock, "Shader Property"));
-
-            if (!iAlpha.isValid() || !iShader.isValid()) {
-                continue;
-            }
-
-            if (nif.getBlockName(iShader) != "BSLightingShaderProperty") {
-                continue;
-            }
-
-            // Check whether enable blending is set
-            if (nif.get<int>(iAlpha, "Flags") & 1) {
-                uint flags = nif.get<uint>(iShader, "Shader Flags 1");
-
-                if (
-                        !(flags & NifValue::enumOptionValue("Fallout4ShaderPropertyFlags1", "Decal")) &&
-                        !(flags & NifValue::enumOptionValue("Fallout4ShaderPropertyFlags1", "Dynamic_Decal"))) {
-                    qDebug() << fname;
-
-                    break;
-                }
-            }
-
-//            if (nif.get<int>(iAlpha, "Flags") == 4333) {
-//                uint flags = nif.get<uint>(iShader, "Shader Flags 1");
-//                if (
-//                        !(flags & NifValue::enumOptionValue("Fallout4ShaderPropertyFlags1", "Decal")) &&
-//                        !(flags & NifValue::enumOptionValue("Fallout4ShaderPropertyFlags1", "Dynamic_Decal"))) {
-//                    qDebug() << fname;
-
-//                    break;
-//                }
-//            }
-        }
-    }
-
-    exit(0);
-}
-
-void search2() {
-    const QString path = "E:\\SteamLibrary\\steamapps\\common\\Fallout New Vegas\\Data\\meshes";
-    QDirIterator it(path, QStringList() << "*.nif", QDir::Files, QDirIterator::Subdirectories);
-    while (it.hasNext()) {
-        QString fname = it.next();
-
-        NifModel nif = NifModel();
-        if (!nif.loadFromFile(fname)) {
-            fprintf(stderr, "Failed to load nif\n");
-        }
-
-        for (int i = 0; i < nif.getBlockCount(); i++) {
-            QModelIndex iBlock = nif.getBlock(i);
-            QModelIndex iProperties = nif.getIndex(iBlock, "Properties");
-
-            if (!iProperties.isValid()) {
-                continue;
-            }
-
-            QModelIndex iAlpha;
-            QModelIndex iShader;
-
-            for (int j = 0; j < nif.rowCount(iProperties); j++) {
-                QModelIndex iLinkBlock = nif.getBlock(nif.getLink(iProperties.child(j, 0)));
-
-                if (nif.getBlockName(iLinkBlock) == "BSShaderPPLightingProperty") {
-                    iShader = iLinkBlock;
-                }
-
-                if (nif.getBlockName(iLinkBlock) == "NiAlphaProperty") {
-                    iAlpha = iLinkBlock;
-                }
-            }
-
-            if (!iAlpha.isValid() || !iShader.isValid()) {
-                continue;
-            }
-
-            // Check whether enable blending is set
-            if (nif.get<int>(iAlpha, "Flags") & 1) {
-                uint flags = nif.get<uint>(iShader, "Shader Flags 1");
-
-                if (
-                        !(flags & NifValue::enumOptionValue("BSShaderFlags", "Decal_Single_Pass")) &&
-                        !(flags & NifValue::enumOptionValue("BSShaderFlags2", "Dynamic_Decal_Single_Pass"))) {
-                    qDebug() << fname;
-
-                    break;
-                }
-            }
-
-//            if (nif.get<int>(iAlpha, "Flags") == 4333) {
-//                uint flags = nif.get<uint>(iShader, "Shader Flags 1");
-//                if (
-//                        !(flags & NifValue::enumOptionValue("Fallout4ShaderPropertyFlags1", "Decal")) &&
-//                        !(flags & NifValue::enumOptionValue("Fallout4ShaderPropertyFlags1", "Dynamic_Decal"))) {
-//                    qDebug() << fname;
-
-//                    break;
-//                }
-//            }
-        }
-    }
-
-    exit(0);
-}
-
 void convert(
         const QString & fname,
+        QString fnameDst,
         ListWrapper<HighLevelLOD> & highLevelLodList,
         ListWrapper<QString> & failedList,
         ProgressReceiver & receiver,
         const QString & path = "") {
-    if (!convert(fname, highLevelLodList, receiver, path)) {
+    if (!convert(fname, fnameDst, highLevelLodList, receiver, path)) {
         failedList.append(fname);
     }
 }
@@ -559,92 +439,6 @@ void ListWrapper<T>::append(T s)
 {
     QMutexLocker locker(&this->listMu);
     list.append(s);
-}
-
-void convertNif(QString path) {
-////    testConverterController();
-
-//    ConversionDialog w;
-////    w.show();
-//    w.exec();
-
-//    return;
-
-    clock_t tStart = clock();
-    bool bProcessHLLODs = true;
-
-    QList<QString> failedList;
-    QList<HighLevelLOD> highLevelLodList;
-
-    ListWrapper<QString> listWrapperFailed = ListWrapper<QString>(failedList);
-    ListWrapper<HighLevelLOD> listWrapperHLLODs = ListWrapper<HighLevelLOD>(highLevelLodList);
-
-    // Progress dialog
-    QFutureWatcher<void> futureWatcher;
-    ProgressGrid dialog(futureWatcher);
-    ProgressReceiver receiver = ProgressReceiver(&dialog);
-
-    if (QFileInfo(path).isFile()) {
-        convert(path, listWrapperHLLODs, listWrapperFailed, receiver);
-    } else if (QDir(path).exists()) {
-        QDirIterator it(path, QStringList() << "*.nif", QDir::Files, QDirIterator::Subdirectories);
-        QStringList fileList;
-
-        if (RUN_CONCURRENT) {
-            // Prepare the file list.
-            while (it.hasNext()) {
-                fileList.append(it.next());
-            }
-
-            qRegisterMetaType<Qt::HANDLE>("Qt::HANDLE");
-
-            // Start the conversion.
-            futureWatcher.setFuture(QtConcurrent::map(
-                    fileList,
-                    [&](QString & elem) {
-                        convert(elem, listWrapperHLLODs, listWrapperFailed, receiver, path);
-
-                        if (futureWatcher.future().isCanceled()) {
-                            return;
-                        }
-                    }));
-
-            // Display the dialog and start the event loop.
-            dialog.exec();
-
-            futureWatcher.waitForFinished();
-
-            if (futureWatcher.future().isCanceled()) {
-                bProcessHLLODs = false;
-
-                qDebug() << "Canceled";
-            }
-        } else {
-            while (it.hasNext()) {
-                convert(it.next(), listWrapperHLLODs, listWrapperFailed, receiver, path);
-            }
-        }
-    } else {
-        qDebug() << "Path not found";
-
-        return;
-    }
-
-    if (bProcessHLLODs) {
-        if (highLevelLodList.count() > 0) {
-            combineHighLevelLODs(highLevelLodList, failedList, "E:\\SteamLibrary\\steamapps\\common\\Fallout 4\\Data\\Meshes\\test\\", receiver);
-        }
-
-        if (failedList.count() > 0) {
-            qDebug() << "Failed to convert:";
-
-            for (QString s : failedList) {
-                qDebug() << s;
-            }
-        }
-    }
-
-    printf("Total time elapsed: %.2fs\n", double(clock() - tStart)/CLOCKS_PER_SEC);
 }
 
 void Converter::loadMatMap() {
@@ -5381,4 +5175,111 @@ uint EnumMap::convert(NifValue option) {
 
 uint EnumMap::convert(QModelIndex iSrc) {
     return convert(nifSrc->getValue(iSrc));
+}
+
+#include <QFileDialog>
+
+void convertNif() {
+    const QString pathSrc = QFileDialog::getExistingDirectory(nullptr, "Select the source directory");
+
+    if (pathSrc == "") {
+        return;
+    }
+
+    const QString pathDst = QFileDialog::getExistingDirectory(nullptr, "Select the destination directory");
+
+    if (pathDst == "") {
+        return;
+    }
+
+    convertNif(pathDst, pathSrc);
+}
+
+void convertNif(const QString pathDst, QString pathSrc) {
+    if (pathDst == "" || !QDir(pathDst).exists()) {
+        qDebug() << "Invalid destination";
+
+        return;
+    }
+
+    clock_t tStart = clock();
+    bool bProcessHLLODs = true;
+
+    QList<QString> failedList;
+    QList<HighLevelLOD> highLevelLodList;
+
+    ListWrapper<QString> listWrapperFailed = ListWrapper<QString>(failedList);
+    ListWrapper<HighLevelLOD> listWrapperHLLODs = ListWrapper<HighLevelLOD>(highLevelLodList);
+
+    // Progress dialog
+    QFutureWatcher<void> futureWatcher;
+    ProgressGrid dialog(futureWatcher);
+    ProgressReceiver receiver = ProgressReceiver(&dialog);
+
+    if (QFileInfo(pathSrc).isFile()) {
+        convert(pathSrc, pathDst, listWrapperHLLODs, listWrapperFailed, receiver);
+    } else if (QDir(pathSrc).exists() && pathSrc != "") {
+        QDirIterator it(pathSrc, QStringList() << "*.nif", QDir::Files, QDirIterator::Subdirectories);
+        QStringList fileList;
+
+        if (RUN_CONCURRENT) {
+            // Prepare the file list.
+            while (it.hasNext()) {
+                fileList.append(it.next());
+            }
+
+            qRegisterMetaType<Qt::HANDLE>("Qt::HANDLE");
+
+            // Start the conversion.
+            futureWatcher.setFuture(QtConcurrent::map(
+                    fileList,
+                    [&](QString & elem) {
+                        convert(elem, pathDst, listWrapperHLLODs, listWrapperFailed, receiver, pathSrc);
+
+                        if (futureWatcher.future().isCanceled()) {
+                            return;
+                        }
+                    }));
+
+            // Display the dialog and start the event loop.
+            dialog.exec();
+
+            futureWatcher.waitForFinished();
+
+            if (futureWatcher.future().isCanceled()) {
+                bProcessHLLODs = false;
+
+                qDebug() << "Canceled";
+            } else {
+                QMessageBox msgBox;
+
+                msgBox.setText("Done");
+                msgBox.exec();
+            }
+        } else {
+            while (it.hasNext()) {
+                convert(it.next(), pathDst, listWrapperHLLODs, listWrapperFailed, receiver, pathSrc);
+            }
+        }
+    } else {
+        qDebug() << "Source path not found";
+
+        return;
+    }
+
+    if (bProcessHLLODs) {
+        if (highLevelLodList.count() > 0) {
+            combineHighLevelLODs(highLevelLodList, failedList, pathDst, receiver);
+        }
+
+        if (failedList.count() > 0) {
+            qDebug() << "Failed to convert:";
+
+            for (QString s : failedList) {
+                qDebug() << s;
+            }
+        }
+    }
+
+    qDebug("Total time elapsed: %.2fs", double(clock() - tStart)/CLOCKS_PER_SEC);
 }
