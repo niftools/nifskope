@@ -47,30 +47,22 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! @file nifmodel.cpp The NIF data model.
 
-NifModel::NifModel(
-        QObject * parent,
-        const QString & version,
-        const QString & userVersion,
-        const QString & userVersion2 )
-    : BaseModel( parent )
+NifModel::NifModel( QObject * parent ) : BaseModel( parent )
 {
-    updateSettings(version, userVersion, userVersion2);
+	updateSettings();
 
 	clear();
 }
 
-void NifModel::updateSettings(
-        const QString & version,
-        const QString & userVersion,
-        const QString & userVersion2 )
+void NifModel::updateSettings()
 {
 	QSettings settings;
 
 	settings.beginGroup( "Settings/NIF/Startup Defaults" );
 
-    cfg.startupVersion = settings.value( "Version", version ).toString();
-    cfg.userVersion = settings.value( "User Version", userVersion ).toInt();
-    cfg.userVersion2 = settings.value( "User Version 2", userVersion2 ).toInt();
+	cfg.startupVersion = settings.value( "Version", "20.0.0.5" ).toString();
+	cfg.userVersion = settings.value( "User Version", "11" ).toInt();
+	cfg.userVersion2 = settings.value( "User Version 2", "11" ).toInt();
 
 	settings.endGroup();
 }

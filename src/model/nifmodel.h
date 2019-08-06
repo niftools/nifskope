@@ -70,11 +70,7 @@ class NifModel final : public BaseModel
 	friend class ArrayUpdateCommand;
 
 public:
-    NifModel(
-            QObject * parent = 0,
-            const QString & version = "20.0.0.5",
-            const QString & userVersion = "11",
-            const QString & userVersion2 = "11");
+	NifModel( QObject * parent = 0 );
 
 	//! Find and parse the XML file
 	static bool loadXML();
@@ -303,10 +299,7 @@ public:
 	QUndoStack * undoStack = nullptr;
 
 public slots:
-    void updateSettings(
-            const QString & version = "20.0.0.5",
-            const QString & userVersion = "11",
-            const QString & userVersion2 = "11" );
+	void updateSettings();
 
 signals:
 	void linksChanged();
