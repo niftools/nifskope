@@ -258,6 +258,22 @@ public:
 
     void convert();
 
+    /*******************************************************************************************************************
+     * Utility
+     ******************************************************************************************************************/
+
+    bool bsShaderFlags1IsSet(uint shaderFlags, QString optionName);
+
+    bool bsShaderFlags1IsSet(QModelIndex iShader, QString optionName);
+
+    bool bsShaderFlags2IsSet(uint shaderFlags, QString optionName);
+
+    bool bsShaderFlags2IsSet(QModelIndex iShader, QString optionName);
+
+    /*******************************************************************************************************************
+     * Getter and setters
+     ******************************************************************************************************************/
+
     bool getConversionResult() const;
     bool getBLODLandscape() const;
     bool getBLODBuilding() const;
@@ -441,6 +457,10 @@ private:
      * Block Conversion utility functions
      ******************************************************************************************************************/
 
+    void matTextures(const QString &shaderType, QModelIndex iShader, QJsonObject & json);
+
+    void makeMaterialFile(QModelIndex iShader, QModelIndex iAlpha);
+
     void niPSysData(const QModelIndex iDst, const QModelIndex iSrc);
 
     void niAVDefaultObjectPalette(QModelIndex iDst, QModelIndex iSrc);
@@ -564,14 +584,6 @@ private:
     uint bsShaderFlags2Get(QString optionName);
 
     bool bsShaderFlagsIsSet(uint shaderFlags, const QString & enumNameSrc, const QString & optionNameSrc);
-
-    bool bsShaderFlags1IsSet(uint shaderFlags, QString optionName);
-
-    bool bsShaderFlags1IsSet(QModelIndex iShader, QString optionName);
-
-    bool bsShaderFlags2IsSet(uint shaderFlags, QString optionName);
-
-    bool bsShaderFlags2IsSet(QModelIndex iShader, QString optionName);
 
     void bsShaderFlagsSet(
             uint shaderFlagsSrc,

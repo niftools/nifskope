@@ -243,6 +243,7 @@ SOURCES += \
 	src/spells/blocks.cpp \
 	src/spells/bounds.cpp \
 	src/spells/color.cpp \
+    src/spells/convert/c_material.cpp \
     src/spells/convert/convert.cpp \
     src/spells/convert/copier.cpp \
     src/spells/convert/emittance.cpp \
