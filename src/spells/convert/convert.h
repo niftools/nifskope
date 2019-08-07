@@ -286,19 +286,55 @@ private:
      * index of the converted block in the destination nif.
      ******************************************************************************************************************/
 
-    QModelIndex bsFadeNode(QModelIndex iNode);
+    /**
+     * @brief bsFadeNode processes BSFadeNode, NiNode, BSOrderedNode, NiBillboardNode, BSValueNode, BSDamageStage,
+     *        BSBlastNode, BSMasterParticleSystem, BSMultiBoundNode and BSDebrisNode blocks.
+     * @param iSrc Source BSFadeNode block
+     * @return Converted block
+     */
+    QModelIndex bsFadeNode(QModelIndex iSrc);
 
+    /**
+     * @brief niControllerSequence processes NiControllerSequence blocks.
+     * @param iSrc Source NiControllerSequence block
+     * @return Converted NiControllerSequence block
+     */
     QModelIndex niControllerSequence(QModelIndex iSrc);
 
+    /**
+     * @brief niInterpolator converts NiInterpolator blocks.
+     * @param iDst Destination block to contain the converted NiInterpolator block
+     * @param iSrc Source block containing the NiInterpolator block
+     * @param name Name of link to the NiInterpolator block in the destination and source blocks
+     */
     void niInterpolator(QModelIndex iDst, QModelIndex iSrc, const QString & name = "Interpolator");
 
     /**
      * @brief niControllerSequences handles controller sequences from NiControllerManager blocks.
-     * @param iDst
-     * @param iSrc
+     * @param iDst Destination NiControllerManager block
+     * @param iSrc Source NiControllerManager block
      */
     void niControllerSequences(QModelIndex iDst, QModelIndex iSrc);
 
+    /**
+     * @brief niController Converts NiMaterialColorController, BSMaterialEmittanceMultController, NiAlphaController,
+     *        BSRefractionFirePeriodController, BSRefractionStrengthController, NiTextureTransformController,
+     *        NiGeomMorpherController, NiBSBoneLODController, NiMultiTargetTransformController, NiControllerManager,
+     *        NiTransformController, NiPSysModifierActiveCtlr, NiPSysEmitterCtlr, NiPSysUpdateCtlr,
+     *        NiPSysEmitterInitialRadiusCtlr, NiVisController, NiPSysGravityStrengthCtlr, NiPSysInitialRotAngleCtlr,
+     *        NiPSysInitialRotSpeedVarCtlr, NiPSysInitialRotSpeedCtlr, NiPSysEmitterLifeSpanCtlr,
+     *        NiPSysEmitterPlanarAngleVarCtlr, NiPSysEmitterPlanarAngleCtlr, NiPSysEmitterDeclinationVarCtlr,
+     *        NiPSysEmitterDeclinationCtlr, NiPSysEmitterSpeedCtlr, NiFloatExtraDataController,
+     *        NiLightDimmerController, NiLightColorController, bhkBlendController, BSPSysMultiTargetEmitterCtlr,
+     *        BSFrustumFOVController and NiPSysResetOnLoopCtlr blocks.
+     * @param iDst      Destination block to contain the converted NiController block
+     * @param iSrc      Source block containing the NiController block
+     * @param c         Copier containing iSrc
+     * @param name      Name of link to the NiController block in the destination and source blocks
+     * @param blockName Name value of the block being controlled
+     * @param target    Controller target block number
+     * @return The first block in the destination controller chain
+     */
     QModelIndex niController(
             QModelIndex iDst,
             QModelIndex iSrc,
@@ -307,6 +343,7 @@ private:
             const QString & blockName = "",
             const int target = -1);
 
+    /** Oveload without Copier */
     QModelIndex niController(
             QModelIndex iDst,
             QModelIndex iSrc,
@@ -315,40 +352,118 @@ private:
             const int target = -1);
 
     /**
-     * @brief bhkPackedNiTriStripsShapeAlt
-     * @param iDst bhkCompressedMeshShape
-     * @param iSrc
-     * @param row
-     * @return
+     * @brief bhkPackedNiTriStripsShapeAlt is an alternative way of converting bhkPackedNiTriStripsShape blocks.
+     * @param iSrc          Source bhkPackedNiTriStripsShape block
+     * @param iRigidBodyDst Destination bhkRigidBody block
+     * @param row           Converted block index
+     * @return Converted bhkCompressedMeshShape block
      */
     QModelIndex bhkPackedNiTriStripsShapeAlt(QModelIndex iSrc, QModelIndex iRigidBodyDst, int row);
 
-    // TODO:
-    // Fix collision between chunks.
-    // Handle scaling and out of bounds.
-    // Chunk transforms.
+    /**
+     * @brief bhkPackedNiTriStripsShapeDataAlt is an alternative way of converting bhkPackedNiTriStripsShapeData blocks.
+     * TODO: Fix collision between chunks.
+     * TODO: Handle scaling and out of bounds.
+     * TODO: Chunk transforms.
+     * @param iSrc          Source bhkPackedNiTriStripsShapeData block
+     * @param iRigidBodyDst Destination bhkRigidBody block
+     * @param row           Converted block index
+     * @return Converted bhkCompressedMeshShapeData block
+     */
     QModelIndex bhkPackedNiTriStripsShapeDataAlt(QModelIndex iSrc, QModelIndex iRigidBodyDst, int row);
 
+    /**
+     * @brief bhkPackedNiTriStripsShape converts bhkPackedNiTriStripsShape blocks
+     * @param iSrc      Source bhkPackedNiTriStripsShape block
+     * @param row       Converted block index
+     * @param bScaleSet Whether the scaling of the rigidbody has been determined
+     * @param radius    Rigidbody scaling
+     * @return Converted bhkNiTriStripsShape block
+     */
     QModelIndex bhkPackedNiTriStripsShape(QModelIndex iSrc, int row, bool & bScaleSet, float & radius);
 
+    /**
+     * @brief bhkPackedNiTriStripsShapeDataSubShapeTriangles converts a sub shape of a bhkPackedNiTriStripsShape block.
+     * @param iSubShapeSrc   Source sub shape index
+     * @param iDataSrc       Source bhkPackedNiTriStripsShapeData block
+     * @param firstVertIndex Index of the first vertex of the subshape in the source data block
+     * @param row            Block number for the new subshape block
+     * @return Converted NiTriStrips block
+     */
     QModelIndex bhkPackedNiTriStripsShapeDataSubShapeTriangles(
             QModelIndex iSubShapeSrc,
             QModelIndex iDataSrc,
             int firstVertIndex,
             int row);
 
+    /**
+     * @brief bhkPackedNiTriStripsShapeData converts bhkPackedNiTriStripsShapeData blocks.
+     * @param iSrc                    Source bhkPackedNiTriStripsShapeData block
+     * @param iBhkNiTriStripsShapeDst Destination bhkNiTriStripsShape block
+     * @param row                     Block number for the new NiTriStripsData block
+     * @return Converted NiTriStripsData block
+     */
     QModelIndex bhkPackedNiTriStripsShapeData(QModelIndex iSrc, QModelIndex iBhkNiTriStripsShapeDst, int row);
 
+    /**
+     * @brief bhkMoppBvTreeShape converts bhkMoppBvTreeShape blocks.
+     * @param iSrc      Source bhkMoppBvTreeShape block
+     * @param parent    Destination parent block of the collision object
+     * @param row       Block number for the new bhkMoppBvTreeShape block
+     * @param bScaleSet Whether the scaling of the rigidbody has been determined
+     * @param radius    Rigidbody scaling
+     * @return Converted bhkMoppBvTreeShape block
+     */
     QModelIndex bhkMoppBvTreeShape(QModelIndex iSrc, QModelIndex & parent, int row, bool & bScaleSet, float & radius);
 
+    /**
+     * @brief bhkShape is a hub function for conversion of all bhkShape blocks.
+     * @param iSrc      Source bhkShape block
+     * @param parent    Destination parent block of the collision object
+     * @param row       Block number for the new bhkShape block
+     * @param bScaleSet Whether the scaling of the rigidbody has been determined
+     * @param radius    Rigidbody scaling
+     * @return Converted bhkShape block
+     */
     QModelIndex bhkShape(QModelIndex iSrc, QModelIndex & parent, int row, bool & bScaleSet, float & radius);
 
+    /**
+     * @brief bhkNiTriStripsShape converts bhkNiTriStripsShape blocks.
+     * @param iSrc      Source bhkNiTriStripsShape block
+     * @param row       Block number for the new bhkNiTriStripsShape block
+     * @param bScaleSet Whether the scaling of the rigidbody has been determined
+     * @param radius    Rigidbody scaling
+     * @return Converted bhkNiTriStripsShape block
+     */
     QModelIndex bhkNiTriStripsShape(QModelIndex iSrc, int row, bool & bScaleSet, float & radius);
 
+    /**
+     * @brief bhkNiTriStripsShapeData converts bhkNiTriStripsShapeData blocks.
+     * @param iSrc Source bhkNiTriStripsShapeData block
+     * @param row  Block number for the new bhkNiTriStripsShapeData block
+     * @return Converted bhkNiTriStripsShapeData block
+     */
     QModelIndex bhkNiTriStripsShapeData(QModelIndex iSrc, int row);
 
+    /**
+     * @brief bhkSphereShape converts bhkSphereShape blocks.
+     * @param iSrc      Source bhkSphereShape block
+     * @param row       Block number for the new bhkSphereShape block
+     * @param bScaleSet Whether the scaling of the rigidbody has been determined
+     * @param radius    Rigidbody scaling
+     * @return Converted bhkSphereShape block
+     */
     QModelIndex bhkSphereShape(QModelIndex iSrc, int row, bool & bScaleSet, float & radius);
 
+    /**
+     * @brief bhkConvexTransformShape converts bhkConvexTransformShape blocks.
+     * @param iSrc      Source bhkConvexTransformShape block
+     * @param parent    Destination parent block of the collision object
+     * @param row       Block number for the new bhkShape block
+     * @param bScaleSet Whether the scaling of the rigidbody has been determined
+     * @param radius    Rigidbody scaling
+     * @return Converted bhkConvexTransformShape block
+     */
     QModelIndex bhkConvexTransformShape(
             QModelIndex iSrc,
             QModelIndex & parent,
@@ -356,101 +471,277 @@ private:
             bool & bScaleSet,
             float & radius);
 
+    /**
+     * @brief bhkTransformShape converts bhkTransformShape blocks
+     * @param iSrc      Source bhkTransformShape block
+     * @param parent    Destination parent block of the collision object
+     * @param row       Block number for the new bhkShape block
+     * @param bScaleSet Whether the scaling of the rigidbody has been determined
+     * @param radius    Rigidbody scaling
+     * @return Converted bhkTransformShape block
+     */
     QModelIndex bhkTransformShape(QModelIndex iSrc, QModelIndex & parent, int row, bool & bScaleSet, float & radius);
 
+    /**
+     * @brief bhkBoxShape converts bhkTransformShape blocks.
+     * @param iSrc      Source bhkTransformShape block
+     * @param row       Block number for the new bhkShape block
+     * @param bScaleSet Whether the scaling of the rigidbody has been determined
+     * @param radius    Rigidbody scaling
+     * @return Converted bhkBoxShape block
+     */
     QModelIndex bhkBoxShape(QModelIndex iSrc, int row, bool & bScaleSet, float & radius);
 
+    /**
+     * @brief bhkCapsuleShape converts bhkCapsuleShape blocks
+     * @param iSrc      Source bhkCapsuleShape block
+     * @param row       Block number for the new bhkShape block
+     * @param bScaleSet Whether the scaling of the rigidbody has been determined
+     * @param radius    Rigidbody scaling
+     * @return Converted bhkCapsuleShape block
+     */
     QModelIndex bhkCapsuleShape(QModelIndex iSrc, int row, bool & bScaleSet, float & radius);
 
+    /**
+     * @brief collisionObject converts bhkCollisionObject blocks
+     * @param parent Destination parent of the converted bhkCollisionObject block
+     * @param iSrc   Source bhkCollisionObject block
+     * @param type   Collision object block type
+     */
     void collisionObject( QModelIndex parent, QModelIndex iSrc, QString type = "bhkCollisionObject" );
 
-    // NOTE: Copy of rigidBody is only correct up to and including Angular Damping
-    // NOTE: Some props have weird collision e.g: 9mmammo.nif.
+    /**
+     * @brief bhkRigidBody converts bhkRigidBody blocks.
+     * @param iSrc   Source bhkRigidBody block
+     * @param parent Destination parent block of the collision object
+     * @param row    Block number for the new bhkShape block
+     * @return Converted bhkRigidBody block
+     */
     QModelIndex bhkRigidBody(QModelIndex iSrc, QModelIndex & parent, int row);
 
-    // NOTE: Block number does not appear to matter
+    /**
+     * @brief bhkConstraint converts bhkLimitedHingeConstraint, bhkRagdollConstraint, bhkHingeConstraint,
+     *        bhkMalleableConstraint, bhkPrismaticConstraint, bhkBreakableConstraint, bhkStiffSpringConstraint,
+     *        bhkOrientHingedBodyAction and bhkLiquidAction blocks
+     * @param iSrc Source bhkConstraint block
+     * @return Converted bhkConstraint block
+     */
     QModelIndex bhkConstraint(QModelIndex iSrc);
 
+    /**
+     * @brief bhkConvexVerticesShape converts bhkConvexVerticesShape blocks
+     * @param iSrc      Source bhkConvexVerticesShape block
+     * @param row       Block number for the new bhkShape block
+     * @param bScaleSet Whether the scaling of the rigidbody has been determined
+     * @param radius    Rigidbody scaling
+     * @return Converted bhkConvexVerticesShape block
+     */
     QModelIndex bhkConvexVerticesShape(QModelIndex iSrc, int row, bool & bScaleSet, float & radius);
 
+    /**
+     * @brief bhkListShape converts bhkListShape blocks
+     * @param iSrc      Source bhkListShape block
+     * @param parent    Destination parent block of the collision object
+     * @param row       Block number for the new bhkShape block
+     * @param bScaleSet Whether the scaling of the rigidbody has been determined
+     * @param radius    Rigidbody scaling
+     * @return Converted bhkListShape block
+     */
     QModelIndex bhkListShape(QModelIndex iSrc, QModelIndex & parent, int row, bool & bScaleSet, float & radius);
 
+    /**
+     * @brief niTexturingProperty converts NiTexturingProperty blocks
+     * @param iDst              Destination Shader Property block
+     * @param iSrc              Source NiTexturingProperty block
+     * @param sequenceBlockName Controlled destination block name
+     */
     void niTexturingProperty(QModelIndex iDst, QModelIndex iSrc, const QString & sequenceBlockName);
 
+    /**
+     * @brief niMaterialProperty converts NiMaterialProperty blocks
+     * @param iDst              Destination Shader Property block
+     * @param iSrc              Source NiMaterialProperty block
+     * @param sequenceBlockName Controlled destination block name
+     */
     void niMaterialProperty(QModelIndex iDst, QModelIndex iSrc, const QString & sequenceBlockName);
 
+    /**
+     * @brief particleSystemModifiers converts NiParticleSystem modifier blocks.
+     * @param iDst Destination NiParticleSystem block
+     * @param iSrc Source NiParticleSystem block
+     * @param c    Copier of the NiParticleSystem block
+     */
     void particleSystemModifiers(QModelIndex iDst, QModelIndex iSrc, Copier & c);
 
+    /**
+     * @brief niParticleSystem converts NiParticleSystem blocks
+     * @param iSrc Source NiParticleSystem block
+     * @return Converted NiParticleSystem block
+     */
     QModelIndex niParticleSystem(QModelIndex iSrc);
 
+    /**
+     * @brief niPSys converts NiPSys blocks.
+     * @param iLinkDst Destination NiPSys link index
+     * @param iLinkSrc Source NiPSys link index
+     */
     void niPSys(QModelIndex iLinkDst, QModelIndex iLinkSrc);
 
+    /**
+     * @brief niPSysColliderManager converts NiPSysColliderManager blocks
+     * @param iDst Destination NiPSysColliderManager block
+     * @param iSrc Source NiPSysColliderManager block
+     * @return Converted NiPSysColliderManager block
+     */
     QModelIndex niPSysColliderManager(QModelIndex iDst, QModelIndex iSrc);
 
+    /**
+     * @brief niPSysCollider converts NiPSysCollider blocks
+     * @param iSrc Source NiPSysCollider block
+     * @return Converted NiPSysCollider block
+     */
     QModelIndex niPSysCollider(QModelIndex iSrc);
 
+    /**
+     * @brief bsFurnitureMarker converts BSFurnitureMarker blocks.
+     * @param iSrc Source BSFurnitureMarker block
+     * @return Converted BSFurnitureMarker block
+     */
     QModelIndex bsFurnitureMarker(QModelIndex iSrc);
 
+    /**
+     * @brief bsSegmentedTriShape converts BSSegmentedTriShape blocks.
+     * @param iSrc Source BSSegmentedTriShape block
+     * @return Converted BSSegmentedTriShape block
+     */
     QModelIndex bsSegmentedTriShape(QModelIndex iSrc);
 
+    /**
+     * @brief bsMultiBound converts BSMultiBound blocks.
+     * @param iSrc Source BSMultiBound block
+     * @return Converted BSMultiBound block
+     */
     QModelIndex bsMultiBound(QModelIndex iSrc);
 
+    /**
+     * @brief bsStripParticleSystem converts BSStripParticleSystem blocks.
+     * @param iSrc Source BSStripParticleSystem block
+     * @return Converted BSStripParticleSystem block
+     */
     QModelIndex bsStripParticleSystem(QModelIndex iSrc);
 
+    /**
+     * @brief bsStripPSysData converts BSStripPSysData blocks
+     * @param iSrc Source BSStripPSysData block
+     * @return Converted BSStripPSysData block
+     */
     QModelIndex bsStripPSysData(QModelIndex iSrc);
 
     /**
-     * @brief niCamera
-     * Source block type: NiCamera
-     * @param iSrc
-     * @return
+     * @brief niCamera converts NiCamera blocks.
+     * @param iSrc Source NiCamera block
+     * @return Converted NiCamera block
      */
     QModelIndex niCamera(QModelIndex iSrc);
 
     /**
-     * @brief niTriShape converts 'NiTriShape' blocks.
-     * Source block type: NiTriShape
-     * @param iSrc
-     * @return
+     * @brief niTriShape converts NiTriShape blocks.
+     * @param iSrc Source NiTriShape block
+     * @return Converted NiTriShape block
      */
     QModelIndex niTriShape(QModelIndex iSrc);
 
+    /**
+     * @brief niTriShapeAlt is an alternative way of converting NiTriShape blocks.
+     * @param iSrc Source NiTriShape block
+     * @return Converted NiTriShape block
+     */
     QModelIndex niTriShapeAlt(QModelIndex iSrc);
 
-    // NOTE: Apply after vertices have been created for example by niTriShapeDataAlt()
+    /**
+     * @brief niSkinInstance converts NiSkinInstance blocks.
+     * NOTE: Apply after vertices have been created for example by niTriShapeDataAlt()
+     * @param iBSTriShapeDst     Destination BSTriShape block
+     * @param iShaderPropertyDst Destination Shader Property block
+     * @param iSrc               Source NiSkinInstance block
+     * @return Converted BSSkin::Instance block
+     */
     QModelIndex niSkinInstance(QModelIndex iBSTriShapeDst, QModelIndex iShaderPropertyDst, QModelIndex iSrc);
 
     /**
-     * @brief niSkinData
-     * Source block type: NiSkinData
-     * @param iBSTriShapeDst
-     * @param iSrc
-     * @return
+     * @brief niSkinData converts NiSkinData blocks.
+     * @param iBSTriShapeDst Destination BSTriShape block
+     * @param iSrc           Source NiSkinData block
+     * @return Converted BSSkin::BoneData block
      */
     QModelIndex niSkinData(QModelIndex iBSTriShapeDst, QModelIndex iSrc);
 
+    /**
+     * @brief niTriShapeData converts NiTriShapeData blocks
+     * @param iSrc Source NiTriShapeData block
+     * @return Converted NiTriShapeData block
+     */
     QModelIndex niTriShapeData(QModelIndex iSrc);
 
+    /**
+     * @brief niPointLight converts NiPointLight blocks.
+     * @param iSrc Source NiPointLight block
+     * @return Converted NiPointLight block
+     */
     QModelIndex niPointLight(QModelIndex iSrc);
 
     /**
-     * Insert prefix after 'textures\'.
-     * @brief bsShaderTextureSet
-     * @param iDst
+     * @brief bsShaderTextureSet converts BSShaderTextureSet blocks.
+     * @param iDst Destination BSShaderTextureSet block
+     * @param iSrc Source BSShaderTextureSet block
      */
     void bsShaderTextureSet(QModelIndex iDst, QModelIndex iSrc);
 
+    /**
+     * @brief bSShaderLightingProperty converts BSShaderPPLightingProperty and BSShaderNoLightingProperty blocks
+     * @param iDst              Destination Shader Property block
+     * @param iSrc              Source Shader Property block
+     * @param sequenceBlockName Controlled block name
+     */
     void bSShaderLightingProperty(QModelIndex iDst, QModelIndex iSrc, const QString & sequenceBlockName);
 
+    /**
+     * @brief shaderProperty converts WaterShaderProperty, TileShaderProperty, SkyShaderProperty and
+     *        TallGrassShaderProperty blocks.
+     * @param iDst              Destination Shader Property block
+     * @param iSrc              Source Shader Property block
+     * @param type              Source Shader Property type
+     * @param sequenceBlockName Controlled block name
+     */
     void shaderProperty(QModelIndex iDst, QModelIndex iSrc, const QString & type, const QString & sequenceBlockName);
 
+    /**
+     * @brief niTriStrips converts NiTriStrips blocks.
+     * @param iSrc Source NiTriStrips block
+     * @return Converted NiTriStrips block
+     */
     QModelIndex niTriStrips( QModelIndex iSrc);
 
-    // Up to and including num triangles
+    /**
+     * @brief niTriData converts Tri Data blocks.
+     * @param iDst Destination BSTriShape block
+     * @param iSrc Source Tri Data block
+     * @param c    Copier of Source Tri Data block
+     */
     void niTriData(QModelIndex iDst, QModelIndex iSrc, Copier & c);
 
+    /**
+     * @brief niTriStripsData converts NiTriStripsData blocks.
+     * @param iSrc Source NiTriStripsData block
+     * @param iDst Destination BSTriShape block
+     */
     void niTriStripsData( QModelIndex iSrc, QModelIndex iDst );
 
+    /**
+     * @brief niTriShapeDataAlt is an alternative way for converting NiTriStripsData blocks.
+     * @param iDst Destination BSTriShape block
+     * @param iSrc Source NiTriStripsData block
+     */
     void niTriShapeDataAlt(QModelIndex iDst, QModelIndex iSrc);
 
     /*******************************************************************************************************************
