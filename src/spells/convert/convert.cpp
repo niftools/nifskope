@@ -22,12 +22,15 @@
 
 #include <time.h>
 
+#include <QJsonDocument>
+
 // UI
 #include "ui/conversiondialog.h"
 #include <QProgressDialog>
 #include <QProgressBar>
 #include <QVBoxLayout>
 #include <QLabel>
+#include <QFileDialog>
 
 bool checkLODFields(const QString & sLevel, const QString & sXCoord, const QString & sYCoord) {
     bool ok = false;
@@ -70,7 +73,12 @@ void adjustToGrid(const int level, int & x, int & y) {
     y = y / level * level;
 }
 
-void combineHighLevelLODs(QList<HighLevelLOD> & list, QList<QString> & failedList, const QString & pathDst, ProgressReceiver & receiver) {
+void combineHighLevelLODs(
+        QList<HighLevelLOD> & list,
+        QList<QString> & failedList,
+        const QString & pathDst,
+        const QString & dataPathSrc,
+        ProgressReceiver & receiver) {
     int maxX = 0;
     int maxY = 0;
     int minX = 0;
@@ -137,7 +145,7 @@ void combineHighLevelLODs(QList<HighLevelLOD> & list, QList<QString> & failedLis
 
                         // Convert
 
-                        Converter c = Converter(&nif, &nifCombined, FileProperties(FileType::Standard, "", lod.getFname(), 0, 0, 0), receiver);
+                        Converter c = Converter(&nif, &nifCombined, FileProperties(FileType::Standard, "", lod.getFname(), dataPathSrc, 0, 0, 0), receiver);
 
                         c.convert();
 
@@ -190,7 +198,7 @@ void combineHighLevelLODs(QList<HighLevelLOD> & list, QList<QString> & failedLis
  * @param isLOD
  * @param isLODObject
  */
-FileProperties getFileType(const QString & fnameSrc, QString & fnameDst, ListWrapper<HighLevelLOD> & highLevelLodList) {
+FileProperties getFileType(const QString & fnameSrc, const QString & dataPathSrc, QString & fnameDst, ListWrapper<HighLevelLOD> & highLevelLodList) {
     QString fileName = QFileInfo(fnameSrc).fileName();
     QStringList fileNameParts = fileName.split('.');
     QDir dirSrc = QFileInfo(fnameSrc).dir();
@@ -219,7 +227,7 @@ FileProperties getFileType(const QString & fnameSrc, QString & fnameDst, ListWra
     }
 
     if (!isLOD) {
-        return FileProperties(FileType::Standard, fnameDst, fnameSrc);
+        return FileProperties(FileType::Standard, fnameDst, fnameSrc, dataPathSrc);
     }
 
     int coordStartIndex = 2;
@@ -253,7 +261,7 @@ FileProperties getFileType(const QString & fnameSrc, QString & fnameDst, ListWra
     if (bHighLevel) {
         highLevelLodList.append(HighLevelLOD(fnameSrc, sWorldSpace, sXCoord.toInt(), sYCoord.toInt()));
 
-        return FileProperties(FileType::LODObjectHigh, "", fnameSrc);
+        return FileProperties(FileType::LODObjectHigh, "", fnameSrc, dataPathSrc);
     } else {
         fnameDst +=
                 "Terrain\\" +
@@ -270,10 +278,10 @@ FileProperties getFileType(const QString & fnameSrc, QString & fnameDst, ListWra
     }
 
     if (isLODObject) {
-        return FileProperties(FileType::LODObject, fnameDst, fnameSrc);
+        return FileProperties(FileType::LODObject, fnameDst, fnameSrc, dataPathSrc);
     }
 
-    return FileProperties(FileType::LODLandscape, fnameDst, fnameSrc, sLevel.toInt(), sXCoord.toInt(), sYCoord.toInt());
+    return FileProperties(FileType::LODLandscape, fnameDst, fnameSrc, dataPathSrc, sLevel.toInt(), sXCoord.toInt(), sYCoord.toInt());
 }
 
 void loadNif(NifModel & nif, const QString & fname) {
@@ -282,7 +290,7 @@ void loadNif(NifModel & nif, const QString & fname) {
     }
 }
 
-bool FileSaver::save(NifModel & nif, const QString & fname)
+bool FileSaver::save(NifModel & nif, const QString & fname, const QString & dataPathDst, QList<QPair<QString, QJsonObject>> materialList)
 {
     QMutexLocker locker(&saveMu);
 
@@ -294,11 +302,26 @@ bool FileSaver::save(NifModel & nif, const QString & fname)
         return false;
     }
 
+    if (materialList.count() > 0) {
+        for (QPair<QString, QJsonObject> mat : materialList) {
+            const QString matPath = dataPathDst + mat.first;
+
+            QDir().mkpath(QFileInfo(matPath).path());
+
+            QFile matFile(matPath);
+            QJsonDocument matDoc(mat.second);
+
+            matFile.open(QIODevice::WriteOnly);
+            matFile.write(matDoc.toJson());
+        }
+    }
+
     return true;
 }
 
 bool convert(
         const QString & fname,
+        const QString & dataPathSrc,
         QString fnameDst,
         ListWrapper<HighLevelLOD> & highLevelLodList,
         ProgressReceiver & receiver,
@@ -310,9 +333,11 @@ bool convert(
 
     fnameDst = QDir(fnameDst).path() + "/";
 
+    const QString rootDst = fnameDst;
+
     // Get File Type and destination path.
 
-    FileProperties fileProps = getFileType(fname, fnameDst, highLevelLodList);
+    FileProperties fileProps = getFileType(fname, dataPathSrc, fnameDst, highLevelLodList);
     int fileType = fileProps.getFileType();
 
     if (fileType == FileType::Invalid) {
@@ -364,7 +389,7 @@ bool convert(
         return false;
     }
 
-    if (!saver.save(newNif, fnameDst)) {
+    if (!saver.save(newNif, fnameDst, rootDst, c.getMaterialList())) {
         return false;
     }
 
@@ -379,13 +404,14 @@ bool convert(
 
 void convert(
         const QString & fname,
+        const QString & dataPathSrc,
         QString fnameDst,
         ListWrapper<HighLevelLOD> & highLevelLodList,
         ListWrapper<QString> & failedList,
         ProgressReceiver & receiver,
         FileSaver & saver,
         const QString & path = "") {
-    if (!convert(fname, fnameDst, highLevelLodList, receiver, saver, path)) {
+    if (!convert(fname, dataPathSrc, fnameDst, highLevelLodList, receiver, saver, path)) {
         failedList.append(fname);
     }
 }
@@ -3598,13 +3624,18 @@ QString Converter::updateTexturePath(QString fname) {
         return "";
     }
 
-    int offset = int(strlen(TEXTURE_ROOT));
-
     if (fname.left(5).compare("Data\\", Qt::CaseInsensitive) == 0) {
         fname.remove(0, 5);
     }
 
-    return fname.insert(offset, TEXTURE_FOLDER);
+    const int offset = int(strlen(TEXTURE_ROOT));
+
+    fname.remove(0, offset);
+    fname.insert(0, TEXTURE_FOLDER);
+
+    return fname;
+
+//    return fname.insert(offset, TEXTURE_FOLDER);
 }
 
 void Converter::bsShaderTextureSet(QModelIndex iDst, QModelIndex iSrc) {
@@ -4064,6 +4095,7 @@ QModelIndex Converter::getShaderProperty(QModelIndex iSrc) {
 
     nifDst->set<qint32>(iResult, "Shader Flags 1", 0);
     nifDst->set<qint32>(iResult, "Shader Flags 2", 0);
+    bsShaderFlags1Add(iResult, "Own_Emit");
 
     return iResult;
 }
@@ -4239,7 +4271,37 @@ void Converter::properties(QModelIndex iSrc, QModelIndex iShaderPropertyDst, QMo
         }
     }
 
-    // TODO: Run makeMaterialFile()
+    QJsonObject json = makeMaterialFile(iShaderPropertyDst, iNiAlphaPropertyDst);
+
+    if (!json.isEmpty()) {
+        // Set the material path to the nif path
+        QString matPath = QFileInfo(fileProps.getFnameSrc()).filePath();
+
+        // Remove the file path up to the meshes folder
+        matPath = matPath.right(matPath.length() - fileProps.getDataPathSrc().length() - QString("/Meshes/").length());
+
+        // Prepend the materials folder
+        matPath = "Materials/new_vegas/" + matPath;
+
+        const QString sExt = QFileInfo(matPath).suffix();
+
+        // Remove the file extension and make the filename a directory
+        if (sExt.length() > 0) {
+            matPath = matPath.left(matPath.length() - sExt.length() - 1) + "/";
+        }
+
+        // Add the material filename
+        matPath += nifDst->get<QString>(iDst, "Name").replace(':', '#');
+
+        if (nifDst->getBlockName(iShaderPropertyDst) == "BSEffectShaderProperty") {
+            matPath += ".BGEM";
+        } else {
+            matPath += ".BGSM";
+        }
+
+        nifDst->set<QString>(iShaderPropertyDst, "Name", matPath.replace('/', '\\'));
+        materialList.append(QPair(matPath, json));
+    }
 }
 
 void Converter::properties(QModelIndex iSrc, QModelIndex shaderProperty, QModelIndex iDst, Copier &c) {
@@ -4724,6 +4786,11 @@ void Converter::niControlledBlocksFinalize() {
     }
 }
 
+QList<QPair<QString, QJsonObject> > Converter::getMaterialList() const
+{
+    return materialList;
+}
+
 Converter::Converter(NifModel *nifSrc, NifModel *nifDst, FileProperties fileProps, ProgressReceiver &receiver)
     : nifSrc(nifSrc),
       nifDst(nifDst),
@@ -4806,15 +4873,33 @@ QString FileProperties::getFnameSrc() const
     return fnameSrc;
 }
 
-FileProperties::FileProperties(FileType fileType, QString fnameDst, QString fnameSrc, int lodLevel, int lodXCoord, int lodYCoord)
+QString FileProperties::getDataPathSrc() const
+{
+    return dataPathSrc;
+}
+
+FileProperties::FileProperties(
+        FileType fileType,
+        QString fnameDst,
+        QString fnameSrc,
+        QString dataPathSrc,
+        int lodLevel,
+        int lodXCoord,
+        int lodYCoord)
     : fileType(fileType),
       fnameDst(fnameDst),
       fnameSrc(fnameSrc),
+      dataPathSrc(dataPathSrc),
       lodLevel(lodLevel),
       lodXCoord(lodXCoord),
       lodYCoord(lodYCoord) {}
 
-FileProperties::FileProperties(FileType fileType, QString fnameDst, QString fnameSrc) : fileType(fileType), fnameDst(fnameDst), fnameSrc(fnameSrc) {}
+FileProperties::FileProperties(
+        FileType fileType,
+        QString fnameDst,
+        QString fnameSrc,
+        QString dataPathSrc)
+    : fileType(fileType), fnameDst(fnameDst), fnameSrc(fnameSrc), dataPathSrc(dataPathSrc) {}
 
 FileProperties::FileProperties() : fileType(FileType::Invalid) {}
 
@@ -4898,27 +4983,15 @@ uint EnumMap::convert(QModelIndex iSrc) {
     return convert(nifSrc->getValue(iSrc));
 }
 
-#include <QFileDialog>
-
-void convertNif() {
-    const QString pathSrc = QFileDialog::getExistingDirectory(nullptr, "Select the source directory");
-
-    if (pathSrc == "") {
-        return;
-    }
-
-    const QString pathDst = QFileDialog::getExistingDirectory(nullptr, "Select the destination directory");
-
-    if (pathDst == "") {
-        return;
-    }
-
-    convertNif(pathDst, pathSrc);
-}
-
-void convertNif(const QString pathDst, QString pathSrc) {
+void convertNif(const QString pathDst, const QString & dataPathSrc, QString pathSrc) {
     if (pathDst == "" || !QDir(pathDst).exists()) {
         qDebug() << "Invalid destination";
+
+        return;
+    }
+
+    if (!pathDst.left(dataPathSrc.length()).compare(dataPathSrc, Qt::CaseSensitive)) {
+        qDebug() << "Source path does not contain data path";
 
         return;
     }
@@ -4939,7 +5012,7 @@ void convertNif(const QString pathDst, QString pathSrc) {
     ProgressReceiver receiver = ProgressReceiver(&dialog);
 
     if (QFileInfo(pathSrc).isFile()) {
-        convert(pathSrc, pathDst, listWrapperHLLODs, listWrapperFailed, receiver, saver);
+        convert(pathSrc, dataPathSrc, pathDst, listWrapperHLLODs, listWrapperFailed, receiver, saver);
     } else if (QDir(pathSrc).exists() && pathSrc != "") {
         QDirIterator it(pathSrc, QStringList() << "*.nif", QDir::Files, QDirIterator::Subdirectories);
         QStringList fileList;
@@ -4956,7 +5029,14 @@ void convertNif(const QString pathDst, QString pathSrc) {
             futureWatcher.setFuture(QtConcurrent::map(
                     fileList,
                     [&](QString & elem) {
-                        convert(elem, pathDst, listWrapperHLLODs, listWrapperFailed, receiver, saver, pathSrc);
+                        convert(elem,
+                                dataPathSrc,
+                                pathDst,
+                                listWrapperHLLODs,
+                                listWrapperFailed,
+                                receiver,
+                                saver,
+                                pathSrc);
 
                         if (futureWatcher.future().isCanceled()) {
                             return;
@@ -4975,7 +5055,14 @@ void convertNif(const QString pathDst, QString pathSrc) {
             }
         } else {
             while (it.hasNext()) {
-                convert(it.next(), pathDst, listWrapperHLLODs, listWrapperFailed, receiver, saver, pathSrc);
+                convert(it.next(),
+                        dataPathSrc,
+                        pathDst,
+                        listWrapperHLLODs,
+                        listWrapperFailed,
+                        receiver,
+                        saver,
+                        pathSrc);
             }
         }
     } else {
@@ -5000,7 +5087,7 @@ void convertNif(const QString pathDst, QString pathSrc) {
 
         label.show();
 
-        combineHighLevelLODs(highLevelLodList, failedList, pathDst, receiver);
+        combineHighLevelLODs(highLevelLodList, failedList, pathDst, dataPathSrc, receiver);
     }
 
     if (failedList.count() > 0) {

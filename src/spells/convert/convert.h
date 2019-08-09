@@ -173,7 +173,7 @@ public:
      * @param fname Full Path
      * @return True if successful
      */
-    bool save(NifModel & nif, const QString & fname);
+    bool save(NifModel & nif, const QString & fname, const QString & dataPathDst, QList<QPair<QString, QJsonObject>> materialList);
 private:
     QMutex saveMu;
 };
@@ -193,12 +193,12 @@ public:
      * @param lodXCoord LOD x coordinate
      * @param lodYCoord LOD y coordinate
      */
-    FileProperties(FileType fileType, QString fnameDst, QString fnameSrc, int lodLevel, int lodXCoord, int lodYCoord);
+    FileProperties(FileType fileType, QString fnameDst, QString fnameSrc, QString dataPathSrc, int lodLevel, int lodXCoord, int lodYCoord);
 
     /**
      * @brief FileProperties constructor overload.
      */
-    FileProperties(FileType fileType, QString fnameDst, QString fnameSrc);
+    FileProperties(FileType fileType, QString fnameDst, QString fnameSrc, QString dataPathSrc);
 
     /**
      * @brief FileProperties constructor overload.
@@ -210,11 +210,13 @@ public:
     int getLodXCoord() const;
     int getLodYCoord() const;
     QString getFnameSrc() const;
+    QString getDataPathSrc() const;
 
 private:
     FileType fileType;
     QString fnameDst;
     QString fnameSrc;
+    QString dataPathSrc;
     int lodLevel = 0;
     int lodXCoord = 0;
     int lodYCoord = 0;
@@ -245,6 +247,7 @@ class Converter
     QList<QModelIndex> niControllerSequenceList;
     QList<Controller> controllerList;
     QList<QModelIndex> controlledBlockList;
+    QList<QPair<QString, QJsonObject>> materialList;
 
     bool conversionResult = true;
     bool bLODLandscape = false;
@@ -270,6 +273,14 @@ public:
 
     bool bsShaderFlags2IsSet(QModelIndex iShader, QString optionName);
 
+    bool bsShaderFlagsIsSet(uint shaderFlags, const QString & enumNameSrc, const QString & optionNameSrc);
+
+    QModelIndex getIndexDst(QModelIndex parent, const QString & name);
+
+    QModelIndex getBlockDst(QModelIndex iLink);
+
+    QModelIndex getBlockDst(QModelIndex iDst, const QString & name);
+
     /*******************************************************************************************************************
      * Getter and setters
      ******************************************************************************************************************/
@@ -277,6 +288,7 @@ public:
     bool getConversionResult() const;
     bool getBLODLandscape() const;
     bool getBLODBuilding() const;
+    QList<QPair<QString, QJsonObject> > getMaterialList() const;
 
 private:
     /*******************************************************************************************************************
@@ -748,9 +760,14 @@ private:
      * Block Conversion utility functions
      ******************************************************************************************************************/
 
-    void matTextures(const QString &shaderType, QModelIndex iShader, QJsonObject & json);
-
-    void makeMaterialFile(QModelIndex iShader, QModelIndex iAlpha);
+    /**
+     * @brief makeMaterialFile makes a material json based off the values in the given shader property and alpha
+     *        property.
+     * @param iShader Destination Shader Property
+     * @param iAlpha  Destination Alpha  Property
+     * @return Material JSON
+     */
+    QJsonObject makeMaterialFile(QModelIndex iShader, QModelIndex iAlpha);
 
     void niPSysData(const QModelIndex iDst, const QModelIndex iSrc);
 
@@ -873,8 +890,6 @@ private:
     uint bsShaderFlags1Get(QString optionName);
 
     uint bsShaderFlags2Get(QString optionName);
-
-    bool bsShaderFlagsIsSet(uint shaderFlags, const QString & enumNameSrc, const QString & optionNameSrc);
 
     void bsShaderFlagsSet(
             uint shaderFlagsSrc,
@@ -1067,15 +1082,9 @@ private:
 
     QModelIndex getIndexSrc(QModelIndex parent, const QString & name);
 
-    QModelIndex getIndexDst(QModelIndex parent, const QString & name);
-
     QModelIndex getBlockSrc(QModelIndex iLink);
 
     QModelIndex getBlockSrc(QModelIndex iSrc, const QString & name);
-
-    QModelIndex getBlockDst(QModelIndex iLink);
-
-    QModelIndex getBlockDst(QModelIndex iDst, const QString & name);
 
     bool setLink(QModelIndex iDst, QModelIndex iTarget);
 
@@ -1166,8 +1175,6 @@ private:
     QPair<QString, QString> acceptFormat( const QString & format, const NifModel * nif );
 };
 
-void convertNif();
-
-void convertNif(const QString pathDst, QString pathSrc);
+void convertNif(const QString pathDst, const QString & dataPathSrc, QString pathSrc);
 
 #endif // SPELL_CONVERT_H

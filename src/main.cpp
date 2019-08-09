@@ -115,6 +115,7 @@ int main( int argc, char * argv[] )
         QCommandLineOption convertOption( {"c", "convert"}, "Convert to Fallout 4");
         parser.addOption( convertOption );
         parser.addPositionalArgument("destination", QCoreApplication::translate("main", "Destination directory."));
+        parser.addPositionalArgument("NVDataFolder", QCoreApplication::translate("main", "New Vegas data directory."));
         parser.addPositionalArgument("source", QCoreApplication::translate("main", "Source directory to convert."));
 
 		// Process options
@@ -126,19 +127,16 @@ int main( int argc, char * argv[] )
 
         // Convert to Fallout 4
         if (parser.isSet( convertOption)) {
-            if (parser.positionalArguments().count() == 0) {
-                convertNif();
-
-                return 0;
-            }
-
-            if (parser.positionalArguments().count() != 2) {
+            if (parser.positionalArguments().count() != 3) {
                 qDebug() << "Invalid syntax";
 
                 parser.showHelp(1);
             }
 
-            convertNif(parser.positionalArguments()[0], parser.positionalArguments()[1]);
+            convertNif(
+                    parser.positionalArguments()[0],
+                    QDir(parser.positionalArguments()[1]).path(),
+                    parser.positionalArguments()[2]);
 
             return 0;
         }

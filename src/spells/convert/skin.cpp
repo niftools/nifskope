@@ -51,7 +51,6 @@ QModelIndex Converter::niSkinInstance(QModelIndex iBSTriShapeDst, QModelIndex iS
     setLink(iDst, "Data", niSkinData(iBSTriShapeDst, getBlockSrc(iSrc, "Data")));
     // TODO: Set bone weights in vertex data
 
-    // Only used for optimization?
     ignoreBlock(iSrc, "Skin Partition", false);
 
     if (nifSrc->getBlockName(iSrc) == "BSDismemberSkinInstance") {
@@ -133,10 +132,11 @@ QModelIndex Converter::niSkinData(QModelIndex iBSTriShapeDst, QModelIndex iSrc) 
                 float vertexWeight = nifSrc->get<float>(iVertexWeightSrc, "Weight");
 
                 if (weightCounts[vertexIndex] >= 4) {
-                    qDebug() << "Too many boneweights for one vertex. Blocknr.:"
-                             << nifSrc->getBlockNumber(iSrc)
-                             << "Vertex"
-                             << vertexIndex;
+                    // TODO:
+//                    qDebug() << "Too many boneweights for one vertex. Blocknr.:"
+//                             << nifSrc->getBlockNumber(iSrc)
+//                             << "Vertex"
+//                             << vertexIndex;
 
 //                    conversionResult = false;
 
