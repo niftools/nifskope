@@ -116,7 +116,7 @@ int main( int argc, char * argv[] )
         parser.addOption( convertOption );
         parser.addPositionalArgument("destination", QCoreApplication::translate("main", "Destination directory."));
         parser.addPositionalArgument("NVDataFolder", QCoreApplication::translate("main", "New Vegas data directory."));
-        parser.addPositionalArgument("source", QCoreApplication::translate("main", "Source directory to convert."));
+        parser.addPositionalArgument("source", QCoreApplication::translate("main", "(Optional) Source directory to convert."));
 
 		// Process options
 		parser.process( *a );
@@ -127,16 +127,21 @@ int main( int argc, char * argv[] )
 
         // Convert to Fallout 4
         if (parser.isSet( convertOption)) {
-            if (parser.positionalArguments().count() != 3) {
+            if (parser.positionalArguments().count() == 2) {
+                convertNif(
+                        parser.positionalArguments()[0],
+                        QDir(parser.positionalArguments()[1]).path(),
+                        QDir(parser.positionalArguments()[1]).path());
+            } else if (parser.positionalArguments().count() == 3) {
+                convertNif(
+                        parser.positionalArguments()[0],
+                        QDir(parser.positionalArguments()[1]).path(),
+                        parser.positionalArguments()[2]);
+            } else {
                 qDebug() << "Invalid syntax";
 
                 parser.showHelp(1);
             }
-
-            convertNif(
-                    parser.positionalArguments()[0],
-                    QDir(parser.positionalArguments()[1]).path(),
-                    parser.positionalArguments()[2]);
 
             return 0;
         }

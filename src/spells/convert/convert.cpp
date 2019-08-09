@@ -329,7 +329,7 @@ bool convert(
         const QString & root = "") {
     clock_t tStart = clock();
 
-    qDebug() << QThread::currentThreadId() <<  "Processing: " + fname;
+//    qDebug() << QThread::currentThreadId() <<  "Processing: " + fname;
 
     fnameDst = QDir(fnameDst).path() + "/";
 
@@ -351,13 +351,22 @@ bool convert(
     }
 
     if (fileType == FileType::Standard) {
+        QString pathFromRoot;
+
         if (root.length() > 0) {
-            fnameDst += QString(fname).remove(0, root.length() + (root.endsWith('/') ? 0 : 1));
+            pathFromRoot = QString(fname).remove(0, root.length() + (root.endsWith('/') ? 0 : 1));
         } else {
-            fnameDst += QFileInfo(fname).fileName();
+            pathFromRoot = QFileInfo(fname).fileName();
         }
 
-        fnameDst = fnameDst.replace('/', '\\');
+        pathFromRoot.replace('/', '\\');
+
+        if (pathFromRoot.left(QString("Meshes\\").length()).compare("Meshes\\", Qt::CaseInsensitive) == 0) {
+            pathFromRoot.insert(QString("Meshes\\").length(), "new_vegas\\");
+        }
+
+        fnameDst += pathFromRoot;
+        fnameDst.replace('/', '\\');
     }
 
     // Load
