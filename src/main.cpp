@@ -116,7 +116,7 @@ int main( int argc, char * argv[] )
         parser.addOption( convertOption );
         parser.addPositionalArgument("destination", QCoreApplication::translate("main", "Destination directory."));
         parser.addPositionalArgument("NVDataFolder", QCoreApplication::translate("main", "New Vegas data directory."));
-        parser.addPositionalArgument("source", QCoreApplication::translate("main", "(Optional) Source directory to convert."));
+        parser.addPositionalArgument("source", QCoreApplication::translate("main", "(Optional) Source directory / file to convert."));
 
 		// Process options
 		parser.process( *a );

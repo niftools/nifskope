@@ -134,7 +134,7 @@ void combineHighLevelLODs(
                             continue;
                         }
 
-                        qDebug() << level << x << y;
+//                        qDebug() << level << x << y;
 
                         NifModel nif = NifModel();
                         if (!nif.loadFromFile(lod.getFname())) {
@@ -175,7 +175,7 @@ void combineHighLevelLODs(
                                 QString::number(y) +
                                 ".BTO";
 
-                        qDebug() << "Destination: " + fileName;
+//                        qDebug() << "Destination: " + fileName;
 
                         QDir().mkpath(QFileInfo(fileName).path());
 
@@ -3890,6 +3890,7 @@ void Converter::bsShaderFlags(QModelIndex iShaderPropertyDst, uint shaderFlags1S
     if (nifDst->getBlockName(iShaderPropertyDst).compare("BSEffectShaderProperty") == 0) {
         bsShaderFlags1Add(flags1Dst, "Use_Falloff");
         bsShaderFlags2Add(flags2Dst, "Double_Sided");
+        bsShaderFlags2Add(flags2Dst, "Effect_Lighting");
     }
 
     nifDst->set<uint>(iShaderPropertyDst, "Shader Flags 1", flags1Dst);
@@ -4278,7 +4279,6 @@ void Converter::properties(QModelIndex iSrc, QModelIndex iShaderPropertyDst, QMo
         if (
                 nifSrc->getBlockName(iShaderPropertySrc) == "BSShaderPPLightingProperty" &&
                 nifDst->getBlockName(iShaderPropertyDst) == "BSEffectShaderProperty") {
-            bsShaderFlags2Add(iShaderPropertyDst, "Effect_Lighting");
             nifDst->set<Color4>(iShaderPropertyDst, "Emissive Color", Color4(1, 1, 1, 1));
         }
     }
@@ -5008,6 +5008,12 @@ void convertNif(const QString pathDst, const QString & dataPathSrc, QString path
         return;
     }
 
+    const QStringList expensiveNifs {
+        "dlc04mansionwindows01.nif",
+        "nv_vitomaticvigortester_activate.nif",
+        "villatest.nif",
+    };
+
     clock_t tStart = clock();
     bool isCanceled = false;
 
@@ -5030,9 +5036,18 @@ void convertNif(const QString pathDst, const QString & dataPathSrc, QString path
         QStringList fileList;
 
         if (RUN_CONCURRENT) {
+            int counter = 0;
+
             // Prepare the file list.
             while (it.hasNext()) {
-                fileList.append(it.next());
+                const QString & fname = it.next();
+
+                if (expensiveNifs.contains(QFileInfo(fname).fileName())) {
+                    // Process expensive nifs first to reduce single thread time.
+                    fileList.insert(counter++, fname);
+                } else {
+                    fileList.append(fname);
+                }
             }
 
             qRegisterMetaType<Qt::HANDLE>("Qt::HANDLE");
@@ -5110,14 +5125,12 @@ void convertNif(const QString pathDst, const QString & dataPathSrc, QString path
         }
     }
 
-    qDebug("Total time elapsed: %.2fs", double(clock() - tStart)/CLOCKS_PER_SEC);
-
     if (DONE_MESSAGE_BOX) {
         QMessageBox msgBox;
 
         msgBox.setText("Done");
         msgBox.exec();
-    } else {
-        fprintf(stdout, "Done\n");
     }
+
+    fprintf(stdout, "Done. Total time elapsed: %.2fs", double(clock() - tStart)/CLOCKS_PER_SEC);
 }

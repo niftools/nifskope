@@ -565,6 +565,10 @@ void matFloats(
         json.insert("cBaseColor",         "#ffffff");
         json.insert("fBaseColorScale",    1.0);
         json.insert("fLightingInfluence", 1.0);
+
+        if (nifDst->get<Color4>(iShader, "Emissive Color").alpha() == 0.0f) {
+            fAlpha = 0.0;
+        }
     }
 
     if (iAlpha.isValid()) {
@@ -587,8 +591,18 @@ void matFloats(
 }
 
 void matBlending(QJsonObject & json, NifModel * nifDst, QModelIndex iAlpha) {
-    if (nifDst->get<int>(iAlpha, "Flags") & 1) {
-        json.insert("eAlphaBlendMode", "Standard");
+    int flags = nifDst->get<int>(iAlpha, "Flags");
+
+    if (flags & 1) {
+        // Check if Source blend mode is Zero and destination blende mode is Src Color
+        if (flags & 1 << 1 && flags & 1 << 6) {
+            json.insert("eAlphaBlendMode", "Multiplicative");
+        // Check if Source blend mode is Src Alpha and Destination blend mode is Inv Src Alpha
+        } else if (flags & 1 << 3 && flags & 1 << 2 && flags & 1 << 5 && flags & 1 << 6 && flags & 1 << 7) {
+            json.insert("eAlphaBlendMode", "Standard");
+        } else {
+            json.insert("eAlphaBlendMode", "");
+        }
     } else {
         json.insert("eAlphaBlendMode", "None");
     }
