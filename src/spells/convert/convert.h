@@ -23,6 +23,7 @@
 //! \file convert.h spToFO42
 
 #define RUN_CONCURRENT true
+#define DONE_MESSAGE_BOX false
 
 /**
  * @brief The FileType enum describes a nif's in engine type.

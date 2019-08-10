@@ -560,11 +560,11 @@ void matFloats(
         sv.addFloat("fFalloffStopOpacity",  "Falloff Stop Opacity");
         sv.addFloat("fSoftDepth",           "Soft Falloff Depth");
 
-        json.insert("fLightingInfluence", double(nifDst->get<int>(iShader, "Lighting Influence")));
         json.insert("iEnvmapMinLOD",      nifDst->get<int>(iShader, "Env Map Min LOD"));
 
-        json.insert("cBaseColor",      "#ffffff");
-        json.insert("fBaseColorScale", 1.0);
+        json.insert("cBaseColor",         "#ffffff");
+        json.insert("fBaseColorScale",    1.0);
+        json.insert("fLightingInfluence", 1.0);
     }
 
     if (iAlpha.isValid()) {

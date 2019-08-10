@@ -163,7 +163,7 @@ void combineHighLevelLODs(
                     if (nifCombined.getBlockCount() > 0) {
                         QString fileName =
                                 pathDst +
-                                "Terrain\\" +
+                                "Meshes\\Terrain\\" +
                                 worldspace +
                                 "\\Objects\\" +
                                 worldspace +
@@ -264,7 +264,7 @@ FileProperties getFileType(const QString & fnameSrc, const QString & dataPathSrc
         return FileProperties(FileType::LODObjectHigh, "", fnameSrc, dataPathSrc);
     } else {
         fnameDst +=
-                "Terrain\\" +
+                "Meshes\\Terrain\\" +
                 sWorldSpace +
                 (isLODObject ? "\\Objects\\" : "\\") +
                 sWorldSpace +
@@ -312,7 +312,12 @@ bool FileSaver::save(NifModel & nif, const QString & fname, const QString & data
             QJsonDocument matDoc(mat.second);
 
             matFile.open(QIODevice::WriteOnly);
-            matFile.write(matDoc.toJson());
+
+            if (matFile.isWritable()) {
+                matFile.write(matDoc.toJson());
+            } else {
+                qDebug() << __FUNCTION__ << "Failed to write" << matPath;
+            }
         }
     }
 
@@ -345,8 +350,6 @@ bool convert(
     }
 
     if (fileType == FileType::LODObjectHigh) {
-        qDebug() << "High level LOD";
-
         return true;
     }
 
@@ -4300,7 +4303,7 @@ void Converter::properties(QModelIndex iSrc, QModelIndex iShaderPropertyDst, QMo
         }
 
         // Add the material filename
-        matPath += nifDst->get<QString>(iDst, "Name").replace(':', '#');
+        matPath += nifDst->get<QString>(iDst, "Name").replace(':', '#').replace('\t', "    ");
 
         if (nifDst->getBlockName(iShaderPropertyDst) == "BSEffectShaderProperty") {
             matPath += ".BGEM";
@@ -5109,8 +5112,12 @@ void convertNif(const QString pathDst, const QString & dataPathSrc, QString path
 
     qDebug("Total time elapsed: %.2fs", double(clock() - tStart)/CLOCKS_PER_SEC);
 
-    QMessageBox msgBox;
+    if (DONE_MESSAGE_BOX) {
+        QMessageBox msgBox;
 
-    msgBox.setText("Done");
-    msgBox.exec();
+        msgBox.setText("Done");
+        msgBox.exec();
+    } else {
+        fprintf(stdout, "Done\n");
+    }
 }
