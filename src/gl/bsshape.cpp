@@ -515,6 +515,7 @@ void BSShape::drawVerts() const
 
 void BSShape::drawSelection() const
 {
+	glDisable(GL_FRAMEBUFFER_SRGB);
 	if ( scene->options & Scene::ShowNodes )
 		Node::drawSelection();
 

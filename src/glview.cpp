@@ -220,7 +220,7 @@ GLView::GLView( const QGLFormat & format, QWidget * p, const QGLWidget * shareWi
 	connect(NifSkope::getOptions(), &SettingsDialog::update3D, [this]() {
 		// Calling update() here in a lambda can crash..
 		//updateSettings();
-		qglClearColor(cfg.background);
+		qglClearColor(clearColor());
 		//update();
 	});
 	connect(NifSkope::getOptions(), &SettingsDialog::update3D, this, static_cast<void (GLView::*)()>(&GLView::update));
@@ -412,7 +412,8 @@ void GLView::paintGL()
 	if ( scene->visMode & Scene::VisSilhouette ) {
 		qglClearColor( QColor( 255, 255, 255, 255 ) );
 	}
-	//glViewport( 0, 0, width(), height() );
+
+	glDisable(GL_FRAMEBUFFER_SRGB);
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT );
 	
 	
@@ -709,8 +710,9 @@ void GLView::resizeGL( int width, int height )
 		return;
 	aspect = (GLdouble)width / (GLdouble)height;
 	glViewport( 0, 0, width, height );
-	qglClearColor( cfg.background );
 
+	glDisable(GL_FRAMEBUFFER_SRGB);
+	qglClearColor(clearColor());
 	update();
 }
 
