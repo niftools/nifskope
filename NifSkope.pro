@@ -499,7 +499,8 @@ win32:contains(QT_ARCH, i386) {
 
 	copyDirs( $$SHADERS, shaders )
 	#copyDirs( $$LANG, lang )
-	copyFiles( $$XML $$QSS )
+	copyFiles( $$QSS )
+	#copyFiles( $$XML )
 
 	# Copy Readmes and rename to TXT
 	copyFiles( $$READMES,,,, md:txt )
