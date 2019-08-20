@@ -188,6 +188,7 @@ public:
 	float timeMax() const;
 signals:
 	void sceneUpdated();
+	void disableSave();
 
 public slots:
 	void updateSceneOptions( bool checked );

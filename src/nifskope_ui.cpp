@@ -608,6 +608,10 @@ void NifSkope::initToolBars()
 		}
 	} );
 
+	connect ( ogl->scene, &Scene::disableSave, [this]() {
+		ui->aSave->setDisabled(true);
+		ui->aSaveAs->setDisabled(true);
+	} );
 
 	// LOD Toolbar
 	QToolBar * tLOD = ui->tLOD;
@@ -790,6 +794,9 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 	ogl->setUpdatesEnabled( true );
 	ogl->setEnabled( true );
 	setEnabled( true ); // IMPORTANT!
+
+	ui->aSave->setDisabled(false);
+	ui->aSaveAs->setDisabled(false);
 
 	int timeout = 2500;
 	if ( success ) {
