@@ -1302,6 +1302,9 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 					{
 						QString optId = NifValue::enumOptionName( item->type(), value.toCount() );
 
+						if ( item->type() == "BSVertexDesc" )
+							return BSVertexDesc(value.toCount()).toString();
+
 						if ( optId.isEmpty() )
 							return value.toString();
 
