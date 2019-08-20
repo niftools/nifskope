@@ -120,6 +120,9 @@ void ControllerManager::setSequence( const QString & seqname )
 					if ( nodename.isEmpty() ) {
 						QModelIndex idx = nif->getIndex( iCB, "Node Name Offset" );
 						nodename = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
+
+						if ( nodename.isEmpty() )
+							nodename = nif->get<QString>( iCB, "Target Name" );
 					}
 
 					QString proptype = nif->get<QString>( iCB, "Property Type" );
@@ -134,6 +137,9 @@ void ControllerManager::setSequence( const QString & seqname )
 					if ( ctrltype.isEmpty() ) {
 						QModelIndex idx = nif->getIndex( iCB, "Controller Type Offset" );
 						ctrltype = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
+
+						if ( ctrltype.isEmpty() && iController.isValid() )
+							ctrltype = nif->getBlockName( iController );
 					}
 
 					QString var1 = nif->get<QString>( iCB, "Controller ID" );

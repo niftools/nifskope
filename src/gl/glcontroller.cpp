@@ -715,7 +715,7 @@ TransformInterpolator::TransformInterpolator( Controller * owner )
 bool TransformInterpolator::update( const NifModel * nif, const QModelIndex & index )
 {
 	if ( Interpolator::update( nif, index ) ) {
-		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ), "NiTransformData" );
+		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ), "NiKeyframeData" );
 		iTranslations = nif->getIndex( iData, "Translations" );
 		iRotations = nif->getIndex( iData, "Rotations" );
 
