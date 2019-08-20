@@ -93,6 +93,7 @@ public:
 	void setDefault() override final;
 
 public slots:
+	void modifyPane() override;
 	void on_btnFolderAdd_clicked();
 	void on_btnFolderRemove_clicked();
 	void on_btnFolderDown_clicked();
@@ -105,10 +106,16 @@ public slots:
 	void on_btnArchiveUp_clicked();
 	void on_btnArchiveAutoDetect_clicked();
 
+	void setFolderList();
+	void setArchiveList();
+
+	void onBrowseClicked();
+
 private:
 	std::unique_ptr<Ui::SettingsResources> ui;
 
-	FSManager * archiveMgr;
+	QString currentFolderItem();
+	QString currentArchiveItem();
 
 	QStringListModel * folders;
 	QStringListModel * archives;

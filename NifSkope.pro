@@ -196,6 +196,7 @@ HEADERS += \
 	src/ui/settingspane.h \
 	src/xml/nifexpr.h \
 	src/xml/xmlconfig.h \
+	src/gamemanager.h \
 	src/glview.h \
 	src/message.h \
 	src/nifskope.h \
@@ -279,6 +280,7 @@ SOURCES += \
 	src/xml/kfmxml.cpp \
 	src/xml/nifexpr.cpp \
 	src/xml/nifxml.cpp \
+	src/gamemanager.cpp \
 	src/glview.cpp \
 	src/main.cpp \
 	src/message.cpp \
@@ -310,12 +312,10 @@ fsengine {
 	INCLUDEPATH += lib/fsengine
 	HEADERS += \
 		lib/fsengine/bsa.h \
-		lib/fsengine/fsengine.h \
-		lib/fsengine/fsmanager.h
+		lib/fsengine/fsengine.h
 	SOURCES += \
 		lib/fsengine/bsa.cpp \
-		lib/fsengine/fsengine.cpp \
-		lib/fsengine/fsmanager.cpp
+		lib/fsengine/fsengine.cpp
 }
 
 nvtristrip {

@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MATERIAL_H
 
 #include "data/niftypes.h"
+#include "gamemanager.h"
 
 #include <QObject>
 #include <QByteArray>
@@ -54,7 +55,7 @@ class Material : public QObject
 	friend class BSEffectShaderProperty;
 
 public:
-	Material( QString name );
+	Material( QString name, Game::GameMode game );
 
 	bool isValid() const;
 	QStringList textures() const;
@@ -63,7 +64,7 @@ public:
 protected:
 	bool openFile();
 	virtual bool readFile();
-	QByteArray find( QString path );
+	QByteArray find( QString path, Game::GameMode game );
 	QString toLocalPath( QString path ) const;
 
 
@@ -133,7 +134,7 @@ class ShaderMaterial : public Material
 	friend class BSLightingShaderProperty;
 
 public:
-	ShaderMaterial( QString name );
+	ShaderMaterial( QString name, Game::GameMode game );
 
 protected:
 	bool readFile() override final;
@@ -217,7 +218,7 @@ class EffectMaterial : public Material
 	friend class BSEffectShaderProperty;
 
 public:
-	EffectMaterial( QString name );
+	EffectMaterial( QString name, Game::GameMode game );
 
 protected:
 	bool readFile() override final;

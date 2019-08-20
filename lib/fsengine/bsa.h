@@ -327,6 +327,8 @@ public:
 	
 	//! Gets the specified folder, or the root folder if not found
 	const BSAFolder * getFolder( QString fn ) const;
+	//! Gets the root folder
+	const BSAFolder * getRootFolder() const;
 	//! Gets the specified file, or null if not found
 	const BSAFile * getFile( QString fn ) const;
 

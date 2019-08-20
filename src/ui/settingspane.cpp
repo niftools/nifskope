@@ -3,6 +3,8 @@
 #include "ui_settingsrender.h"
 #include "ui_settingsresources.h"
 
+#include "gamemanager.h"
+
 #include "ui/widgets/colorwheel.h"
 #include "ui/widgets/floatslider.h"
 #include "ui/settingsdialog.h"
@@ -10,7 +12,6 @@
 #include "nifskope.h"
 
 #include <fsengine/fsengine.h>
-#include <fsengine/fsmanager.h>
 
 #include <QComboBox>
 #include <QDebug>
@@ -27,6 +28,7 @@
 #include <QTimer>
 
 using namespace nstheme;
+using Game::GameManager;
 
 
 SettingsPane::SettingsPane( QWidget * parent ) :
@@ -469,7 +471,10 @@ bool regFolderPath( QStringList & gamePaths, const QString & regPath, const QStr
                      QStringList gameSubDirs = QStringList(), QStringList gameArchiveFilters = QStringList() )
 {
 	QSettings reg( regPath, QSettings::Registry32Format );
-	QDir dir( reg.value( regValue ).toString() );
+
+	QString path = reg.value( regValue ).toString();
+	path.remove('"');
+	QDir dir( path );
 
 	if ( dir.exists() && dir.cd( gameFolder ) ) {
 		gamePaths.append( dir.path() );
@@ -512,6 +517,11 @@ bool regFolderPaths( QStringList & gamePaths, const QStringList & regPaths, cons
  * Resources
  */
 
+static QString lblGame = "lblGame%1";
+static QString chkGame = "chkGame%1";
+static QString edtGame = "edtGame%1";
+static QString btnBrowse = "btnBrowse%1";
+
 SettingsResources::SettingsResources( QWidget * parent ) :
 	SettingsPane( parent ),
 	ui( new Ui::SettingsResources )
@@ -519,18 +529,57 @@ SettingsResources::SettingsResources( QWidget * parent ) :
 	ui->setupUi( this );
 	SettingsDialog::registerPage( parent, ui->name->text() );
 
-	archiveMgr = FSManager::get();
-
 	folders = new QStringListModel( this );
 	archives = new QStringListModel( this );
 
 	ui->foldersList->setModel( folders );
 	ui->archivesList->setModel( archives );
 
-#ifndef Q_OS_WIN32
-	ui->btnArchiveAutoDetect->setHidden( true );
+	// TODO: Hide for new asset manager for now
 	ui->btnFolderAutoDetect->setHidden( true );
-#endif
+	ui->btnAutoDetectGames->setHidden( true );
+
+	for ( int i = 0; i < Game::NUM_GAMES; i++ ) {
+		// Get each widget for game slot `i`
+		auto lbl = findChild<QLabel *>(lblGame.arg(i));
+		auto chk = findChild<QCheckBox *>(chkGame.arg(i));
+		auto edt = findChild<QLineEdit *>(edtGame.arg(i));
+		auto btn = findChild<QPushButton *>(btnBrowse.arg(i));
+
+		auto game = Game::GameMode(i);
+		auto game_string = Game::StringForMode(game);
+		if ( game_string.isEmpty() )
+			continue;
+
+		// Rename generic `GAME_N` label to game name
+		lbl->setText(game_string);
+
+		// Sync line edit with game install path if it exists
+		auto path_string = GameManager::get_game_path(game);
+		if ( !path_string.isNull() )
+			edt->setText(path_string);
+
+		// Sync Enabled checkbox
+		chk->setChecked(GameManager::get_game_status(game));
+
+		auto folder_item = ui->foldersGameList->findItems(QString("GAME_%1").arg(i), Qt::MatchExactly).value(0, nullptr);
+		auto archive_item = ui->archivesGameList->findItems(QString("GAME_%1").arg(i), Qt::MatchExactly).value(0, nullptr);
+		//Q_ASSERT(folder_item && archive_item);
+		folder_item->setText(game_string);
+		folder_item->setHidden(!chk->isChecked());
+		archive_item->setText(game_string);
+		archive_item->setHidden(!chk->isChecked());
+
+		connect( btn, &QPushButton::clicked, this, &SettingsResources::onBrowseClicked );
+
+		connect( chk, &QCheckBox::clicked, this, &SettingsPane::modifyPane );
+
+		// Hide game items from Folders and Archives lists when game is disabled
+		connect( chk, &QCheckBox::clicked, [chk, folder_item, archive_item](){
+			folder_item->setHidden(!chk->isChecked());
+			archive_item->setHidden(!chk->isChecked());
+		} );
+	}
 
 	connect( ui->foldersList, &QListView::doubleClicked, this, &SettingsPane::modifyPane );
 	connect( ui->chkAlternateExt, &QCheckBox::clicked, this, &SettingsPane::modifyPane );
@@ -556,6 +605,15 @@ SettingsResources::SettingsResources( QWidget * parent ) :
 			ui->btnArchiveDown->setEnabled( idx.row() < archives->rowCount() - 1 );
 		}
 	);
+
+	connect( ui->archivesGameList->selectionModel(), &QItemSelectionModel::currentChanged,
+		this, &SettingsResources::setArchiveList
+	);
+	
+	connect( ui->foldersGameList->selectionModel(), &QItemSelectionModel::currentChanged,
+		this, &SettingsResources::setFolderList
+	);
+
 }
 
 SettingsResources::~SettingsResources()
@@ -566,14 +624,34 @@ void SettingsResources::read()
 {
 	QSettings settings;
 
-	QVariant foldersVal = settings.value( "Settings/Resources/Folders", QStringList() );
-	folders->setStringList( foldersVal.toStringList() );
+	auto mgr = GameManager::get();
 
-	QVariant archivesVal = settings.value( "Settings/Resources/Archives", QStringList() );
-	archives->setStringList( archivesVal.toStringList() );
+	mgr->load();
 
-	ui->foldersList->setCurrentIndex( folders->index( 0, 0 ) );
-	ui->archivesList->setCurrentIndex( archives->index( 0, 0 ) );
+	for ( int i = 0; i < Game::NUM_GAMES; i++ ) {
+		// Get each checkbox for game slot `i`
+		auto chk = findChild<QCheckBox *>(chkGame.arg(i));
+		auto game = Game::GameMode(i);
+		chk->setChecked(mgr->get_game_status(game));
+	}
+
+	for ( int i = 0; i < ui->foldersGameList->count(); i++ ) {
+		auto item = ui->foldersGameList->item(i);
+		if ( !item->isHidden() ) {
+			ui->foldersGameList->setCurrentRow(i);
+			break;
+		}
+	}
+
+	for ( int i = 0; i < ui->archivesGameList->count(); i++ ) {
+		auto item = ui->archivesGameList->item(i);
+		if ( !item->isHidden() ) {
+			ui->archivesGameList->setCurrentRow(i);
+			break;
+		}
+	}
+	setFolderList();
+	setArchiveList();
 
 	ui->chkAlternateExt->setChecked( settings.value( "Settings/Resources/Alternate Extensions", true ).toBool() );
 
@@ -585,19 +663,21 @@ void SettingsResources::write()
 	if ( !isModified() )
 		return;
 
-	QSettings settings;
+	auto mgr = GameManager::get();
 
-	settings.setValue( "Settings/Resources/Folders", folders->stringList() );
-	settings.setValue( "Settings/Resources/Archives", archives->stringList() );
-
-	// Sync FSManager to Archives list
-	archiveMgr->archives.clear();
-	for ( const QString an : archives->stringList() ) {
-		if ( !archiveMgr->archives.contains( an ) )
-			if ( auto a = FSArchiveHandler::openArchive( an ) )
-				archiveMgr->archives.insert( an, a );
+	for ( int i = 0; i < Game::NUM_GAMES; i++ ) {
+		// Get each checkbox for game slot `i`
+		auto chk = findChild<QCheckBox *>(chkGame.arg(i));
+		auto game = Game::GameMode(i);
+		mgr->set_game_status(game, chk->isChecked());
 	}
 
+	mgr->save();
+
+	// Reload the currently open archive handles
+	mgr->reset_archive_handles();
+
+	QSettings settings;
 	settings.setValue( "Settings/Resources/Alternate Extensions", ui->chkAlternateExt->isChecked() );
 
 	setModified( false );
@@ -610,6 +690,62 @@ void SettingsResources::setDefault()
 	read();
 }
 
+void SettingsResources::setFolderList()
+{
+	folders->setStringList(GameManager::get_folder_list(currentFolderItem()));
+	ui->foldersList->setCurrentIndex( folders->index( 0, 0 ) );
+}
+
+void SettingsResources::setArchiveList()
+{
+	archives->setStringList(GameManager::get_archive_list(currentArchiveItem()));
+	ui->archivesList->setCurrentIndex( archives->index( 0, 0 ) );
+}
+
+void SettingsResources::onBrowseClicked()
+{
+	QPushButton * btn = qobject_cast<QPushButton *>(sender());
+	if ( !btn )
+		return;
+
+	QFileDialog dialog(this);
+	dialog.setFileMode(QFileDialog::Directory);
+
+	QString path;
+	if ( dialog.exec() )
+		path = dialog.selectedFiles().at(0);
+
+	auto edt = ui->resourcesGames->findChild<QLineEdit *>(btn->objectName().replace("btnBrowse", "edtGame"));
+	if ( edt ) {
+		if ( path.isEmpty() )
+			edt->clear();
+		else
+			edt->setText(path);
+	}
+	
+	auto lbl = ui->resourcesGames->findChild<QLabel *>(btn->objectName().replace("btnBrowse", "lblGame"));
+	if ( lbl ) {
+		GameManager::update_game(lbl->text(), path);
+	}
+	SettingsPane::modifyPane();
+}
+
+QString SettingsResources::currentFolderItem()
+{
+	return ui->foldersGameList->currentItem()->text();
+}
+
+QString SettingsResources::currentArchiveItem()
+{
+	return ui->archivesGameList->currentItem()->text();
+}
+
+void SettingsResources::modifyPane()
+{
+	GameManager::update_folders(currentFolderItem(), folders->stringList());
+	GameManager::update_archives(currentArchiveItem(), archives->stringList());
+	SettingsPane::modifyPane();
+}
 
 void moveIdxDown( QListView * view )
 {
@@ -643,6 +779,7 @@ void SettingsResources::on_btnFolderAdd_clicked()
 {
 	QFileDialog dialog( this );
 	dialog.setFileMode( QFileDialog::Directory );
+	dialog.setDirectory(GameManager::get_data_path(currentFolderItem()));
 
 	QString path;
 	if ( dialog.exec() )
@@ -674,90 +811,22 @@ void SettingsResources::on_btnFolderUp_clicked()
 
 void SettingsResources::on_btnFolderAutoDetect_clicked()
 {
-#ifdef Q_OS_WIN32
-	// List to hold all games paths that were detected
-	QStringList list;
 
-	QString beth = "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\%1";
-
-	// Fallout 4
-	{
-		regFolderPath( list, beth.arg( "Fallout4" ),
-			"Installed Path",
-			"Data",
-			{ "/Textures" },
-			{ ".ba2" }
-		);
-	}
-
-	// Skyrim, Fallout, Oblivion
-	{
-		regFolderPaths( list,
-			{ beth.arg( "Skyrim Special Edition" ), beth.arg( "Skyrim" ), beth.arg( "FalloutNV" ), beth.arg( "Fallout3" ), beth.arg( "Oblivion" ) },
-			"Installed Path",
-			"Data",
-			{},        /* No subdirs */
-			{ ".bsa" }
-		);
-	}
-
-	// Morrowind
-	{
-		regFolderPath( list,
-			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Morrowind",
-			"Installed Path",
-			"Data",
-			{ "/Textures" },
-			{ ".bsa" }
-		);
-	}
-
-	// CIV IV
-	{
-		regFolderPath( list,
-			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Firaxis Games\\Sid Meier's Civilization 4",
-			"INSTALLDIR",
-			"Assets/Art/shared"
-		);
-	}
-
-	// Freedom Force
-	{
-		QString ff = "HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\%1";
-		QStringList ffSubDirs{ "./textures", "./skins/standard" };
-
-		regFolderPaths( list,
-			{ ff.arg( "FFVTTR" ), ff.arg( "Freedom Force" ) },
-			"InstallDir",
-			"Data/Art/library/area_specific/_textures",
-			ffSubDirs
-		);
-	}
-
-	QStringList archivesNew = folders->stringList() + list;
-	archivesNew.removeDuplicates();
-
-	folders->setStringList( archivesNew );
-	ui->foldersList->setCurrentIndex( folders->index( 0, 0, QModelIndex() ) );
-
-	modifyPane();
-#endif
 }
-
 
 void SettingsResources::on_btnArchiveAdd_clicked()
 {
 	QStringList files = QFileDialog::getOpenFileNames(
 		this,
 		"Select one or more archives",
-		"",
+		GameManager::get_data_path(currentArchiveItem()),
 		"Archive (*.bsa *.ba2)"
 	);
 
 	QStringList filtered;
-
-	filtered += FSManager::filterArchives( files, "textures" );
-	filtered += FSManager::filterArchives( files, "materials" );
+	
+	filtered += GameManager::get_filtered_archives_list( files, "materials" );
+	filtered += GameManager::get_filtered_archives_list( files, "textures" );
 	filtered.removeDuplicates();
 
 	for ( int i = 0; i < filtered.count(); i++ ) {
@@ -789,21 +858,27 @@ void SettingsResources::on_btnArchiveUp_clicked()
 
 void SettingsResources::on_btnArchiveAutoDetect_clicked()
 {
-	QStringList archivesNew = archives->stringList();
-	
-	QStringList autoList = FSManager::autodetectArchives( "textures" );
-	// Fallout 4 Materials
-	autoList += FSManager::autodetectArchives( "materials" );
-	for ( const QString & archive : autoList ) {
-		if ( !archivesNew.contains( archive, Qt::CaseInsensitive ) ) {
-			archivesNew.append( archive );
-		}
+	QStringList archives_list = archives->stringList();
+	QStringList data_archives = GameManager::get_archive_file_list(currentArchiveItem());
+
+	QStringList new_archives;
+	for ( const auto& a : GameManager::get_filtered_archives_list(data_archives, "materials") ) {
+		if ( archives_list.contains(a, Qt::CaseInsensitive) )
+			continue;
+		archives_list << a;
 	}
 
-	archivesNew.removeDuplicates();
+	for ( const auto& a : GameManager::get_filtered_archives_list(data_archives, "textures") ) {
+		if ( archives_list.contains(a, Qt::CaseInsensitive) )
+			continue;
+		archives_list << a;
+	}
 
-	archives->setStringList( archivesNew );
+	archives_list.removeDuplicates();
+	
+	archives->setStringList(archives_list);
+	
+	ui->archivesList->setCurrentIndex(archives->index(0, 0));
 
-	ui->archivesList->setCurrentIndex( archives->index( 0, 0 ) );
 	modifyPane();
 }

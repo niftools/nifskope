@@ -1186,7 +1186,7 @@ void BSLightingShaderProperty::update( const NifModel * nif, const QModelIndex &
 	BSShaderLightingProperty::update( nif, property );
 
 	if ( name.endsWith( ".bgsm", Qt::CaseInsensitive ) )
-		material = new ShaderMaterial( name );
+		material = new ShaderMaterial( name, scene->game );
 
 	if ( material && !material->isValid() )
 		material = nullptr;
@@ -1526,7 +1526,7 @@ void BSEffectShaderProperty::update( const NifModel * nif, const QModelIndex & p
 	BSShaderLightingProperty::update( nif, property );
 
 	if ( name.endsWith( ".bgem", Qt::CaseInsensitive ) )
-		material = new EffectMaterial( name );
+		material = new EffectMaterial( name, scene->game);
 
 	if ( material && !material->isValid() )
 		material = nullptr;

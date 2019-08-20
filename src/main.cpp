@@ -36,6 +36,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "model/nifmodel.h"
 #include "model/kfmmodel.h"
 
+#include "gamemanager.h"
+
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QDesktopServices>
@@ -96,6 +98,9 @@ int main( int argc, char * argv[] )
 		// Load XML files
 		NifModel::loadXML();
 		KfmModel::loadXML();
+
+		// Init game manager
+		auto mgr = Game::GameManager::get();
 
 		int port = NIFSKOPE_IPC_PORT;
 

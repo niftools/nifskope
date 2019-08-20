@@ -747,6 +747,11 @@ const BSA::BSAFolder * BSA::getFolder( QString fn ) const
 		return folders.value( fn );
 }
 
+const BSA::BSAFolder * BSA::getRootFolder() const
+{
+	return root;
+}
+
 // see bsa.h
 const BSA::BSAFile * BSA::getFile( QString fn ) const
 {

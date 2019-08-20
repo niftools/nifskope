@@ -33,7 +33,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "material.h"
 
 #include <fsengine/fsengine.h>
-#include <fsengine/fsmanager.h>
 
 #include <QBuffer>
 #include <QDataStream>
@@ -47,13 +46,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define BGSM 0x4D534742
 #define BGEM 0x4D454742
 
-Material::Material( QString name )
+Material::Material( QString name, Game::GameMode game )
 {
 	localPath = toLocalPath( name.replace( "\\", "/" ) );
 	if ( localPath.startsWith( "data/", Qt::CaseInsensitive ) ) {
 		localPath.remove( 0, 5 );
 	}
-	data = find( localPath );
+	data = find( localPath, game );
 
 	fileExists = !data.isEmpty();
 }
@@ -109,14 +108,13 @@ bool Material::readFile()
 	return in.status() == QDataStream::Ok;
 }
 
-QByteArray Material::find( QString path )
+QByteArray Material::find( QString path, Game::GameMode game )
 {
 	QSettings settings;
-	QStringList folders = settings.value( "Settings/Resources/Folders", QStringList() ).toStringList();
 
 	QString filename;
 	QDir dir;
-	for ( QString folder : folders ) {
+	for ( QString folder : Game::GameManager::get_folder_list(game) ) {
 		dir.setPath( folder );
 
 		if ( dir.exists( path ) ) {
@@ -128,7 +126,7 @@ QByteArray Material::find( QString path )
 		}
 	}
 
-	for ( FSArchiveFile * archive : FSManager::archiveList() ) {
+	for ( FSArchiveFile * archive : Game::GameManager::get_archive_handles(game) ) {
 		if ( archive ) {
 			filename = QDir::fromNativeSeparators( path.toLower() );
 			if ( archive->hasFile( filename ) ) {
@@ -175,7 +173,7 @@ QString Material::getPath() const
 }
 
 
-ShaderMaterial::ShaderMaterial( QString name ) : Material( name )
+ShaderMaterial::ShaderMaterial( QString name, Game::GameMode game ) : Material( name, game )
 {
 	if ( fileExists )
 		readable = openFile();
@@ -264,7 +262,7 @@ bool ShaderMaterial::readFile()
 	return in.status() == QDataStream::Ok;
 }
 
-EffectMaterial::EffectMaterial( QString name ) : Material( name )
+EffectMaterial::EffectMaterial( QString name, Game::GameMode game ) : Material( name, game )
 {
 	if ( fileExists )
 		readable = openFile();
