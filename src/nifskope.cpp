@@ -163,7 +163,7 @@ NifSkope::NifSkope()
 	nifEmpty = new NifModel( this );
 	proxyEmpty = new NifProxyModel( this );
 
-	nif->setMessageMode( BaseModel::UserMessage );
+	nif->setMessageMode( BaseModel::MSG_USER );
 
 	// Setup QUndoStack
 	nif->undoStack = new QUndoStack( this );

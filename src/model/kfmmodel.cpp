@@ -159,7 +159,7 @@ bool KfmModel::updateArrayItem( NifItem * array )
 
 	if ( d1 > 1024 * 1024 * 8 ) {
 		auto m = tr( "array %1 much too large. %2 bytes requested" ).arg( array->name() ).arg( d1 );
-		if ( msgMode == UserMessage ) {
+		if ( msgMode == MSG_USER ) {
 			Message::append( nullptr, tr( "Could not update array item." ), m, QMessageBox::Critical );
 		} else {
 			testMsg( m );

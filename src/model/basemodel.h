@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define BaseModel_H
 
 #include "data/nifitem.h"
+#include "message.h"
 
 #include <QAbstractItemModel> // Inherited
 #include <QFileInfo>
@@ -298,10 +299,14 @@ public:
 
 	enum MsgMode
 	{
-		UserMessage, TstMessage
+		MSG_USER, MSG_TEST
 	};
 
 	void setMessageMode( MsgMode mode );
+	MsgMode getMessageMode() const;
+
+	void logMessage( const QString & message, const QString & details, QMessageBox::Icon lvl = QMessageBox::Warning ) const;
+	void logWarning( const QString & details ) const;
 
 signals:
 	//! Messaging signal

@@ -23,7 +23,7 @@ Message::~Message()
 }
 
 //! Static helper for message box without detail text
-void Message::message( QWidget * parent, const QString & str, QMessageBox::Icon icon )
+QMessageBox* Message::message( QWidget * parent, const QString & str, QMessageBox::Icon icon )
 {
 	auto msgBox = new QMessageBox( parent );
 	msgBox->setWindowFlags( msgBox->windowFlags() | Qt::Tool );
@@ -36,10 +36,12 @@ void Message::message( QWidget * parent, const QString & str, QMessageBox::Icon 
 	msgBox->show();
 
 	msgBox->activateWindow();
+
+	return msgBox;
 }
 
 //! Static helper for message box with detail text
-void Message::message( QWidget * parent, const QString & str, const QString & err, QMessageBox::Icon icon )
+QMessageBox* Message::message( QWidget * parent, const QString & str, const QString & err, QMessageBox::Icon icon )
 {
 	if ( !parent )
 		parent = qApp->activeWindow();
@@ -56,6 +58,8 @@ void Message::message( QWidget * parent, const QString & str, const QString & er
 	msgBox->show();
 
 	msgBox->activateWindow();
+
+	return msgBox;
 }
 
 //! Static helper for installed message handler

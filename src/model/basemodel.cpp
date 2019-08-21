@@ -33,7 +33,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "basemodel.h"
 
 #include "xml/xmlconfig.h"
-#include "message.h"
 
 #include <QByteArray>
 #include <QColor>
@@ -53,7 +52,7 @@ BaseModel::BaseModel( QObject * p ) : QAbstractItemModel( p )
 {
 	root = new NifItem( 0 );
 	parentWindow = qobject_cast<QWidget *>(p);
-	msgMode = TstMessage;
+	msgMode = MSG_TEST;
 }
 
 BaseModel::~BaseModel()
@@ -74,6 +73,25 @@ void BaseModel::setEmitChanges( bool e )
 void BaseModel::setMessageMode( MsgMode mode )
 {
 	msgMode = mode;
+}
+
+BaseModel::MsgMode BaseModel::getMessageMode() const
+{
+	return msgMode;
+}
+
+void BaseModel::logMessage( const QString & message, const QString & details, QMessageBox::Icon lvl ) const
+{
+	if ( msgMode == MSG_USER ) {
+		Message::append( nullptr, message, details, lvl );
+	} else {
+		testMsg( details );
+	}
+}
+
+void BaseModel::logWarning( const QString & details ) const
+{
+	logMessage(tr("Warnings were generated while reading the file."), details);
 }
 
 void BaseModel::testMsg( const QString & m ) const
