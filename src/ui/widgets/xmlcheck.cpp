@@ -5,6 +5,8 @@
 #include "model/nifmodel.h"
 #include "ui/widgets/fileselect.h"
 
+#include "spells/sanitize.h"
+
 #include <QAction>
 #include <QCheckBox>
 #include <QCloseEvent>
@@ -21,9 +23,10 @@
 #include <QSpinBox>
 #include <QTextBrowser>
 #include <QToolButton>
+#include <QComboBox>
 #include <QQueue>
 
-#define NUM_THREADS 2
+#define NUM_THREADS 4
 
 
 TestShredder * TestShredder::create()
@@ -66,12 +69,29 @@ TestShredder::TestShredder()
 	btChoose->setDefaultAction( aChoose );
 
 	blockMatch = new QLineEdit( this );
+	valueName = new QLineEdit( this );
+	valueMatch = new QLineEdit( this );
+	valueOps = new QComboBox( this );
+	for ( const auto & o : ops_ord )
+		valueOps->insertItem(ops[o].first, o );
+	valueOps->setCurrentIndex(0);
 
-	repErr = new QCheckBox( tr( "report errors only" ), this );
-	repErr->setChecked( settings.value( "Report Errors Only", true ).toBool() );
+	QString op_tip;
+	for ( const auto t : ops_ord )
+		op_tip += QString("%1\t%2\r\n").arg(t).arg(ops[t].second);
+	valueOps->setToolTip(op_tip);
+
+	chkCheckErrors = new QCheckBox(tr("Error Checking"), this);
+	chkCheckErrors->setChecked(settings.value("Error Checking", true).toBool());
+
+	hdrOnly = new QCheckBox( tr( "Header Only" ), this );
+	hdrOnly->setChecked( settings.value( "Header Only", false ).toBool() );
+
+	repErr = new QCheckBox( tr( "List Matches Only" ), this );
+	repErr->setChecked( settings.value( "List Matches Only", true ).toBool() );
 
 	count = new QSpinBox();
-	count->setRange( 1, 8 );
+	count->setRange( 1, 16 );
 	count->setValue( settings.value( "Threads", NUM_THREADS ).toInt() );
 	connect( count, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &TestShredder::renumberThreads );
 
@@ -88,7 +108,7 @@ TestShredder::TestShredder()
 	label = new QLabel( this );
 	label->setHidden( true );
 
-	btRun = new QPushButton( tr( "run" ), this );
+	btRun = new QPushButton( tr( "Run" ), this );
 	btRun->setCheckable( true );
 	connect( btRun, &QPushButton::clicked, this, &TestShredder::run );
 
@@ -112,9 +132,19 @@ TestShredder::TestShredder()
 	lay->addLayout( hbox = new QHBoxLayout() );
 	hbox->addWidget( btChoose );
 	hbox->addWidget( blockMatch );
-	hbox->addWidget( repErr );
 	hbox->addWidget( new QLabel( tr( "Threads:" ) ) );
 	hbox->addWidget( count );
+
+	lay->addLayout( hbox = new QHBoxLayout() );
+	hbox->addWidget( new QLabel( tr( "Value:" ) ) );
+	hbox->addWidget( valueName );
+	hbox->addWidget( valueOps );
+	hbox->addWidget( valueMatch );
+
+	lay->addLayout( hbox = new QHBoxLayout() );
+	hbox->addWidget( chkCheckErrors );
+	hbox->addWidget( repErr );
+	hbox->addWidget( hdrOnly );
 
 	lay->addLayout( hbox = new QHBoxLayout() );
 	hbox->addWidget( new QLabel( tr( "Version Match:" ) ) );
@@ -146,7 +176,9 @@ TestShredder::~TestShredder()
 	settings.setValue( "Check NIF", chkNif->isChecked() );
 	settings.setValue( "Check KF", chkKf->isChecked() );
 	settings.setValue( "Check KFM", chkKfm->isChecked() );
-	settings.setValue( "Report Errors Only", repErr->isChecked() );
+	settings.setValue( "List Matches Only", repErr->isChecked() );
+	settings.setValue( "Header Only", hdrOnly->isChecked() );
+	settings.setValue( "Error Checking", chkCheckErrors->isChecked() );
 	settings.setValue( "Threads", count->value() );
 
 	settings.endGroup();
@@ -176,6 +208,12 @@ void TestShredder::renumberThreads( int num )
 		thread->blockMatch = blockMatch->text();
 		thread->verMatch  = NifModel::version2number( verMatch->text() );
 		thread->reportAll = !repErr->isChecked();
+		thread->headerOnly = hdrOnly->isChecked();
+		thread->checkFile = chkCheckErrors->isChecked();
+
+		thread->valueName = valueName->text();
+		thread->valueMatch = valueMatch->text();
+		thread->op = OpType(valueOps->currentIndex());
 
 		if ( btRun->isChecked() ) {
 			thread->start();
@@ -206,7 +244,7 @@ void TestShredder::run()
 	QStringList extensions;
 
 	if ( chkNif->isChecked() )
-		extensions << "*.nif" << "*.nifcache" << "*.texcache" << "*.pcpatch" << "*.bto" << "*.btr";
+		extensions << "*.nif" << "*.nifcache" << "*.texcache" << "*.pcpatch" << "*.bto" << "*.btr" << "*.item" << "*.nif_wii";
 	if ( chkKf->isChecked() )
 		extensions << "*.kf" << "*.kfa";
 	if ( chkKfm->isChecked() )
@@ -223,6 +261,12 @@ void TestShredder::run()
 		thread->verMatch = NifModel::version2number( verMatch->text() );
 		thread->blockMatch = blockMatch->text();
 		thread->reportAll  = !repErr->isChecked();
+		thread->headerOnly = hdrOnly->isChecked();
+		thread->checkFile = chkCheckErrors->isChecked();
+		thread->valueName = valueName->text();
+		thread->valueMatch = valueMatch->text();
+		thread->op = OpType(valueOps->currentIndex());
+
 		thread->start();
 	}
 }
@@ -356,7 +400,6 @@ void FileQueue::clear()
 TestThread::TestThread( QObject * o, FileQueue * q )
 	: QThread( o ), queue( q )
 {
-	reportAll = true;
 }
 
 TestThread::~TestThread()
@@ -392,29 +435,117 @@ void TestThread::run()
 			// lock the XML lock
 			QReadLocker lck( lock );
 
+			QString result;
 			if ( model == &nif && nif.earlyRejection( filepath, blockMatch, verMatch ) ) {
-				bool loaded = model->loadFromFile( filepath );
+				bool loaded = (headerOnly) ? nif.loadHeaderOnly(filepath) : model->loadFromFile(filepath);
 
-				QString result = QString( "<a href=\"nif:%1\">%1</a> (%2)" ).arg( filepath, model->getVersion() );
+				result = QString( "<a href=\"nif:%1\">%1</a> (%2, %3, %4)" )
+					.arg( filepath, model->getVersion() ).arg( nif.getUserVersion() ).arg( nif.getUserVersion2() );
 				QList<TestMessage> messages = model->getMessages();
 
 				bool blk_match = false;
+				bool val_match = false;
 
-				if ( loaded && model == &nif )
+				if ( !headerOnly && loaded && model == &nif ) {
 					for ( int b = 0; b < nif.getBlockCount(); b++ ) {
-						// In case early rejection failed, such as if this is an older file without the block types in the header
-						// note if any of these blocks types match the specified one.
-						if ( blockMatch.isEmpty() == false && nif.inherits( nif.getBlockName( nif.getBlock( b ) ), blockMatch ) ) {
-							blk_match = true;
+						auto blk = nif.getBlock( b );
+						bool current_match = !blockMatch.isEmpty() && nif.inherits(nif.getBlockName(blk), blockMatch);
+						blk_match |= current_match;
+
+						NifValue value;
+						if ( (blockMatch.isEmpty() || current_match) && !valueName.isEmpty() && !valueMatch.isEmpty() ) {
+							auto nameIdx = nif.getIndex(blk, valueName);
+							bool hasName = nameIdx.isValid();
+							if ( hasName ) {
+								value = nif.getValue(nameIdx);
+
+								bool isInt = value.isCount() && !value.isFloat();
+								bool isStr = value.isString() || value.type() == NifValue::tStringIndex || value.isFloat();
+
+								auto asInt = value.toCount();
+								auto asStr = value.toString();
+								if ( value.type() == NifValue::tStringIndex )
+									asStr = nif.string(nameIdx);
+
+								bool current_match = false;
+
+								switch ( op ) {
+								case OP_EQ:
+									if ( isInt )
+										current_match = (asInt == valueMatch.toInt(nullptr, 0));
+									else if ( isStr )
+										current_match = (asStr == valueMatch);
+									break;
+								case OP_NEQ:
+									if ( isInt )
+										current_match = (asInt != valueMatch.toInt(nullptr, 0));
+									else if ( isStr )
+										current_match = (asStr != valueMatch);
+									break;
+								case OP_AND:
+									if ( !isInt )
+										break;
+									current_match = (asInt & valueMatch.toInt(nullptr, 0));
+									break;
+								case OP_AND_S:
+									if ( !isInt )
+										break;
+									current_match = (asInt & (1 << valueMatch.toInt(nullptr, 0)));
+									break;
+								case OP_NAND:
+									if ( !isInt )
+										break;
+									current_match = !(asInt & valueMatch.toInt(nullptr, 0));
+									break;
+								case OP_STR_S:
+									current_match = asStr.startsWith(valueMatch, Qt::CaseInsensitive);
+									break;
+								case OP_STR_E:
+									current_match = asStr.endsWith(valueMatch, Qt::CaseInsensitive);
+									break;
+								case OP_STR_NS:
+									current_match = !asStr.startsWith(valueMatch, Qt::CaseInsensitive);
+									break;
+								case OP_STR_NE:
+									current_match = !asStr.endsWith(valueMatch, Qt::CaseInsensitive);
+									break;
+								case OP_CONT:
+									current_match = asStr.contains(valueMatch, Qt::CaseInsensitive);
+									break;
+								default:
+									current_match = false;
+									break;
+								}
+
+								if ( current_match )
+									messages += TestMessage( QtInfoMsg ) <<
+												QString( "[%1] Found Match: %2 %3 %4 | Value: %5" ).arg(b)
+												.arg(valueName).arg(ops_ord[int(op)].toHtmlEscaped())
+												.arg(valueMatch).arg(asStr);
+							} else {
+								current_match = false;
+							}
+
+							val_match |= current_match;
 						}
 
-						messages += checkLinks( &nif, nif.getBlock( b ), kf );
+						if ( checkFile ) {
+							messages += checkLinks(&nif, blk, kf);
+						}
 					}
 
-				bool rep = reportAll;
+					if ( checkFile ) {
+						for ( auto checker : SpellBook::checkers() )
+							checker->castIfApplicable(&nif, {});
+						messages += nif.getMessages();
+					}
+
+				}
+
+				bool rep = reportAll || (blk_match && valueMatch.isEmpty());
 
 				// Don't show anything if block match is on but the requested type wasn't found & we're in block match mode
-				if ( blockMatch.isEmpty() == true || blk_match == true ) {
+				if ( blockMatch.isEmpty() == true || blk_match == true || val_match == true ) {
 					for ( const TestMessage& msg : messages ) {
 						if ( msg.type() != QtDebugMsg ) {
 							result += "<br>" + msg;
@@ -425,6 +556,10 @@ void TestThread::run()
 					if ( rep )
 						emit sigReady( result );
 				}
+			} else if ( !blockMatch.isEmpty() && !verMatch ) {
+				// Do not silently fail on unrecognized NIFs
+				result += QString("Did not recognize file as a NIF: %1").arg(filepath);
+				emit sigReady(result);
 			}
 		}
 

@@ -239,8 +239,8 @@
     <addaction name="menuImport"/>
     <addaction name="menuExport"/>
     <addaction name="separator"/>
-    <addaction name="aLoadXML"/>
     <addaction name="aShredder"/>
+    <addaction name="aLoadXML"/>
     <addaction name="separator"/>
     <addaction name="aQuit"/>
    </widget>
@@ -1055,7 +1055,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
   </action>
   <action name="aShredder">
    <property name="text">
-    <string>XML Checker</string>
+    <string>File Checker</string>
    </property>
   </action>
   <action name="aQuit">

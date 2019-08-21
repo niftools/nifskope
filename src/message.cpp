@@ -200,7 +200,7 @@ template <> TestMessage & TestMessage::operator<<(const char * x)
 template <> TestMessage & TestMessage::operator<<(QString x)
 {
 	space( s );
-	s += "\"" + x + "\"";
+	s += x; //"\"" + x + "\"";
 	return *this;
 }
 
