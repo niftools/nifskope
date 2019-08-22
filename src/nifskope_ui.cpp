@@ -779,10 +779,11 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 		mImport->setDisabled( true );
 	} else {
 		mExport->setDisabled( false );
+		mImport->setDisabled( false );
 		if ( nif->getUserVersion2() >= 100 )
-			mImport->setDisabled( true );
-		else
-			mImport->setDisabled( false );
+			mImport->actions().at(0)->setDisabled(true);
+		else if ( nif->getUserVersion2() == 0 )
+			mImport->actions().at(1)->setDisabled(true);
 	}
 
 	// Reconnect the models to the views
