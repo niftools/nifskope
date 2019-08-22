@@ -536,7 +536,6 @@ SettingsResources::SettingsResources( QWidget * parent ) :
 	ui->archivesList->setModel( archives );
 
 	// TODO: Hide for new asset manager for now
-	ui->btnFolderAutoDetect->setHidden( true );
 	ui->btnAutoDetectGames->setHidden( true );
 
 	for ( int i = 0; i < Game::NUM_GAMES; i++ ) {
@@ -785,6 +784,9 @@ void SettingsResources::on_btnFolderAdd_clicked()
 	if ( dialog.exec() )
 		path = dialog.selectedFiles().at( 0 );
 
+	if ( path.isEmpty() )
+		return;
+
 	folders->insertRow( 0 );
 	folders->setData( folders->index( 0, 0 ), path );
 	ui->foldersList->setCurrentIndex( folders->index( 0, 0 ) );
@@ -811,7 +813,20 @@ void SettingsResources::on_btnFolderUp_clicked()
 
 void SettingsResources::on_btnFolderAutoDetect_clicked()
 {
+	QStringList folders_list = folders->stringList();
+	for ( const auto& f : GameManager::get_existing_folders_list(currentFolderItem()) ) {
+		if ( folders_list.contains(f, Qt::CaseInsensitive) )
+			continue;
+		folders_list << f;
+	}
 
+	folders_list.removeDuplicates();
+
+	folders->setStringList(folders_list);
+
+	ui->foldersList->setCurrentIndex(folders->index(0, 0));
+
+	modifyPane();
 }
 
 void SettingsResources::on_btnArchiveAdd_clicked()

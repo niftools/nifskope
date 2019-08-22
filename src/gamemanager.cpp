@@ -55,6 +55,31 @@ QStringList archives_list( const QString& path, const QString& data_dir, const Q
 	return list_filtered;
 }
 
+QStringList existing_folders(GameMode game, QString path)
+{
+	// TODO: Restore the minimal previous support for detecting Civ IV, etc.
+	if ( game == OTHER )
+		return {};
+
+	QStringList folders;
+	for ( const auto& f : FOLDERS.value(game, {}) ) {
+		QDir dir(QString("%1/%2").arg(path).arg(DATA.value(game, "")));
+		if ( dir.exists(f) )
+			folders << QFileInfo(dir, f).absoluteFilePath();
+	}
+
+	return folders;
+}
+
+GameManager::GameInfo get_game_info(GameMode game)
+{
+	GameManager::GameInfo info;
+	info.id = game;
+	info.name = StringForMode(game);
+	info.path = registry_game_path(KEY.value(game, {}));
+	return info;
+}
+
 QString StringForMode( GameMode game )
 {
 	if ( game >= NUM_GAMES )
@@ -68,18 +93,35 @@ GameMode ModeForString( QString game )
 	return STRING.key(game, OTHER);
 }
 
+QProgressDialog* prog_dialog( QString title )
+{
+	QProgressDialog* dlg = new QProgressDialog(title, {}, 0, NUM_GAMES);
+	dlg->setAttribute(Qt::WA_DeleteOnClose);
+	dlg->show();
+	return dlg;
+}
+
+void process( QProgressDialog* dlg, int i )
+{
+	if ( dlg ) {
+		dlg->setValue(i);
+		QCoreApplication::processEvents();
+	}
+}
+
 GameManager::GameManager()
 {
 	QSettings settings;
 	int manager_version = settings.value("Game Manager Version", 0).toInt();
 	if ( manager_version == 0 ) {
-		manager_version++;
-		QProgressDialog* dlg = new QProgressDialog( "Initializing the Game Manager", {}, 0, NUM_GAMES );
-		dlg->setAttribute(Qt::WA_DeleteOnClose);
-		dlg->show();
+		auto dlg = prog_dialog("Initializing the Game Manager");
 		// Initial game manager settings
 		initialize(manager_version, dlg);
 		dlg->close();
+	}
+
+	if ( manager_version == 1 ) {
+		update(manager_version);
 	}
 
 	load();
@@ -152,44 +194,62 @@ void GameManager::del()
 	}
 }
 
-void GameManager::initialize( int manager_version, QProgressDialog* dlg )
+void GameManager::initialize( int& manager_version, QProgressDialog* dlg )
 {
 	QSettings settings;
 	QMap<QString, QVariant> paths;
 	QMap<QString, QVariant> folders;
 	QMap<QString, QVariant> archives;
 	QMap<QString, QVariant> status;
-	for ( const auto & key : KEY.toStdMap() ) {
-		// Progress Bar
-		if ( dlg ) {
-			dlg->setValue(key.first);
-			QCoreApplication::processEvents();
-		}
-		if ( key.second.isEmpty() )
+
+	for ( int g = 0; g < NUM_GAMES; g++ ) {
+		process(dlg, g);
+		auto game = get_game_info(GameMode(g));
+		if ( game.path.isEmpty() )
 			continue;
-		auto game = key.first;
-		auto game_str = StringForMode(game);
-		auto path = registry_game_path(key.second);
-		paths.insert(game_str, path);
-		folders.insert(game_str, FOLDERS.value(game, {}));
+		paths.insert(game.name, game.path);
+		folders.insert(game.name, existing_folders(game.id, game.path));
 
 		// Filter and insert archives
 		QStringList filtered;
-		if ( game == FALLOUT_4 || game == FALLOUT_76 )
-			filtered.append(archives_list(path, DATA.value(game, {}), "materials"));
-		filtered.append(archives_list(path, DATA.value(game, {}), "textures"));
+		if ( game.id == FALLOUT_4 || game.id == FALLOUT_76 )
+			filtered.append(archives_list(game.path, DATA.value(game.id, {}), "materials"));
+		filtered.append(archives_list(game.path, DATA.value(game.id, {}), "textures"));
 		filtered.removeDuplicates();
 
-		archives.insert(game_str, filtered);
+		archives.insert(game.name, filtered);
 
 		// Game Enabled Status
-		status.insert(game_str, !path.isEmpty());
+		status.insert(game.name, !game.path.isEmpty());
 	}
 
 	settings.setValue("Game Paths", paths);
 	settings.setValue("Game Folders", folders);
 	settings.setValue("Game Archives", archives);
 	settings.setValue("Game Status", status);
+	settings.setValue("Game Manager Version", ++manager_version);
+}
+
+void GameManager::update( int& manager_version, QProgressDialog * dlg )
+{
+	QSettings settings;
+	QMap<QString, QVariant> folders;
+
+	for ( int g = 0; g < NUM_GAMES; g++ ) {
+		process(dlg, g);
+		auto game = get_game_info(GameMode(g));
+		if ( game.path.isEmpty() )
+			continue;
+
+		if ( manager_version == 1 )
+			folders.insert(game.name, existing_folders(game.id, game.path));
+	}
+
+	if ( manager_version == 1 ) {
+		settings.setValue("Game Folders", folders);
+		manager_version++;
+	}
+
 	settings.setValue("Game Manager Version", manager_version);
 }
 
@@ -278,6 +338,16 @@ QStringList GameManager::get_archive_list( const GameMode game )
 QStringList GameManager::get_archive_list( const QString& game )
 {
 	return get_archive_list(ModeForString(game));
+}
+
+QStringList GameManager::get_existing_folders_list(const GameMode game)
+{
+	return existing_folders(game, get()->game_paths.value(game, {}));
+}
+
+QStringList GameManager::get_existing_folders_list(const QString & game)
+{
+	return get_existing_folders_list(ModeForString(game));
 }
 
 QStringList GameManager::get_archive_file_list( const GameMode game )

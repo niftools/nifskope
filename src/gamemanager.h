@@ -224,6 +224,8 @@ public:
 	static QStringList get_archive_list(const GameMode game);
 	static QStringList get_archive_list(const QString& game);
 
+	static QStringList get_existing_folders_list(const GameMode game);
+	static QStringList get_existing_folders_list(const QString& game);
 	static QStringList get_archive_file_list(const GameMode game);
 	static QStringList get_archive_file_list(const QString& game);
 	static QStringList get_filtered_archives_list(const QStringList& list, const QString& folder);
@@ -237,10 +239,20 @@ public:
 	static void update_folders(const QString& game, const QStringList& list);
 	static void update_archives(const QString& game, const QStringList& list);
 
-	void initialize(int manager_version, QProgressDialog* dlg = nullptr);
+	void initialize(int& manager_version, QProgressDialog* dlg = nullptr);
+	void update(int& manager_version, QProgressDialog* dlg = nullptr);
+
 	void save();
 	void load();
 	void reset_archive_handles();
+
+	struct GameInfo
+	{
+		GameMode id = OTHER;
+		QString name;
+		QString path;
+		bool status = false;
+	};
 
 private:
 	QMutex mutex;
