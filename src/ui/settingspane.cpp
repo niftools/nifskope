@@ -731,11 +731,15 @@ void SettingsResources::onBrowseClicked()
 
 QString SettingsResources::currentFolderItem()
 {
+	if ( !ui->foldersGameList->currentItem() )
+		return {};
 	return ui->foldersGameList->currentItem()->text();
 }
 
 QString SettingsResources::currentArchiveItem()
 {
+	if ( !ui->archivesGameList->currentItem() )
+		return {};
 	return ui->archivesGameList->currentItem()->text();
 }
 
