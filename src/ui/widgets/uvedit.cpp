@@ -32,6 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "uvedit.h"
 
+#include "gamemanager.h"
 #include "message.h"
 #include "nifskope.h"
 #include "gl/gltex.h"
@@ -123,6 +124,8 @@ UVWidget::UVWidget( QWidget * parent )
 	pos = QPoint( 0, 0 );
 
 	mousePos = QPoint( -1000, -1000 );
+
+	game = Game::OTHER;
 
 	setCursor( QCursor( Qt::CrossCursor ) );
 	setMouseTracking( true );
@@ -224,9 +227,9 @@ void UVWidget::initializeGL()
 	qglClearColor( cfg.background );
 
 	if ( !texfile.isEmpty() )
-		bindTexture( texfile );
+		bindTexture( texfile, game );
 	else
-		bindTexture( texsource );
+		bindTexture( texsource, game );
 
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glVertexPointer( 2, GL_SHORT, 0, vertArray );
@@ -280,9 +283,9 @@ void UVWidget::paintGL()
 		glDisable( GL_BLEND );
 
 	if ( !texfile.isEmpty() )
-		bindTexture( texfile );
+		bindTexture( texfile, game );
 	else
-		bindTexture( texsource );
+		bindTexture( texsource, game );
 
 	glTranslatef( -0.5f, -0.5f, 0.0f );
 
@@ -528,10 +531,10 @@ QVector<int> UVWidget::indices( const QRegion & region ) const
 	return hits.toVector();
 }
 
-bool UVWidget::bindTexture( const QString & filename )
+bool UVWidget::bindTexture( const QString & filename, const Game::GameMode game )
 {
 	GLuint mipmaps = 0;
-	mipmaps = textures->bind( filename );
+	mipmaps = textures->bind( filename, game );
 
 	if ( mipmaps ) {
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
@@ -550,10 +553,10 @@ bool UVWidget::bindTexture( const QString & filename )
 	return false;
 }
 
-bool UVWidget::bindTexture( const QModelIndex & iSource )
+bool UVWidget::bindTexture( const QModelIndex & iSource, const Game::GameMode game )
 {
 	GLuint mipmaps = 0;
-	mipmaps = textures->bind( iSource );
+	mipmaps = textures->bind( iSource, game );
 
 	if ( mipmaps ) {
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
@@ -800,6 +803,8 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 	iShape = nifIndex;
 	isDataOnSkin = false;
 
+	game = Game::GameManager::get_game(nif->getVersionNumber(), nif->getUserVersion(), nif->getUserVersion2());
+
 	// Version dependent actions
 	if ( nif && nif->getVersionNumber() != 0x14020007 ) {
 		coordSetGroup = new QActionGroup( this );
@@ -929,7 +934,7 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 						QModelIndex iTextures = nif->getIndex( iTexSource, "Textures" );
 
 						if ( iTextures.isValid() ) {
-							texfile = TexCache::find( nif->get<QString>( iTextures.child( 0, 0 ) ), nif->getFolder() );
+							texfile = TexCache::find( nif->get<QString>( iTextures.child( 0, 0 ) ), nif->getFolder(), game );
 							return true;
 						}
 					}
@@ -940,7 +945,7 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 						QString texture = nif->get<QString>( iTexProp, "Source Texture" );
 
 						if ( !texture.isEmpty() ) {
-							texfile = TexCache::find( texture, nif->getFolder() );
+							texfile = TexCache::find( texture, nif->getFolder(), game );
 							return true;
 						}
 					}
