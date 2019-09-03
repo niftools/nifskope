@@ -213,7 +213,7 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 			return dir.filePath( filename );
 		}
 
-		for ( QString folder : Game::GameManager::get_folder_list(game) ) {
+		for ( QString folder : Game::GameManager::folders(game) ) {
 			// TODO: Always search nifdir without requiring a relative entry
 			// in folders?  Not too intuitive to require ".\" in your texture folder list
 			// even if it is added by default.
@@ -231,7 +231,7 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 		}
 
 		// Search through archives last, and load any requested textures into memory.
-		for ( FSArchiveFile * archive : Game::GameManager::get_archive_handles(game) ) {
+		for ( FSArchiveFile * archive : Game::GameManager::opened_archives(game) ) {
 			if ( archive ) {
 				filename = QDir::fromNativeSeparators( filename.toLower() );
 				if ( archive->hasFile( filename ) ) {

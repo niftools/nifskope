@@ -12,6 +12,7 @@
 class FSManager;
 class SettingsDialog;
 class QStringListModel;
+class QListWidget;
 
 namespace Ui {
 class SettingsGeneral;
@@ -91,6 +92,9 @@ public:
 	void read() override final;
 	void write() override final;
 	void setDefault() override final;
+	
+	void select_first(QListWidget* list);
+	void manager_sync(bool make_connections = false);
 
 public slots:
 	void modifyPane() override;

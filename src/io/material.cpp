@@ -114,7 +114,7 @@ QByteArray Material::find( QString path, Game::GameMode game )
 
 	QString filename;
 	QDir dir;
-	for ( QString folder : Game::GameManager::get_folder_list(game) ) {
+	for ( QString folder : Game::GameManager::folders(game) ) {
 		dir.setPath( folder );
 
 		if ( dir.exists( path ) ) {
@@ -126,7 +126,7 @@ QByteArray Material::find( QString path, Game::GameMode game )
 		}
 	}
 
-	for ( FSArchiveFile * archive : Game::GameManager::get_archive_handles(game) ) {
+	for ( FSArchiveFile * archive : Game::GameManager::opened_archives(game) ) {
 		if ( archive ) {
 			filename = QDir::fromNativeSeparators( path.toLower() );
 			if ( archive->hasFile( filename ) ) {

@@ -38,7 +38,7 @@ constexpr uint32_t VersionInt( uint64_t version )
 	return (uint32_t)version;
 }
 
-enum GameMode
+enum GameMode : int
 {
 	OTHER,
 	MORROWIND,
@@ -53,7 +53,8 @@ enum GameMode
 	NUM_GAMES,
 
 	// Not a physical game, exclude from NUM_GAMES count
-	FALLOUT_3NV,
+	// Fallout 3 and Fallout NV cannot be differentiated by version
+	FALLOUT_3NV, 
 };
 
 using GameMap = QMap<GameMode, QString>;
@@ -62,11 +63,11 @@ using ResourceListMap = QMap<GameMode, QStringList>;
 
 using namespace std::string_literals;
 
-static auto beth = QString("HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\%1");
-static auto msft = QString("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\%1");
+static const auto beth = QString("HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\%1");
+static const auto msft = QString("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\%1");
 
 
-static GameMap STRING = {
+static const GameMap STRING = {
 	{MORROWIND, "Morrowind"},
 	{OBLIVION, "Oblivion"},
 	{FALLOUT_3, "Fallout 3"},
@@ -78,7 +79,7 @@ static GameMap STRING = {
 	{OTHER, "Other Games"}
 };
 
-static GameMap KEY = {
+static const GameMap KEY = {
 	{MORROWIND, beth.arg("Morrowind")},
 	{OBLIVION, beth.arg("Oblivion")},
 	{FALLOUT_3, beth.arg("Fallout3")},
@@ -90,7 +91,7 @@ static GameMap KEY = {
 	{OTHER, ""}
 };
 
-static GameMap DATA = {
+static const GameMap DATA = {
 	{MORROWIND, "Data Files"},
 	{OBLIVION, "Data"},
 	{FALLOUT_3, "Data"},
@@ -102,7 +103,7 @@ static GameMap DATA = {
 	{OTHER, ""}
 };
 
-static ResourceListMap FOLDERS = {
+static const ResourceListMap FOLDERS = {
 	{MORROWIND, {"."}},
 	{OBLIVION, {"."}},
 	{FALLOUT_3, {"."}},
@@ -204,47 +205,71 @@ GameMode ModeForString(QString game);
 
 class GameManager
 {
-public:
 	GameManager();
+public:
+	GameManager(const GameManager&) = delete;
+	GameManager& operator= (const GameManager) = delete;
 
-	static GameMode GetGame(uint32_t version, uint32_t user, uint32_t bsver);
+	static GameMode get_game(uint32_t version, uint32_t user, uint32_t bsver);
 
-	static GameManager * get();
-	static void del();
+	static GameManager* get();
 
-	static QList <FSArchiveFile *> get_archive_handles(Game::GameMode game);
+	static QList <FSArchiveFile *> opened_archives(const GameMode game);
 	static bool archive_contains_folder(const QString& archive, const QString& folder);
 
-	static QString get_game_path(const GameMode game);
-	static QString get_game_path(const QString& game);
-	static QString get_data_path(const GameMode game);
-	static QString get_data_path(const QString& game);
-	static QStringList get_folder_list(const GameMode game);
-	static QStringList get_folder_list(const QString& game);
-	static QStringList get_archive_list(const GameMode game);
-	static QStringList get_archive_list(const QString& game);
+	//! Game installation path
+	static QString path(const GameMode game);
+	//! Game data path
+	static QString data(const GameMode game);
+	//! Game folders managed by the GameManager
+	static QStringList folders(const GameMode game);
+	//! Game archives managed by the GameManager
+	static QStringList archives(const GameMode game);
+	//! Game enabled status in the GameManager
+	static bool status(const GameMode game);
 
-	static QStringList get_existing_folders_list(const GameMode game);
-	static QStringList get_existing_folders_list(const QString& game);
-	static QStringList get_archive_file_list(const GameMode game);
-	static QStringList get_archive_file_list(const QString& game);
-	static QStringList get_filtered_archives_list(const QStringList& list, const QString& folder);
+	//! Find applicable data folders at the game installation path
+	static QStringList find_folders(const GameMode game);
+	//! Find applicable archives at the game installation path
+	static QStringList find_archives(const GameMode game);
+	//! Given an archive list, returns a sublist of archives that contain the given folder
+	static QStringList filter_archives(const QStringList& list, const QString& folder);
 
-	static void set_game_status(const GameMode game, bool status);
-	static void set_game_status(const QString& game, bool status);
-	static bool get_game_status(const GameMode game);
-	static bool get_game_status(const QString& game);
+	//! Game installation path
+	static inline QString path(const QString& game);
+	//! Game data path
+	static inline QString data(const QString& game);
+	//! Game folders managed by the GameManager
+	static inline QStringList folders(const QString& game);
+	//! Game archives managed by the GameManager
+	static inline QStringList archives(const QString& game);
+	//! Game enabled status in the GameManager
+	static inline bool status(const QString& game);
+	//! Find applicable data folders at the game installation path
+	static inline QStringList find_folders(const QString& game);
+	//! Find applicable archives at the game installation path
+	static inline QStringList find_archives(const QString& game);
 
-	static void update_game(const QString& game, const QString& path);
-	static void update_folders(const QString& game, const QStringList& list);
-	static void update_archives(const QString& game, const QStringList& list);
+	static inline void update_game(const GameMode game, const QString& path);
+	static inline void update_game(const QString& game, const QString& path);
+	static inline void update_folders(const GameMode game, const QStringList& list);
+	static inline void update_folders(const QString& game, const QStringList& list);
+	static inline void update_archives(const GameMode game, const QStringList& list);
+	static inline void update_archives(const QString& game, const QStringList& list);
+	static inline void update_status(const GameMode game, bool status);
+	static inline void update_status(const QString& game, bool status);
 
-	void initialize(int& manager_version, QProgressDialog* dlg = nullptr);
-	void update(int& manager_version, QProgressDialog* dlg = nullptr);
+	void init_settings(int& manager_version, QProgressDialog* dlg = nullptr) const;
+	void update_settings(int& manager_version, QProgressDialog* dlg = nullptr) const;
 
-	void save();
+	//! Save the manager to settings
+	void save() const;
+	//! Load the manager from settings
 	void load();
-	void reset_archive_handles();
+	//! Load the managed archives
+	void load_archives();
+	//! Reset the manager
+	void clear();
 
 	struct GameInfo
 	{
@@ -255,7 +280,12 @@ public:
 	};
 
 private:
-	QMutex mutex;
+	void insert_game(const GameMode game, const QString& path);
+	void insert_folders(const GameMode game, const QStringList& list);
+	void insert_archives(const GameMode game, const QStringList& list);
+	void insert_status(const GameMode game, bool status);
+
+	mutable QMutex mutex;
 
 	GameMap game_paths;
 	GameEnabledMap game_status;
@@ -264,6 +294,81 @@ private:
 
 	QMap<Game::GameMode, QList<std::shared_ptr<FSArchiveHandler>>> handles;
 };
+
+QString GameManager::path(const QString& game)
+{
+	return path(ModeForString(game));
+}
+
+QString GameManager::data(const QString& game)
+{
+	return data(ModeForString(game));
+}
+
+QStringList GameManager::folders(const QString& game)
+{
+	return folders(ModeForString(game));
+}
+
+QStringList GameManager::archives(const QString& game)
+{
+	return archives(ModeForString(game));
+}
+
+bool GameManager::status(const QString& game)
+{
+	return status(ModeForString(game));
+}
+
+QStringList GameManager::find_folders(const QString & game)
+{
+	return find_folders(ModeForString(game));
+}
+
+QStringList GameManager::find_archives(const QString& game)
+{
+	return find_archives(ModeForString(game));
+}
+
+void GameManager::update_game(const GameMode game, const QString & path)
+{
+	get()->insert_game(game, path);
+}
+
+void GameManager::update_game(const QString& game, const QString& path)
+{
+	update_game(ModeForString(game), path);
+}
+
+void GameManager::update_folders(const GameMode game, const QStringList & list)
+{
+	get()->insert_folders(game, list);
+}
+
+void GameManager::update_folders(const QString& game, const QStringList& list)
+{
+	update_folders(ModeForString(game), list);
+}
+
+void GameManager::update_archives(const GameMode game, const QStringList & list)
+{
+	get()->insert_archives(game, list);
+}
+
+void GameManager::update_archives(const QString& game, const QStringList& list)
+{
+	update_archives(ModeForString(game), list);
+}
+
+void GameManager::update_status(const GameMode game, bool status)
+{
+	get()->insert_status(game, status);
+}
+
+void GameManager::update_status(const QString& game, bool status)
+{
+	update_status(ModeForString(game), status);
+}
 
 } // end namespace Game
 
