@@ -833,6 +833,20 @@
              </property>
             </widget>
            </item>
+           <item>
+            <widget class="QCheckBox" name="chkAlternateExt">
+             <property name="text">
+              <string>Search alternative file extensions (TGA, PNG)</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkOtherGamesFallback">
+             <property name="text">
+              <string>Search Other Games if no match</string>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
         </widget>
@@ -985,13 +999,6 @@ Game Paths</string>
            </widget>
           </item>
          </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="chkAlternateExt">
-         <property name="text">
-          <string>Load alternate file extensions</string>
-         </property>
         </widget>
        </item>
       </layout>

@@ -179,7 +179,7 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 
 	bool textureAlternatives = settings.value( "Settings/Resources/Alternate Extensions", false ).toBool();
 	if ( textureAlternatives ) {
-		extensions << ".tga" << ".bmp" << ".nif" << ".texcache";
+		extensions << ".tga" << ".png" << ".bmp" << ".nif" << ".texcache";
 		for ( const QString ext : QStringList{ extensions } )
 		{
 			if ( filename.endsWith( ext, Qt::CaseInsensitive ) ) {
@@ -270,6 +270,10 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 		// Remove file extension
 		filename = filename.left( filename.length() - ext.length() );
 	}
+
+	bool searchFallback = settings.value("Settings/Resources/Other Games Fallback", true).toBool();
+	if ( searchFallback && game != Game::OTHER )
+		return find(file, nifdir, data, Game::OTHER);
 
 	// Fix separators
 	filename = QDir::toNativeSeparators( filename );

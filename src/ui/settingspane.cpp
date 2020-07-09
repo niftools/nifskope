@@ -543,6 +543,7 @@ SettingsResources::SettingsResources( QWidget * parent ) :
 
 	connect( ui->foldersList, &QListView::doubleClicked, this, &SettingsPane::modifyPane );
 	connect( ui->chkAlternateExt, &QCheckBox::clicked, this, &SettingsPane::modifyPane );
+	connect( ui->chkOtherGamesFallback, &QCheckBox::clicked, this, &SettingsPane::modifyPane );
 
 	// Move Up / Move Down Behavior
 	connect( ui->foldersList->selectionModel(), &QItemSelectionModel::currentChanged,
@@ -593,6 +594,7 @@ void SettingsResources::read()
 	setArchiveList();
 
 	ui->chkAlternateExt->setChecked( settings.value( "Settings/Resources/Alternate Extensions", true ).toBool() );
+	ui->chkOtherGamesFallback->setChecked( settings.value("Settings/Resources/Other Games Fallback", true).toBool() );
 
 	setModified( false );
 }
@@ -608,6 +610,7 @@ void SettingsResources::write()
 
 	QSettings settings;
 	settings.setValue( "Settings/Resources/Alternate Extensions", ui->chkAlternateExt->isChecked() );
+	settings.setValue( "Settings/Resources/Other Games Fallback", ui->chkOtherGamesFallback->isChecked() );
 
 	setModified( false );
 
