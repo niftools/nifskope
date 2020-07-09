@@ -135,6 +135,12 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 		// For compatibility with coords list
 		TexCoords coordset;
 
+		auto dynVerts = nif->getArray<Vector4>(iBlock, "Vertices");
+		if ( isDynamic ) {
+			for ( const auto & v : dynVerts )
+				verts << Vector3(v);
+		}
+
 		for ( int i = 0; i < numVerts; i++ ) {
 			auto idx = nif->index( i, 0, iVertData );
 
@@ -145,6 +151,9 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 
 			// Bitangent X
 			auto bitX = nif->getValue( nif->getIndex( idx, "Bitangent X" ) ).toFloat();
+			if ( isDynamic ) {
+				bitX = dynVerts.at(i)[3];
+			}
 			// Bitangent Y/Z
 			auto bitYi = nif->getValue( nif->getIndex( idx, "Bitangent Y" ) ).toCount();
 			auto bitZi = nif->getValue( nif->getIndex( idx, "Bitangent Z" ) ).toCount();
@@ -161,11 +170,6 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 			}
 		}
 
-		if ( isDynamic ) {
-			auto dynVerts = nif->getArray<Vector4>( iBlock, "Vertices" );
-			for ( const auto & v : dynVerts )
-				verts << Vector3( v );
-		}
 
 		// Add coords as first set of QList
 		coords.append( coordset );
