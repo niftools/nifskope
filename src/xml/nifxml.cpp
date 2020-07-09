@@ -99,7 +99,7 @@ public:
 		tags.insert( "niftoolsxml", tagFile );
 		tags.insert( "version", tagVersion );
 		tags.insert( "module", tagModule );
-		tags.insert( "compound", tagCompound );
+		tags.insert( "struct", tagCompound );
 		tags.insert( "niobject", tagBlock );
 		tags.insert( "field", tagAdd );
 		tags.insert( "default", tagAddDefault );
@@ -221,10 +221,10 @@ public:
 						QString id = name;
 
 						if ( x == tagCompound && NifValue::isValid( NifValue::type( id ) ) )
-							err( tr( "compound %1 is already registered as internal type" ).arg( list.value( "name" ) ) );
+							err( tr( "struct %1 is already registered as internal type" ).arg( list.value( "name" ) ) );
 
 						if ( id.isEmpty() )
-							err( tr( "compound and niblocks must have a name" ) );
+							err( tr( "struct and niblocks must have a name" ) );
 
 						if ( NifModel::compounds.contains( id ) || NifModel::blocks.contains( id ) )
 							err( tr( "multiple declarations of %1" ).arg( id ) );
@@ -310,7 +310,7 @@ public:
 			case tagModule:
 				break;
 			default:
-				err( tr( "expected basic, enum, compound, niobject or version got %1 instead" ).arg( tagid ) );
+				err( tr( "expected basic, enum, struct, niobject or version got %1 instead" ).arg( tagid ) );
 			}
 
 			break;
@@ -320,7 +320,7 @@ public:
 		case tagCompound:
 
 			if ( x != tagAdd )
-				err( tr( "only field tags allowed in compound type declaration" ) );
+				err( tr( "only field tags allowed in struct type declaration" ) );
 
 		case tagBlock:
 			push( x );
@@ -649,13 +649,13 @@ public:
 			NifBlockPtr c = NifModel::compounds.value( key );
 			for ( NifData data :c->types ) {
 				if ( !checkType( data ) )
-					err( tr( "compound type %1 refers to unknown type %2" ).arg( key, data.type() ) );
+					err( tr( "struct type %1 refers to unknown type %2" ).arg( key, data.type() ) );
 
 				if ( !checkTemp( data ) )
-					err( tr( "compound type %1 refers to unknown template type %2" ).arg( key, data.temp() ) );
+					err( tr( "struct type %1 refers to unknown template type %2" ).arg( key, data.temp() ) );
 
 				if ( data.type() == key )
-					err( tr( "compound type %1 contains itself" ).arg( key ) );
+					err( tr( "struct type %1 contains itself" ).arg( key ) );
 			}
 		}
 
