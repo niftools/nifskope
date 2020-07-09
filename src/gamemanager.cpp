@@ -151,7 +151,7 @@ GameMode GameManager::get_game( uint32_t version, uint32_t user, uint32_t bsver 
 	case BSSTREAM_9:
 		return OBLIVION;
 	case BSSTREAM_11:
-		if ( user == 10 ) // TODO: Enumeration
+		if ( user == 10 || version == 0x14000005 ) // TODO: Enumeration
 			return OBLIVION;
 		else if ( user == 11 )
 			return FALLOUT_3NV;
@@ -181,6 +181,10 @@ GameMode GameManager::get_game( uint32_t version, uint32_t user, uint32_t bsver 
 	default:
 		break;
 	};
+
+	// NOTE: Morrowind shares a version with other games (Freedom Force, etc.)
+	if ( version == 0x04000002 )
+		return MORROWIND;
 
 	return OTHER;
 }
