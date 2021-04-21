@@ -77,18 +77,14 @@ static bool BSAReadSizedString( QFile & bsa, QString & s )
 	return false;
 }
 
-QByteArray gUncompress( const QByteArray & data, const int size )
+QByteArray gUncompress( const char * data, const int size )
 {
-	if ( data.size() <= 4 ) {
-		qWarning( "gUncompress: Input data is truncated" );
-		return QByteArray();
-	}
-
 	QByteArray result;
+	result.reserve( size );
 
 	int ret;
 	z_stream strm;
-	static const int CHUNK_SIZE = 1024;
+	static const int CHUNK_SIZE = 4096;
 	char out[CHUNK_SIZE];
 
 	/* allocate inflate state */
@@ -96,7 +92,7 @@ QByteArray gUncompress( const QByteArray & data, const int size )
 	strm.zfree = Z_NULL;
 	strm.opaque = Z_NULL;
 	strm.avail_in = size;
-	strm.next_in = (Bytef*)(data.data());
+	strm.next_in = (Bytef*)(data);
 
 	ret = inflateInit2( &strm, 15 + 32 ); // gzip decoding
 	Q_ASSERT( ret == Z_OK );
@@ -126,6 +122,16 @@ QByteArray gUncompress( const QByteArray & data, const int size )
 	// clean up and return
 	inflateEnd( &strm );
 	return result;
+}
+
+QByteArray gUncompress( const QByteArray & data, const int size )
+{
+	if ( data.size() <= 4 ) {
+		qWarning( "gUncompress: Input data is truncated" );
+		return QByteArray();
+	}
+
+	return gUncompress( data.data(), size );
 }
 
 // see bsa.h
@@ -575,8 +581,27 @@ bool BSA::fileContents( const QString & fn, QByteArray & content )
 						ddsHeader.dwPitchOrLinearSize = file->tex.header.width * file->tex.header.height;	// 8bpp
 						break;
 
-					case DXGI_FORMAT_BC7_UNORM:
+					case DXGI_FORMAT_BC4_UNORM:
 					case DXGI_FORMAT_BC1_UNORM_SRGB:
+						ddsHeader.ddspf.dwFlags = DDS_FOURCC;
+						ddsHeader.ddspf.dwFourCC = MAKEFOURCC( 'D', 'X', '1', '0' );
+						ddsHeader.dwPitchOrLinearSize = file->tex.header.width * file->tex.header.height / 2;
+
+						dx10 = true;
+						dx10Header.dxgiFormat = DXGI_FORMAT( file->tex.header.format );
+						break;
+					case DXGI_FORMAT_R8G8B8A8_UNORM:
+					case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+						ddsHeader.ddspf.dwFlags = DDS_FOURCC;
+						ddsHeader.ddspf.dwFourCC = MAKEFOURCC( 'D', 'X', '1', '0' );
+						ddsHeader.dwPitchOrLinearSize = file->tex.header.width * file->tex.header.height * 4;
+
+						dx10 = true;
+						dx10Header.dxgiFormat = DXGI_FORMAT( file->tex.header.format );
+						break;
+
+					case DXGI_FORMAT_BC7_UNORM:
+					case DXGI_FORMAT_BC5_SNORM:
 					case DXGI_FORMAT_BC2_UNORM_SRGB:
 					case DXGI_FORMAT_BC3_UNORM_SRGB:
 					case DXGI_FORMAT_BC7_UNORM_SRGB:
@@ -587,7 +612,6 @@ bool BSA::fileContents( const QString & fn, QByteArray & content )
 						dx10 = true;
 						dx10Header.dxgiFormat = DXGI_FORMAT( file->tex.header.format );
 						break;
-
 					default:
 						supported = false;
 						break;
@@ -620,7 +644,7 @@ bool BSA::fileContents( const QString & fn, QByteArray & content )
 
 					// Start at 1st chunk now
 					for ( int i = 0; i < file->tex.chunks.count(); i++ ) {
-						F4TexChunk chunk = file->tex.chunks[i];
+						const F4TexChunk & chunk = file->tex.chunks[i];
 						if ( bsa.seek( chunk.offset ) ) {
 							QByteArray chunkData;
 
@@ -721,6 +745,11 @@ const BSA::BSAFolder * BSA::getFolder( QString fn ) const
 		return root;
 	else
 		return folders.value( fn );
+}
+
+const BSA::BSAFolder * BSA::getRootFolder() const
+{
+	return root;
 }
 
 // see bsa.h
@@ -873,7 +902,7 @@ bool BSAProxyModel::filterAcceptsRow( int sourceRow, const QModelIndex & sourceP
 			if ( filetypes.count() ) {
 				typeMatch = false;
 				for ( auto f : filetypes ) {
-					typeMatch |= key1.endsWith( f );
+					typeMatch |= key1.endsWith( f, Qt::CaseInsensitive );
 				}
 			}
 

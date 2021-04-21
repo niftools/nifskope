@@ -21,6 +21,7 @@ class spEditFlags : public Spell
 {
 public:
 	QString name() const override { return Spell::tr( "Flags" ); }
+	bool constant() const override { return true; }
 	bool instant() const override { return true; }
 	QIcon icon() const override { return QIcon( ":/img/flag" ); }
 
@@ -523,7 +524,7 @@ public:
 			Spell::tr( "Save External Geom Data" ),         // 512
 			Spell::tr( "No Decals" ),                       // 1024
 			Spell::tr( "Always Draw" ),                     // 2048
-			Spell::tr( "Mesh LOD" ),                        // 4096
+			Spell::tr( "Mesh LOD (FO4)" ),                  // 4096
 			Spell::tr( "Fixed Bound" ),                     // 8192
 			Spell::tr( "Top Fade Node" ),                   // 16384
 			Spell::tr( "Ignore Fade" ),                     // 32768
@@ -538,7 +539,7 @@ public:
 			Spell::tr( "High Detail" ),                     // 1 << 24
 			Spell::tr( "Force Update" ),                    // 1 << 25
 			Spell::tr( "Pre-Processed Node" ),              // 1 << 26
-			Spell::tr( "Bit 27" ),                          // 1 << 27
+			Spell::tr( "Mesh LOD (Skyrim)" ),               // 1 << 27
 			Spell::tr( "Bit 28" ),                          // 1 << 28
 			Spell::tr( "Bit 29" ),                          // 1 << 29
 			Spell::tr( "Bit 30" ),                          // 1 << 30

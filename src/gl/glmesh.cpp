@@ -118,6 +118,12 @@ void Shape::update( const NifModel * nif, const QModelIndex & index )
 	{
 		updateShaderProperties( nif );
 	}
+
+	if ( bssp && nifVersion == 155 ) {
+		depthTest = bssp->getDepthTest();
+		depthWrite = bssp->getDepthWrite();
+		isDoubleSided = bssp->getIsDoubleSided();
+	}
 }
 
 void Shape::updateShaderProperties( const NifModel * nif )
@@ -185,7 +191,7 @@ void Shape::boneSphere( const NifModel * nif, const QModelIndex & index ) const
 	Transform t = (scene->options & Scene::DoSkinning) ? viewTrans() : Transform();
 	t = t * skeletonTrans * bone->localTrans( 0 ) * boneT;
 
-	auto bSphere = BoundSphere( nif, nif->getIndex( index, "Bounding Sphere" ) );
+	auto bSphere = BoundSphere( nif, index );
 	if ( bSphere.radius > 0.0 ) {
 		glColor4f( 1, 1, 1, 0.33 );
 		auto pos = boneT.rotation.inverted() * (bSphere.center - boneT.translation);
@@ -680,10 +686,6 @@ void Mesh::transform()
 
 			coords.clear();
 			QModelIndex uvcoord = nif->getIndex( iData, "UV Sets" );
-
-			if ( !uvcoord.isValid() )
-				uvcoord = nif->getIndex( iData, "UV Sets 2" );
-
 			if ( uvcoord.isValid() ) {
 				for ( int r = 0; r < nif->rowCount( uvcoord ); r++ ) {
 					TexCoords tc = nif->getArray<Vector2>( uvcoord.child( r, 0 ) );
@@ -806,7 +808,7 @@ void Mesh::transform()
 		}
 
 		if ( iSkinPart.isValid() && doSkinning ) {
-			QModelIndex idx = nif->getIndex( iSkinPart, "Skin Partition Blocks" );
+			QModelIndex idx = nif->getIndex( iSkinPart, "Partitions" );
 
 			uint numTris = 0;
 			uint numStrips = 0;
@@ -1457,7 +1459,7 @@ void Mesh::drawSelection() const
 		}
 	}
 
-	if ( n == "Skin Partition Blocks" ) {
+	if ( n == "Partitions" ) {
 
 		for ( int c = 0; c < partitions.count(); c++ ) {
 			if ( c == i )

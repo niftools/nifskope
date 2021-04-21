@@ -1,6 +1,7 @@
 #include "transform.h"
 
 #include "ui/widgets/nifeditors.h"
+#include "gl/gltools.h"
 
 #include <QApplication>
 #include <QBuffer>
@@ -172,15 +173,10 @@ QModelIndex spApplyTransformation::cast( NifModel * nif, const QModelIndex & ind
 				}
 			}
 
-			QModelIndex iCenter = nif->getIndex( iData, "Center" );
-
-			if ( iCenter.isValid() )
-				nif->set<Vector3>( iCenter, t * nif->get<Vector3>( iCenter ) );
-
-			QModelIndex iRadius = nif->getIndex( iData, "Radius" );
-
-			if ( iRadius.isValid() )
-				nif->set<float>( iRadius, t.scale * nif->get<float>( iRadius ) );
+			auto bound = BoundSphere( nif, iData );
+			bound.center = t * bound.center;
+			bound.radius = t.scale * bound.radius;
+			bound.update( nif, iData );
 
 			t = Transform();
 			t.writeBack( nif, index );
@@ -194,14 +190,10 @@ QModelIndex spApplyTransformation::cast( NifModel * nif, const QModelIndex & ind
 		Transform t( nif, index );
 
 		// Update Bounding Sphere
-		auto iBound = nif->getIndex( index, "Bounding Sphere" );
-		QModelIndex iCenter = nif->getIndex( iBound, "Center" );
-		if ( iCenter.isValid() )
-			nif->set<Vector3>( iCenter, t * nif->get<Vector3>( iCenter ) );
-		
-		QModelIndex iRadius = nif->getIndex( iBound, "Radius" );
-		if ( iRadius.isValid() )
-			nif->set<float>( iRadius, t.scale * nif->get<float>( iRadius ) );
+		auto bound = BoundSphere( nif, index );
+		bound.center = t * bound.center;
+		bound.radius = t.scale * bound.radius;
+		bound.update( nif, index );
 
 		nif->setState( BaseModel::Processing );
 		for ( int i = 0; i < nif->rowCount( iVertData ); i++ ) {

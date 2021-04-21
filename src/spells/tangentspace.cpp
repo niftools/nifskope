@@ -87,15 +87,9 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 	}
 
 	QVector<Color4> vxcol = nif->getArray<Color4>( iData, "Vertex Colors" );
-	int numUVSets = nif->get<int>( iData, "Num UV Sets" );
-	int tspaceFlags = nif->get<int>( iData, "TSpace Flag" );
 
 	if ( nif->getUserVersion2() < 100 ) {
 		QModelIndex iTexCo = nif->getIndex( iData, "UV Sets" );
-
-		if ( !iTexCo.isValid() )
-			iTexCo = nif->getIndex( iData, "UV Sets 2" );
-
 		iTexCo = iTexCo.child( 0, 0 );
 		texco = nif->getArray<Vector2>( iTexCo );
 	}
@@ -116,8 +110,8 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 	} else if ( nif->getUserVersion2() >= 100 ) {
 		if ( iPartBlock.isValid() ) {
 			// Get triangles from all partitions
-			auto numParts = nif->get<int>( iPartBlock, "Num Skin Partition Blocks" );
-			auto iParts = nif->getIndex( iPartBlock, "Partition" );
+			auto numParts = nif->get<int>( iPartBlock, "Num Partitions" );
+			auto iParts = nif->getIndex( iPartBlock, "Partitions" );
 			for ( int i = 0; i < numParts; i++ )
 				triangles << nif->getArray<Triangle>( iParts.child( i, 0 ), "Triangles" );
 		} else {
@@ -277,11 +271,6 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 
 		nif->set<QByteArray>( iTSpace, "Binary Data", QByteArray( (const char *)tan.data(), tan.count() * sizeof( Vector3 ) ) + QByteArray( (const char *)bin.data(), bin.count() * sizeof( Vector3 ) ) );
 	} else if ( nif->getUserVersion2() < 100 ) {
-		if ( tspaceFlags == 0 )
-			tspaceFlags = 0x10;
-
-		nif->set<int>( iShape, "TSpace Flag", tspaceFlags );
-		nif->set<int>( iShape, "Num UV Sets", numUVSets );
 		QModelIndex iBinorms  = nif->getIndex( iData, "Bitangents" );
 		QModelIndex iTangents = nif->getIndex( iData, "Tangents" );
 		nif->updateArray( iBinorms );
@@ -388,11 +377,11 @@ public:
 			// Do not do anything without proper UV/Vert/Tri data
 			auto numVerts = nif->get<int>( iData, "Num Vertices" );
 			auto numTris = nif->get<int>( iData, "Num Triangles" );
-			bool hasUVs = nif->get<int>( iData, "Vector Flags" ) & 1;
+			bool hasUVs = nif->get<int>( iData, "Data Flags" ) & 1;
 			if ( !hasUVs || !numVerts || !numTris )
 				continue;
 
-			nif->set<int>( iData, "Vector Flags", 4097 );
+			nif->set<int>( iData, "Data Flags", 4097 );
 			nif->updateArray( iData, "Tangents" );
 			nif->updateArray( iData, "Bitangents" );
 

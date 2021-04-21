@@ -709,14 +709,8 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 			nif->updateArray( iData, "Normals" );
 			nif->setArray<Vector3>( iData, "Normals",  mesh->normals );
 			nif->set<int>( iData, "Has UV", 1 );
-			nif->set<int>( iData, "Num UV Sets", 1 );
-			nif->set<int>( iData, "Num UV Sets 2", 1 );
+			nif->set<int>( iData, "Data Flags", 1 );
 			QModelIndex iTexCo = nif->getIndex( iData, "UV Sets" );
-
-			if ( !iTexCo.isValid() ) {
-				iTexCo = nif->getIndex( iData, "UV Sets 2" );
-			}
-
 			nif->updateArray( iTexCo );
 			nif->updateArray( iTexCo.child( 0, 0 ) );
 			nif->setArray<Vector2>( iTexCo.child( 0, 0 ),  mesh->texcoords );

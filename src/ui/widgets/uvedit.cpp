@@ -32,6 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "uvedit.h"
 
+#include "gamemanager.h"
 #include "message.h"
 #include "nifskope.h"
 #include "gl/gltex.h"
@@ -123,6 +124,8 @@ UVWidget::UVWidget( QWidget * parent )
 	pos = QPoint( 0, 0 );
 
 	mousePos = QPoint( -1000, -1000 );
+
+	game = Game::OTHER;
 
 	setCursor( QCursor( Qt::CrossCursor ) );
 	setMouseTracking( true );
@@ -224,9 +227,9 @@ void UVWidget::initializeGL()
 	qglClearColor( cfg.background );
 
 	if ( !texfile.isEmpty() )
-		bindTexture( texfile );
+		bindTexture( texfile, game );
 	else
-		bindTexture( texsource );
+		bindTexture( texsource, game );
 
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glVertexPointer( 2, GL_SHORT, 0, vertArray );
@@ -280,9 +283,9 @@ void UVWidget::paintGL()
 		glDisable( GL_BLEND );
 
 	if ( !texfile.isEmpty() )
-		bindTexture( texfile );
+		bindTexture( texfile, game );
 	else
-		bindTexture( texsource );
+		bindTexture( texsource, game );
 
 	glTranslatef( -0.5f, -0.5f, 0.0f );
 
@@ -528,10 +531,10 @@ QVector<int> UVWidget::indices( const QRegion & region ) const
 	return hits.toVector();
 }
 
-bool UVWidget::bindTexture( const QString & filename )
+bool UVWidget::bindTexture( const QString & filename, const Game::GameMode game )
 {
 	GLuint mipmaps = 0;
-	mipmaps = textures->bind( filename );
+	mipmaps = textures->bind( filename, game );
 
 	if ( mipmaps ) {
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
@@ -550,10 +553,10 @@ bool UVWidget::bindTexture( const QString & filename )
 	return false;
 }
 
-bool UVWidget::bindTexture( const QModelIndex & iSource )
+bool UVWidget::bindTexture( const QModelIndex & iSource, const Game::GameMode game )
 {
 	GLuint mipmaps = 0;
-	mipmaps = textures->bind( iSource );
+	mipmaps = textures->bind( iSource, game );
 
 	if ( mipmaps ) {
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
@@ -800,6 +803,8 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 	iShape = nifIndex;
 	isDataOnSkin = false;
 
+	game = Game::GameManager::get_game(nif->getVersionNumber(), nif->getUserVersion(), nif->getUserVersion2());
+
 	// Version dependent actions
 	if ( nif && nif->getVersionNumber() != 0x14020007 ) {
 		coordSetGroup = new QActionGroup( this );
@@ -929,7 +934,7 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 						QModelIndex iTextures = nif->getIndex( iTexSource, "Textures" );
 
 						if ( iTextures.isValid() ) {
-							texfile = TexCache::find( nif->get<QString>( iTextures.child( 0, 0 ) ), nif->getFolder() );
+							texfile = TexCache::find( nif->get<QString>( iTextures.child( 0, 0 ) ), nif->getFolder(), game );
 							return true;
 						}
 					}
@@ -940,7 +945,7 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 						QString texture = nif->get<QString>( iTexProp, "Source Texture" );
 
 						if ( !texture.isEmpty() ) {
-							texfile = TexCache::find( texture, nif->getFolder() );
+							texfile = TexCache::find( texture, nif->getFolder(), game );
 							return true;
 						}
 					}
@@ -974,7 +979,7 @@ bool UVWidget::setTexCoords()
 		if ( !isDataOnSkin ) {
 			tris = nif->getArray<Triangle>( iShape, "Triangles" );
 		} else {
-			auto partIdx = nif->getIndex( iPartBlock, "Partition" );
+			auto partIdx = nif->getIndex( iPartBlock, "Partitions" );
 			for ( int i = 0; i < nif->rowCount( partIdx ); i++ ) {
 				tris << nif->getArray<Triangle>( nif->index( i, 0, partIdx ), "Triangles" );
 			}
@@ -1569,8 +1574,8 @@ void UVWidget::getCoordSets()
 {
 	coordSetSelect->clear();
 
-	// TODO: Broken for newer nif.xml where NiGeometryData has been corrected
-	quint8 numUvSets = nif->get<quint8>( iShapeData, "Num UV Sets" );
+	quint8 numUvSets = (nif->get<quint16>( iShapeData, "Data Flags" ) & 0x3F)
+					 | (nif->get<quint16>( iShapeData, "BS Data Flags" ) & 0x1);
 
 	for ( int i = 0; i < numUvSets; i++ ) {
 		QAction * temp;
@@ -1620,8 +1625,12 @@ void UVWidget::duplicateCoordSet()
 	// this signal close the UVWidget
 	disconnect( nif, &NifModel::dataChanged, this, &UVWidget::nifDataChanged );
 	// expand the UV Sets array and duplicate the current coordinates
-	quint8 numUvSets = nif->get<quint8>( iShapeData, "Num UV Sets" );
-	nif->set<quint8>( iShapeData, "Num UV Sets", numUvSets + 1 );
+	auto dataFlags = nif->get<quint16>( iShapeData, "Data Flags" );
+	quint8 numUvSets = nif->get<quint16>( iShapeData, "Data Flags" ) & 0x3F;
+	numUvSets += 1;
+	dataFlags = dataFlags | ((dataFlags & 0x3F) | numUvSets);
+
+	nif->set<quint8>( iShapeData, "Data Flags", numUvSets );
 	QModelIndex uvSets = nif->getIndex( iShapeData, "UV Sets" );
 	nif->updateArray( uvSets );
 	nif->setArray<Vector2>( uvSets.child( numUvSets, 0 ), nif->getArray<Vector2>( uvSets.child( currentCoordSet, 0 ) ) );

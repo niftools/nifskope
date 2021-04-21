@@ -48,7 +48,7 @@ std::shared_ptr<FSArchiveHandler> FSArchiveHandler::openArchive( const QString &
 	if ( BSA::canOpen( fn ) )
 	{
 		BSA * bsa = new BSA( fn );
-		if ( bsa->open() ) {
+		if ( bsa && bsa->open() ) {
 			//qDebug() << "BSA Open: " << fn;
 			return std::shared_ptr<FSArchiveHandler>( new FSArchiveHandler( bsa ) );
 		}

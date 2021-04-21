@@ -30,6 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+#include "xmlconfig.h"
 #include "message.h"
 #include "data/niftypes.h"
 #include "model/nifmodel.h"
@@ -51,6 +52,12 @@ QHash<QString, NifBlockPtr> NifModel::fixedCompounds;
 QHash<QString, NifBlockPtr> NifModel::blocks;
 QMap<quint32, NifBlockPtr> NifModel::blockHashes;
 
+
+// Current token attribute list
+QString attrlist;
+// Token storage
+QMap<QString, QVector<QPair<QString, QString>>> tokens;
+
 //! Parses nif.xml
 class NifXmlHandler final : public QXmlDefaultHandler
 {
@@ -66,10 +73,16 @@ public:
 		tagCompound,
 		tagBlock,
 		tagAdd,
+		tagAddDefault,
 		tagBasic,
 		tagEnum,
 		tagOption,
-		tagBitFlag
+		tagBitFlag,
+		tagBitfield,
+		tagMember,
+		tagToken,
+		tagTokenTag,
+		tagModule
 	};
 
 	//! i18n wrapper for various strings
@@ -85,13 +98,20 @@ public:
 	{
 		tags.insert( "niftoolsxml", tagFile );
 		tags.insert( "version", tagVersion );
-		tags.insert( "compound", tagCompound );
+		tags.insert( "module", tagModule );
+		tags.insert( "struct", tagCompound );
 		tags.insert( "niobject", tagBlock );
-		tags.insert( "add", tagAdd );
+		tags.insert( "field", tagAdd );
+		tags.insert( "default", tagAddDefault );
 		tags.insert( "basic", tagBasic );
 		tags.insert( "enum", tagEnum );
 		tags.insert( "option", tagOption );
 		tags.insert( "bitflags", tagBitFlag );
+		tags.insert( "token", tagToken );
+		tags.insert( "bitfield", tagBitfield );
+		tags.insert( "member", tagMember );
+
+		tokens.clear();
 	}
 
 	//! Current position on stack
@@ -112,6 +132,8 @@ public:
 	QString optId;
 	//! Current enumeration value
 	QString optVal;
+	//! Current enumeration bit
+	QString optBit;
 	//! Current enumeration text
 	QString optTxt;
 
@@ -136,6 +158,16 @@ public:
 		return stack[--depth];
 	}
 
+	QString token_replace( const QXmlAttributes & list, const QString & attr )
+	{
+		QString str = list.value(attr);
+		if ( tokens.contains( attr ) ) {
+			for ( const auto & p : tokens[attr] )
+				str.replace( p.first, p.second );
+		}
+		return str;
+	}
+
 	//! Reimplemented from QXmlContentHandler
 	/*!
 	 * \param Namespace (unused)
@@ -150,8 +182,18 @@ public:
 
 		Tag x = tags.value( tagid );
 
+		// Token Replace lambda, use get(x) instead of list.value(x)
+		auto get = [this, &list]( const QString & attr ) {
+			return token_replace( list, attr );
+		};
+
+		if ( x == tagToken )
+			tags.insert( list.value( "name" ), tagTokenTag );
+
 		if ( x == tagNone )
-			err( tr( "error unknown element '%1'" ).arg( tagid ) );
+			x = tags.value( tagid );
+			if ( x == tagNone )
+				err( tr( "error unknown element '%1'" ).arg( tagid ) );
 
 		if ( depth == 0 ) {
 			if ( x != tagFile )
@@ -179,10 +221,10 @@ public:
 						QString id = name;
 
 						if ( x == tagCompound && NifValue::isValid( NifValue::type( id ) ) )
-							err( tr( "compound %1 is already registered as internal type" ).arg( list.value( "name" ) ) );
+							err( tr( "struct %1 is already registered as internal type" ).arg( list.value( "name" ) ) );
 
 						if ( id.isEmpty() )
-							err( tr( "compound and niblocks must have a name" ) );
+							err( tr( "struct and niblocks must have a name" ) );
 
 						if ( NifModel::compounds.contains( id ) || NifModel::blocks.contains( id ) )
 							err( tr( "multiple declarations of %1" ).arg( id ) );
@@ -191,7 +233,7 @@ public:
 							blk = NifBlockPtr( new NifBlock );
 
 						blk->id = id;
-						blk->abstract = ( list.value( "abstract" ) == "1" );
+						blk->abstract = (list.value( "abstract" ) == "1" || list.value( "abstract" ) == "true");
 
 						if ( x == tagBlock ) {
 							blk->ancestor = list.value( "inherit" );
@@ -237,6 +279,19 @@ public:
 					NifValue::registerEnumType( typId, flags );
 				}
 				break;
+			case tagBitfield:
+				{
+					typId = list.value( "name" );
+					typTxt = QString();
+					QString storage = list.value( "storage" );
+
+					if ( typId.isEmpty() || storage.isEmpty() )
+						err( tr( "bitfield definition must have a name and a known storage type" ) );
+
+					if ( !NifValue::registerAlias( typId, storage ) )
+						err( tr( "failed to register alias %1 for enum type %2" ).arg( storage, typId ) );
+				}
+				break;
 			case tagVersion:
 				{
 					int v = NifModel::version2number( list.value( "num" ).trimmed() );
@@ -247,8 +302,15 @@ public:
 						err( tr( "invalid version tag" ) );
 				}
 				break;
+			case tagToken:
+				{
+					attrlist = list.value( "attrs" );
+				}
+				break;
+			case tagModule:
+				break;
 			default:
-				err( tr( "expected basic, enum, compound, niobject or version got %1 instead" ).arg( tagid ) );
+				err( tr( "expected basic, enum, struct, niobject or version got %1 instead" ).arg( tagid ) );
 			}
 
 			break;
@@ -258,7 +320,7 @@ public:
 		case tagCompound:
 
 			if ( x != tagAdd )
-				err( tr( "only add tags allowed in compound type declaration" ) );
+				err( tr( "only field tags allowed in struct type declaration" ) );
 
 		case tagBlock:
 			push( x );
@@ -268,19 +330,30 @@ public:
 				{
 					QString type = list.value( "type" );
 					QString tmpl = list.value( "template" );
-					QString arg  = list.value( "arg" );
-					QString arr1 = list.value( "arr1" );
-					QString arr2 = list.value( "arr2" );
-					QString cond = list.value( "cond" );
-					QString ver1 = list.value( "ver1" );
-					QString ver2 = list.value( "ver2" );
+					QString arg  = get( "arg" );
+					QString arr1 = get( "length" );
+					QString arr2 = get( "width" );
+					QString cond = get( "cond" );
+					QString ver1 = list.value( "since" );
+					QString ver2 = list.value( "until" );
 					QString abs = list.value( "abstract" );
 					QString bin = list.value( "binary" );
-					QString vercond = list.value( "vercond" );
-					QString userver = list.value( "userver" );
-					QString userver2 = list.value( "userver2" );
+					QString vercond = get( "vercond" );
+					QString defval = get( "default" );
 
-					bool isTemplated = (type == "TEMPLATE" || tmpl == "TEMPLATE");
+					QString onlyT = list.value( "onlyT" );
+					QString excludeT = list.value( "excludeT" );
+					if ( !onlyT.isEmpty() || !excludeT.isEmpty() ) {
+						Q_ASSERT( cond.isEmpty() );
+						Q_ASSERT( onlyT.isEmpty() != excludeT.isEmpty() );
+						if ( !onlyT.isEmpty() )
+							cond = onlyT;
+						else
+							cond = QString( "!%1" ).arg( excludeT );
+					}
+
+
+					bool isTemplated = (type == XMLTMPL || tmpl == XMLTMPL);
 					bool isCompound = NifModel::compounds.contains( type );
 					bool isArray = !arr1.isEmpty();
 					bool isMultiArray = !arr2.isEmpty();
@@ -293,20 +366,20 @@ public:
 						static const QVector<QString> mixinTypes {
 							"HavokFilter",
 							"HavokMaterial",
-							"RagdollDescriptor",
-							"LimitedHingeDescriptor",
-							"HingeDescriptor",
-							"BallAndSocketDescriptor",
-							"PrismaticDescriptor",
-							"MalleableDescriptor",
-							"ConstraintData"
+							"bhkRagdollConstraintCInfo",
+							"bhkLimitedHingeConstraintCInfo",
+							"bhkHingeConstraintCInfo",
+							"bhkBallAndSocketConstraintCInfo",
+							"bhkPrismaticConstraintCInfo",
+							"bhkMalleableConstraintCInfo",
+							"bhkConstraintData",
+							"bhkConstraintCInfo"
 						};
 
 						isMixin = mixinTypes.contains( type );
 						// The <add> must not use any attributes other than name/type
 						isMixin = isMixin && !isTemplated && !isArray;
-						isMixin = isMixin && cond.isEmpty() && ver1.isEmpty() && ver2.isEmpty()
-							&& vercond.isEmpty() && userver.isEmpty() && userver2.isEmpty();
+						isMixin = isMixin && cond.isEmpty() && ver1.isEmpty() && ver2.isEmpty() && vercond.isEmpty();
 
 						isCompound = !isMixin;
 					}
@@ -331,15 +404,14 @@ public:
 					);
 
 					// Set data flags
-					data.setAbstract( abs == "1" );
-					data.setBinary( bin == "1" );
+					data.setAbstract( abs == "1" || abs == "true" );
+					data.setBinary( bin == "1" || bin == "true" );
 					data.setTemplated( isTemplated );
 					data.setIsCompound( isCompound );
 					data.setIsArray( isArray );
 					data.setIsMultiArray( isMultiArray );
 					data.setIsMixin( isMixin );
 
-					QString defval = list.value( "default" );
 
 					if ( !defval.isEmpty() ) {
 						bool ok;
@@ -352,20 +424,6 @@ public:
 						}
 					}
 
-					if ( !userver.isEmpty() ) {
-						if ( !vercond.isEmpty() )
-							vercond += " && ";
-
-						vercond += QString( "(User Version == %1)" ).arg( userver );
-					}
-
-					if ( !userver2.isEmpty() ) {
-						if ( !vercond.isEmpty() )
-							vercond += " && ";
-
-						vercond += QString( "(User Version 2 == %1)" ).arg( userver2 );
-					}
-
 					if ( !vercond.isEmpty() ) {
 						data.setVerCond( vercond );
 					}
@@ -375,13 +433,22 @@ public:
 						data.setIsConditionless( true );
 
 					if ( data.name().isEmpty() || data.type().isEmpty() )
-						err( tr( "add needs at least name and type attributes" ) );
+						err( tr( "field needs at least name and type attributes" ) );
 				}
 				break;
 			default:
-				err( tr( "only add tags allowed in block declaration" ) );
+				err( tr( "only field tags allowed in block declaration" ) );
 			}
 
+			break;
+		case tagAdd:
+			// Member child tags
+			push( x );
+			switch ( x ) {
+			case tagAddDefault:
+				// Subclass defaults
+				break;
+			}
 			break;
 		case tagEnum:
 		case tagBitFlag:
@@ -391,6 +458,10 @@ public:
 			case tagOption:
 				optId  = list.value( "name" );
 				optVal = list.value( "value" );
+				optBit = list.value( "bit" );
+				if ( !optBit.isEmpty() )
+					optVal = optBit;
+
 				optTxt = QString();
 
 				if ( optId.isEmpty() || optVal.isEmpty() )
@@ -407,6 +478,34 @@ public:
 				err( tr( "only option tags allowed in enum declaration" ) );
 			}
 
+			break;
+		case tagBitfield:
+			push( x );
+			switch ( x ) {
+			case tagMember:
+				break;
+			default:
+				err( tr( "only member tags allowed in bitfield declaration" ) );
+			}
+			break;
+		case tagToken:
+			push( x );
+			switch ( x ) {
+			case tagTokenTag:
+				{
+					auto tok = list.value( "token" );
+					auto str = list.value( "string" );
+					for ( const auto & attr : attrlist.split( " " ) ) {
+						if ( !tokens.contains(attr) )
+							tokens[attr] = {};
+
+						tokens[attr].append( {tok, str} );
+					}
+				}
+				break;
+			default:
+				err( tr( "only token tags allowed in token declaration" ) );;
+			}
 			break;
 		default:
 			err( tr( "error unhandled tag %1" ).arg( tagid ) );
@@ -527,7 +626,7 @@ public:
 	{
 		return ( NifModel::compounds.contains( d.type() )
 		        || NifValue::type( d.type() ) != NifValue::tNone
-		        || d.type() == "TEMPLATE"
+		        || d.type() == XMLTMPL
 		);
 	}
 
@@ -536,7 +635,7 @@ public:
 	{
 		return ( d.temp().isEmpty()
 		        || NifValue::type( d.temp() ) != NifValue::tNone
-		        || d.temp() == "TEMPLATE"
+		        || d.temp() == XMLTMPL
 		        || NifModel::blocks.contains( d.temp() )
 		        || NifModel::compounds.contains( d.temp() )
 		);
@@ -550,13 +649,13 @@ public:
 			NifBlockPtr c = NifModel::compounds.value( key );
 			for ( NifData data :c->types ) {
 				if ( !checkType( data ) )
-					err( tr( "compound type %1 refers to unknown type %2" ).arg( key, data.type() ) );
+					err( tr( "struct type %1 refers to unknown type %2" ).arg( key, data.type() ) );
 
 				if ( !checkTemp( data ) )
-					err( tr( "compound type %1 refers to unknown template type %2" ).arg( key, data.temp() ) );
+					err( tr( "struct type %1 refers to unknown template type %2" ).arg( key, data.temp() ) );
 
 				if ( data.type() == key )
-					err( tr( "compound type %1 contains itself" ).arg( key ) );
+					err( tr( "struct type %1 contains itself" ).arg( key ) );
 			}
 		}
 

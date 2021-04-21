@@ -71,7 +71,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QStandardItemModel>
 
 #include <fsengine/bsa.h>
-#include <fsengine/fsmanager.h>
 
 #ifdef WIN32
 #  define WINDOWS_LEAN_AND_MEAN
@@ -164,7 +163,7 @@ NifSkope::NifSkope()
 	nifEmpty = new NifModel( this );
 	proxyEmpty = new NifProxyModel( this );
 
-	nif->setMessageMode( BaseModel::UserMessage );
+	nif->setMessageMode( BaseModel::MSG_USER );
 
 	// Setup QUndoStack
 	nif->undoStack = new QUndoStack( this );
@@ -332,8 +331,6 @@ void NifSkope::exitRequested()
 	qApp->removeEventFilter( this );
 	// Must disconnect from this signal as it's set once for each widget for some reason
 	disconnect( qApp, &QApplication::lastWindowClosed, this, &NifSkope::exitRequested );
-
-	FSManager::del();
 
 	if ( options ) {
 		delete options;
@@ -1247,40 +1244,6 @@ void NifSkope::migrateSettings() const
 		if ( oldVersion <= NifSkopeVersion( "2.0.dev1" ) ) {
 			qDebug() << "Migrating to new Settings";
 
-			// Sanitize backslashes
-			auto sanitize = []( QVariant oldVal ) {
-				QStringList sanitized;
-				for ( const QString & archive : oldVal.toStringList() ) {
-					if ( archive == "AUTO" ) {
-						sanitized.append( FSManager::autodetectArchives() );
-						continue;
-					}
-
-					sanitized.append( QDir::fromNativeSeparators( archive ) );
-				}
-
-				return sanitized;
-			};
-
-			QVariant foldersVal = settings.value( "Settings/Resources/Folders" );
-			if ( foldersVal.toStringList().isEmpty() ) {
-				QVariant oldVal = settings.value( "Render Settings/Texture Folders" );
-				if ( !oldVal.isNull() ) {
-					settings.setValue( "Settings/Resources/Folders", sanitize( oldVal ) );
-				}
-			}
-
-			QVariant archivesVal = settings.value( "Settings/Resources/Archives" );
-			if ( archivesVal.toStringList().isEmpty() ) {
-				QVariant oldVal = settings.value( "FSEngine/Archives" );
-				if ( !oldVal.isNull() ) {
-					settings.setValue( "Settings/Resources/Archives", sanitize( oldVal ) );
-				}
-			}
-
-			// Update archive handler
-			FSManager::get()->initialize();
-			
 			// Remove old keys
 
 			settings.remove( "FSEngine" );

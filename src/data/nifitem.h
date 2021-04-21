@@ -72,7 +72,7 @@ private:
 
 	NifSharedData( const QString & n, const QString & t, const QString & tt, const QString & a, const QString & a1,
 				   const QString & a2, const QString & c, quint32 v1, quint32 v2, NifSharedData::DataFlags f )
-		: QSharedData(), name( n ), type( t ), temp( tt ), arg( a ), arr1( a1 ), arr2( a2 ),
+		: QSharedData(), name( n ), type( t ), temp( tt ), arg( a ), argexpr( a ), arr1( a1 ), arr2( a2 ),
 		cond( c ), ver1( v1 ), ver2( v2 ), condexpr( c ), arr1expr( a1 ), flags( f )
 	{
 	}
@@ -94,6 +94,8 @@ private:
 	QString temp;
 	//! Argument.
 	QString arg;
+	//! Arg as an expression.
+	NifExpr argexpr;
 	//! First array length.
 	QString arr1;
 	//! Second array length.
@@ -156,6 +158,8 @@ public:
 	inline quint32 ver2() const { return d->ver2; }
 	//! Get the text description of the data.
 	inline const QString & text() const { return d->text; }
+	//! Get the arg attribute of the data, as an expression.
+	inline const NifExpr & argexpr() const { return d->argexpr; }
 	//! Get the condition attribute of the data, as an expression.
 	inline const NifExpr & condexpr() const { return d->condexpr; }
 	//! Get the first array length of the data, as an expression.
@@ -188,7 +192,11 @@ public:
 	//! Sets the template type of the data.
 	void setTemp( const QString & temp ) { d->temp = temp; }
 	//! Sets the argument of the data.
-	void setArg( const QString & arg ) { d->arg = arg; }
+	void setArg( const QString & arg )
+	{
+		d->arg = arg;
+		d->argexpr = NifExpr( arg );
+	}
 	//! Sets the first array length of the data.
 	void setArr1( const QString & arr1 )
 	{
@@ -617,6 +625,8 @@ public:
 	//! Return the description text of the data
 	inline QString text() const {   return itemData.text(); }
 
+	//! Return the condition attribute of the data, as an expression
+	inline const NifExpr & argexpr() const { return itemData.argexpr(); }
 	//! Return the condition attribute of the data, as an expression
 	inline const NifExpr & condexpr() const {   return itemData.condexpr(); }
 	//! Return the arr1 attribute of the data, as an expression

@@ -37,6 +37,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glproperty.h"
 #include "gltools.h"
 
+#include "gamemanager.h"
+
 #include <QFlags>
 #include <QObject>
 #include <QHash>
@@ -89,6 +91,8 @@ public:
 
 	Node * getNode( const NifModel * nif, const QModelIndex & iNode );
 	Property * getProperty( const NifModel * nif, const QModelIndex & iProperty );
+
+	Game::GameMode game = Game::OTHER;
 
 	enum SceneOption
 	{
@@ -184,6 +188,7 @@ public:
 	float timeMax() const;
 signals:
 	void sceneUpdated();
+	void disableSave();
 
 public slots:
 	void updateSceneOptions( bool checked );

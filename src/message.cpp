@@ -23,43 +23,43 @@ Message::~Message()
 }
 
 //! Static helper for message box without detail text
-void Message::message( QWidget * parent, const QString & str, QMessageBox::Icon icon )
+QMessageBox* Message::message( QWidget * parent, const QString & str, QMessageBox::Icon icon )
 {
 	auto msgBox = new QMessageBox( parent );
-
-	// Keep message box on top if it does not have a parent
-	//if ( !parent )
-	msgBox->setWindowFlags( msgBox->windowFlags() | Qt::WindowStaysOnTopHint | Qt::Tool );
+	msgBox->setWindowFlags( msgBox->windowFlags() | Qt::Tool );
+	msgBox->setAttribute( Qt::WA_DeleteOnClose );
+	msgBox->setWindowModality( Qt::NonModal );
 
 	msgBox->setText( str );
 	msgBox->setIcon( icon );
 
-	msgBox->open();
+	msgBox->show();
 
-	//if ( !parent )
 	msgBox->activateWindow();
+
+	return msgBox;
 }
 
 //! Static helper for message box with detail text
-void Message::message( QWidget * parent, const QString & str, const QString & err, QMessageBox::Icon icon )
+QMessageBox* Message::message( QWidget * parent, const QString & str, const QString & err, QMessageBox::Icon icon )
 {
 	if ( !parent )
 		parent = qApp->activeWindow();
 
 	auto msgBox = new QMessageBox( parent );
-
-	// Keep message box on top if it does not have a parent
-	//if ( !parent )
-	msgBox->setWindowFlags( msgBox->windowFlags() | Qt::WindowStaysOnTopHint | Qt::Tool );
+	msgBox->setAttribute( Qt::WA_DeleteOnClose );
+	msgBox->setWindowModality( Qt::NonModal );
+	msgBox->setWindowFlags( msgBox->windowFlags() | Qt::Tool );
 
 	msgBox->setText( str );
 	msgBox->setIcon( icon );
 	msgBox->setDetailedText( err );
 
-	msgBox->open();
+	msgBox->show();
 
-	//if ( !parent )
 	msgBox->activateWindow();
+
+	return msgBox;
 }
 
 //! Static helper for installed message handler
@@ -152,25 +152,24 @@ void Message::append( QWidget * parent, const QString & str, const QString & err
 	} else {
 		// Create new message box
 		auto msgBox = new QMessageBox( parent );
-
-		// Keep message box on top if it does not have a parent
-		//if ( !parent )
-		msgBox->setWindowFlags( msgBox->windowFlags() | Qt::WindowStaysOnTopHint | Qt::Tool );
+		msgBox->setAttribute( Qt::WA_DeleteOnClose );
+		msgBox->setWindowModality( Qt::NonModal );
+		msgBox->setWindowFlags( msgBox->windowFlags() | Qt::Tool );
 
 		msgBox->setText( str );
 		msgBox->setIcon( icon );
 		msgBox->setDetailedText( err + "\n" );
-		msgBox->open();
+		msgBox->show();
 
-		//if ( !parent )
 		msgBox->activateWindow();
 
 		messageBoxes[str] = msgBox;
 
 		// Clear Detailed Text with each confirmation
-		connect( msgBox, &QMessageBox::buttonClicked, [msgBox]( QAbstractButton * button ) { 
+		connect( msgBox, &QMessageBox::buttonClicked, [msgBox, str]( QAbstractButton * button ) { 
 			Q_UNUSED( button );
-			msgBox->setDetailedText( "" );
+			if ( messageBoxes.contains( str ) )
+				messageBoxes.remove( str );
 		} );
 	}
 }
@@ -201,7 +200,7 @@ template <> TestMessage & TestMessage::operator<<(const char * x)
 template <> TestMessage & TestMessage::operator<<(QString x)
 {
 	space( s );
-	s += "\"" + x + "\"";
+	s += x; //"\"" + x + "\"";
 	return *this;
 }
 

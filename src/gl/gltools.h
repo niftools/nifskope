@@ -53,6 +53,10 @@ public:
 	Vector3 center;
 	float radius;
 
+	void update( NifModel * nif, const QModelIndex & );
+
+	static void setBounds( NifModel * nif, const QModelIndex &, const Vector3 & center, float radius );
+
 	BoundSphere & operator=( const BoundSphere & );
 	BoundSphere & operator|=( const BoundSphere & );
 
@@ -113,6 +117,15 @@ public:
 	QVector<Triangle> triangles;
 	QVector<QVector<quint16> > tristrips;
 };
+
+float bhkScale( const NifModel * nif );
+float bhkInvScale( const NifModel * nif );
+float bhkScaleMult( const NifModel * nif );
+
+Transform bhkBodyTrans( const NifModel * nif, const QModelIndex & index );
+
+QModelIndex bhkGetEntity( const NifModel * nif, const QModelIndex & index, const QString & name );
+QModelIndex bhkGetRBInfo( const NifModel * nif, const QModelIndex & index, const QString & name );
 
 QVector<int> sortAxes( QVector<float> axesDots );
 

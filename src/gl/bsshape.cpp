@@ -44,13 +44,12 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 	if ( iBlock != index && iSkin != index && iSkinData != index && !extraData )
 		return;
 
+	nifVersion = nif->getUserVersion2();
 	// Update shaders from this mesh's shader property
 	updateShaderProperties( nif );
 
 	if ( extraData )
 		return;
-
-	nifVersion = nif->getUserVersion2();
 
 	isLOD = nif->isNiBlock( iBlock, "BSMeshLODTriShape" );
 	if ( isLOD )
@@ -64,7 +63,7 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 
 	bool isDataOnSkin = false;
 	bool isSkinned = vertexFlags & VertexFlags::VF_SKINNED;
-	if ( nifVersion == 130 ) {
+	if ( nifVersion >= 130 ) {
 		skinInstName = "BSSkin::Instance";
 		skinDataName = "BSSkin::BoneData";
 	} else {
@@ -88,6 +87,9 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 	updateBounds |= updateData;
 	updateSkin = isSkinned;
 	transformRigid = !isSkinned;
+
+	if ( updateBounds )
+		dataBound = BoundSphere( nif, iBlock );
 
 	int dataSize = 0;
 	if ( !isDataOnSkin ) {
@@ -121,13 +123,6 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 		numVerts = dataSize / vertexSize;
 	}
 
-
-	auto bsphere = nif->getIndex( iBlock, "Bounding Sphere" );
-	if ( bsphere.isValid() ) {
-		bsphereCenter = nif->get<Vector3>( bsphere, "Center" );
-		bsphereRadius = nif->get<float>( bsphere, "Radius" );
-	}
-
 	if ( iBlock == index && dataSize > 0 ) {
 		verts.clear();
 		norms.clear();
@@ -140,6 +135,12 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 		// For compatibility with coords list
 		TexCoords coordset;
 
+		auto dynVerts = nif->getArray<Vector4>(iBlock, "Vertices");
+		if ( isDynamic ) {
+			for ( const auto & v : dynVerts )
+				verts << Vector3(v);
+		}
+
 		for ( int i = 0; i < numVerts; i++ ) {
 			auto idx = nif->index( i, 0, iVertData );
 
@@ -150,6 +151,9 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 
 			// Bitangent X
 			auto bitX = nif->getValue( nif->getIndex( idx, "Bitangent X" ) ).toFloat();
+			if ( isDynamic ) {
+				bitX = dynVerts.at(i)[3];
+			}
 			// Bitangent Y/Z
 			auto bitYi = nif->getValue( nif->getIndex( idx, "Bitangent Y" ) ).toCount();
 			auto bitZi = nif->getValue( nif->getIndex( idx, "Bitangent Z" ) ).toCount();
@@ -166,11 +170,6 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 			}
 		}
 
-		if ( isDynamic ) {
-			auto dynVerts = nif->getArray<Vector4>( iBlock, "Vertices" );
-			for ( const auto & v : dynVerts )
-				verts << Vector3( v );
-		}
 
 		// Add coords as first set of QList
 		coords.append( coordset );
@@ -179,7 +178,7 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 			triangles = nif->getArray<Triangle>( iTriData );
 			triangles = triangles.mid( 0, numTris );
 		} else {
-			auto partIdx = nif->getIndex( iSkinPart, "Partition" );
+			auto partIdx = nif->getIndex( iSkinPart, "Partitions" );
 			for ( int i = 0; i < nif->rowCount( partIdx ); i++ )
 				triangles << nif->getArray<Triangle>( nif->index( i, 0, partIdx ), "Triangles" );
 		}
@@ -337,7 +336,7 @@ void BSShape::transformShapes()
 	}
 
 	transColors = colors;
-	if ( bslsp ) {
+	if ( nifVersion < 130 && bslsp ) {
 		if ( !(bslsp->getFlags1() & ShaderFlags::SLSF1_Vertex_Alpha) ) {
 			for ( int c = 0; c < colors.count(); c++ )
 				transColors[c] = Color4( colors[c].red(), colors[c].green(), colors[c].blue(), 1.0f );
@@ -399,13 +398,13 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 
 		bool doVCs = (bssp && (bssp->getFlags2() & ShaderFlags::SLSF2_Vertex_Colors));
 		// Always do vertex colors for FO4 if colors present
-		if ( nifVersion == 130 && hasVertexColors && colors.count() )
+		if ( nifVersion >= 130 && hasVertexColors && colors.count() )
 			doVCs = true;
 
 		if ( transColors.count() && (scene->options & Scene::DoVertexColors) && doVCs ) {
 			glEnableClientState( GL_COLOR_ARRAY );
 			glColorPointer( 4, GL_FLOAT, 0, transColors.constData() );
-		} else if ( !hasVertexColors && (bslsp && bslsp->hasVertexColors) ) {
+		} else if ( nifVersion < 130 && !hasVertexColors && (bslsp && bslsp->hasVertexColors) ) {
 			// Correctly blacken the mesh if SLSF2_Vertex_Colors is still on
 			//	yet "Has Vertex Colors" is not.
 			glColor( Color3( 0.0f, 0.0f, 0.0f ) );
@@ -415,8 +414,16 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 	}
 
 
-	if ( !Node::SELECTING )
+	if ( !Node::SELECTING ) {
+		if ( nifVersion == 155 )
+			glEnable( GL_FRAMEBUFFER_SRGB );
+		else
+			glDisable( GL_FRAMEBUFFER_SRGB );
 		shader = scene->renderer->setupProgram( this, shader );
+	
+	} else if ( nifVersion == 155 ) {
+		glDisable( GL_FRAMEBUFFER_SRGB );
+	}
 	
 	if ( isDoubleSided ) {
 		glCullFace( GL_FRONT );
@@ -512,6 +519,7 @@ void BSShape::drawVerts() const
 
 void BSShape::drawSelection() const
 {
+	glDisable(GL_FRAMEBUFFER_SRGB);
 	if ( scene->options & Scene::ShowNodes )
 		Node::drawSelection();
 
@@ -904,7 +912,7 @@ BoundSphere BSShape::bounds() const
 		if ( verts.count() ) {
 			boundSphere = BoundSphere( verts );
 		} else {
-			boundSphere = BoundSphere( bsphereCenter, bsphereRadius );
+			boundSphere = dataBound;
 		}
 	}
 

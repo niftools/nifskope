@@ -120,6 +120,9 @@ void ControllerManager::setSequence( const QString & seqname )
 					if ( nodename.isEmpty() ) {
 						QModelIndex idx = nif->getIndex( iCB, "Node Name Offset" );
 						nodename = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
+
+						if ( nodename.isEmpty() )
+							nodename = nif->get<QString>( iCB, "Target Name" );
 					}
 
 					QString proptype = nif->get<QString>( iCB, "Property Type" );
@@ -134,6 +137,9 @@ void ControllerManager::setSequence( const QString & seqname )
 					if ( ctrltype.isEmpty() ) {
 						QModelIndex idx = nif->getIndex( iCB, "Controller Type Offset" );
 						ctrltype = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
+
+						if ( ctrltype.isEmpty() && iController.isValid() )
+							ctrltype = nif->getBlockName( iController );
 					}
 
 					QString var1 = nif->get<QString>( iCB, "Controller ID" );
@@ -564,24 +570,24 @@ bool ParticleController::update( const NifModel * nif, const QModelIndex & index
 		emitNode = target->scene->getNode( nif, nif->getBlock( nif->getLink( iBlock, "Emitter" ) ) );
 		emitStart = nif->get<float>( iBlock, "Emit Start Time" );
 		emitStop = nif->get<float>( iBlock, "Emit Stop Time" );
-		emitRate = nif->get<float>( iBlock, "Emit Rate" );
-		emitRadius = nif->get<Vector3>( iBlock, "Start Random" );
+		emitRate = nif->get<float>( iBlock, "Birth Rate" );
+		emitRadius = nif->get<Vector3>( iBlock, "Emitter Dimensions" );
 		emitAccu = 0;
 		emitLast = emitStart;
 
 		spd = nif->get<float>( iBlock, "Speed" );
-		spdRnd = nif->get<float>( iBlock, "Speed Random" );
+		spdRnd = nif->get<float>( iBlock, "Speed Variation" );
 
 		ttl = nif->get<float>( iBlock, "Lifetime" );
-		ttlRnd = nif->get<float>( iBlock, "Lifetime Random" );
+		ttlRnd = nif->get<float>( iBlock, "Lifetime Variation" );
 
-		inc = nif->get<float>( iBlock, "Vertical Direction" );
-		incRnd = nif->get<float>( iBlock, "Vertical Angle" );
+		inc = nif->get<float>( iBlock, "Declination" );
+		incRnd = nif->get<float>( iBlock, "Declination Variation" );
 
-		dec = nif->get<float>( iBlock, "Horizontal Direction" );
-		decRnd = nif->get<float>( iBlock, "Horizontal Angle" );
+		dec = nif->get<float>( iBlock, "Planar Angle" );
+		decRnd = nif->get<float>( iBlock, "Planar Angle Variation" );
 
-		size = nif->get<float>( iBlock, "Size" );
+		size = nif->get<float>( iBlock, "Initial Size" );
 		grow = 0.0;
 		fade = 0.0;
 
@@ -599,10 +605,10 @@ bool ParticleController::update( const NifModel * nif, const QModelIndex & index
 			for ( int p = 0; p < numValid && p < nif->rowCount( iParticles ); p++ ) {
 				Particle particle;
 				particle.velocity = nif->get<Vector3>( iParticles.child( p, 0 ), "Velocity" );
-				particle.lifetime = nif->get<float>( iParticles.child( p, 0 ), "Lifetime" );
-				particle.lifespan = nif->get<float>( iParticles.child( p, 0 ), "Lifespan" );
-				particle.lasttime = nif->get<float>( iParticles.child( p, 0 ), "Timestamp" );
-				particle.vertex = nif->get<int>( iParticles.child( p, 0 ), "Vertex ID" );
+				particle.lifetime = nif->get<float>( iParticles.child( p, 0 ), "Age" );
+				particle.lifespan = nif->get<float>( iParticles.child( p, 0 ), "Life Span" );
+				particle.lasttime = nif->get<float>( iParticles.child( p, 0 ), "Last Update" );
+				particle.vertex = nif->get<int>( iParticles.child( p, 0 ), "Code" );
 				// Display saved particle start on initial load
 				list.append( particle );
 			}
@@ -610,14 +616,14 @@ bool ParticleController::update( const NifModel * nif, const QModelIndex & index
 			//}
 		}
 
-		if ( (nif->get<int>( iBlock, "Emit Flags" ) & 1) == 0 ) {
+		if ( nif->get<bool>( iBlock, "Use Birth Rate" ) == 0 ) {
 			emitRate = emitMax / (ttl + ttlRnd / 2);
 		}
 
 		iExtras.clear();
 		grav.clear();
 		iColorKeys = QModelIndex();
-		QModelIndex iExtra = nif->getBlock( nif->getLink( iBlock, "Particle Extra" ) );
+		QModelIndex iExtra = nif->getBlock( nif->getLink( iBlock, "Particle Modifier" ) );
 
 		while ( iExtra.isValid() ) {
 			iExtras.append( iExtra );
@@ -1027,7 +1033,7 @@ void EffectFloatController::updateTime( float time )
 bool EffectFloatController::update( const NifModel * nif, const QModelIndex & index )
 {
 	if ( Controller::update( nif, index ) ) {
-		variable = EffectFloat::Variable( nif->get<int>( iBlock, "Type of Controlled Variable" ) );
+		variable = EffectFloat::Variable( nif->get<int>( iBlock, "Controlled Variable" ) );
 		return true;
 	}
 
@@ -1068,7 +1074,7 @@ void EffectColorController::updateTime( float time )
 bool EffectColorController::update( const NifModel * nif, const QModelIndex & index )
 {
 	if ( Controller::update( nif, index ) ) {
-		variable = nif->get<int>( iBlock, "Type of Controlled Color" );
+		variable = nif->get<int>( iBlock, "Controlled Color" );
 		return true;
 	}
 
@@ -1130,7 +1136,7 @@ void LightingFloatController::updateTime( float time )
 bool LightingFloatController::update( const NifModel * nif, const QModelIndex & index )
 {
 	if ( Controller::update( nif, index ) ) {
-		variable = LightingFloat::Variable(nif->get<int>( iBlock, "Type of Controlled Variable" ));
+		variable = LightingFloat::Variable(nif->get<int>( iBlock, "Controlled Variable" ));
 		return true;
 	}
 
@@ -1169,7 +1175,7 @@ void LightingColorController::updateTime( float time )
 bool LightingColorController::update( const NifModel * nif, const QModelIndex & index )
 {
 	if ( Controller::update( nif, index ) ) {
-		variable = nif->get<int>( iBlock, "Type of Controlled Color" );
+		variable = nif->get<int>( iBlock, "Controlled Color" );
 		return true;
 	}
 

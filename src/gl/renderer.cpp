@@ -123,8 +123,14 @@ QModelIndex Renderer::ConditionSingle::getIndex( const NifModel * nif, const QVe
 {
 	QString childid;
 
-	if ( blkid.startsWith( "HEADER/" ) )
-		return nif->getIndex( nif->getHeader(), blkid.remove( "HEADER/" ) );
+	if ( blkid.startsWith( "HEADER/" ) ) {
+		auto blk = blkid.remove( "HEADER/" );
+		if ( blk.contains("/") ) {
+			auto blks = blk.split( "/" );
+			return nif->getIndex( nif->getIndex( nif->getHeader(), blks.at(0) ), blks.at(1) );
+		}
+		return nif->getIndex( nif->getHeader(), blk );
+	}
 
 	int pos = blkid.indexOf( "/" );
 
@@ -159,7 +165,7 @@ bool Renderer::ConditionSingle::eval( const NifModel * nif, const QVector<QModel
 	if ( val.isString() )
 		return compare( val.toString(), right ) ^ invert;
 	else if ( val.isCount() )
-		return compare( val.toCount(), right.toUInt( nullptr, 0 ) ) ^ invert;
+		return compare( val.toCount(), right.toULongLong( nullptr, 0 ) ) ^ invert;
 	else if ( val.isFloat() )
 		return compare( val.toFloat(), (float)right.toDouble() ) ^ invert;
 	else if ( val.isFileVersion() )
@@ -554,6 +560,8 @@ bool Renderer::Program::uniSampler( BSShaderLightingProperty * bsprop, UniformTy
 	GLint uniSamp = uniformLocations[var];
 	if ( uniSamp >= 0 ) {
 
+		// TODO: On stream 155 bsprop->fileName can reference incorrect strings because
+		// the BSSTS is not filled out nor linked from the BSSP
 		QString fname = (forced.isEmpty()) ? bsprop->fileName( textureSlot ) : forced;
 		if ( fname.isEmpty() )
 			fname = alternate;
@@ -589,9 +597,11 @@ bool Renderer::Program::uniSamplerBlank( UniformType var, int & texunit )
 
 static QString white = "shaders/white.dds";
 static QString black = "shaders/black.dds";
+static QString lighting = "shaders/lighting.dds";
 static QString gray = "shaders/gray.dds";
 static QString magenta = "shaders/magenta.dds";
 static QString default_n = "shaders/default_n.dds";
+static QString default_ns = "shaders/default_ns.dds";
 static QString cube = "shaders/cubemap.dds";
 
 bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & props,
@@ -616,6 +626,9 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 	else if ( mesh->bsesp && mesh->bsesp->mat() )
 		mat = mesh->bsesp->mat();
 
+	QString default_n = ::default_n;
+	if ( mesh->nifVersion == 155 )
+		default_n = ::default_ns;
 
 	// texturing
 
@@ -649,7 +662,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 		}
 	}
 
-	if ( bsprop && mesh->bslsp ) {
+	if ( bsprop && !mesh->bsesp ) {
 		QString forced;
 		if ( !(opts & Scene::DoLighting) )
 			forced = default_n;
@@ -679,7 +692,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 		}
 	}
 
-	if ( bsprop && mesh->bslsp ) {
+	if ( bsprop && !mesh->bsesp ) {
 		prog->uniSampler( bsprop, SAMP_GLOW, 2, texunit, black, clamp );
 	} else if ( !bsprop ) {
 		GLint uniGlowMap = prog->uniformLocations[SAMP_GLOW];
@@ -753,7 +766,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 
 		// Glow params
 
-		if ( (opts & Scene::DoGlow) && (opts & Scene::DoLighting) && mesh->bslsp->hasEmittance )
+		if ( (opts & Scene::DoGlow) && (opts & Scene::DoLighting) && (mesh->bslsp->hasEmittance || mesh->nifVersion == 155) )
 			prog->uni1f( GLOW_MULT, mesh->bslsp->getEmissiveMult() );
 		else
 			prog->uni1f( GLOW_MULT, 0 );
@@ -776,12 +789,14 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 
 		prog->uni1i( HAS_MAP_SPEC, mesh->bslsp->hasSpecularMap );
 
-		if ( mesh->bslsp->hasSpecularMap && (mesh->nifVersion == 130 || !mesh->bslsp->hasBacklight) )
-			prog->uniSampler( bsprop, SAMP_SPECULAR, 7, texunit, white, clamp );
-		else
-			prog->uniSampler( bsprop, SAMP_SPECULAR, 7, texunit, black, clamp );
+		if ( mesh->nifVersion <= 130 ) {
+			if ( mesh->nifVersion == 130 || (mesh->bslsp->hasSpecularMap && !mesh->bslsp->hasBacklight) )
+				prog->uniSampler( bsprop, SAMP_SPECULAR, 7, texunit, white, clamp );
+			else
+				prog->uniSampler( bsprop, SAMP_SPECULAR, 7, texunit, black, clamp );
+		}
 
-		if ( mesh->nifVersion == 130 ) {
+		if ( mesh->nifVersion >= 130 ) {
 			prog->uni1i( DOUBLE_SIDE, mesh->bslsp->getIsDoubleSided() );
 			prog->uni1f( G2P_SCALE, mesh->bslsp->paletteScale );
 			prog->uni1f( SS_ROLLOFF, mesh->bslsp->getLightingEffect1() );
@@ -830,6 +845,11 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 		}
 		// Always bind mask regardless of shader settings
 		prog->uniSampler( bsprop, SAMP_ENV_MASK, 5, texunit, white, clamp );
+
+		if ( mesh->nifVersion == 155 ) {
+			prog->uniSampler( bsprop, SAMP_REFLECTIVITY, 8, texunit, black, clamp );
+			prog->uniSampler( bsprop, SAMP_LIGHTING, 9, texunit, lighting, clamp );
+		}
 
 		// Parallax
 		prog->uni1i( HAS_MAP_HEIGHT, mesh->bslsp->hasHeightMap );
@@ -883,7 +903,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 		// BSEffectShader textures
 		prog->uniSampler( bsprop, SAMP_GRAYSCALE, 1, texunit, "", TexClampMode::MIRRORED_S_MIRRORED_T );
 
-		if ( mesh->nifVersion == 130 ) {
+		if ( mesh->nifVersion >= 130 ) {
 
 			prog->uni1f( LIGHT_INF, mesh->bsesp->getLightingInfluence() );
 
@@ -913,6 +933,12 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 				fn->glUniform1i( uniCubeMap, texunit++ );
 			}
 			prog->uniSampler( bsprop, SAMP_SPECULAR, 4, texunit, white, clamp );
+			if ( mesh->nifVersion == 155 ) {
+				prog->uniSampler( bsprop, SAMP_REFLECTIVITY, 6, texunit, black, clamp );
+				prog->uniSampler( bsprop, SAMP_LIGHTING, 7, texunit, lighting, clamp );
+			}
+
+			prog->uni1f( LUM_EMIT, mesh->bsesp->lumEmittance );
 		}
 	}
 

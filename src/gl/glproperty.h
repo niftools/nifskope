@@ -540,6 +540,86 @@ namespace ShaderFlags
 		ST_WorldMap4,
 		ST_WorldLODMultitexture
 	};
+
+	enum BSShaderCRC32 : unsigned int
+	{
+		// Lighting + Effect
+		// SF1
+		ZBUFFER_TEST = 1740048692,
+		SKINNED = 3744563888,
+		ENVMAP = 2893749418,
+		VERTEX_ALPHA = 2333069810,
+		GRAYSCALE_TO_PALETTE_COLOR = 442246519,
+		DECAL = 3849131744,
+		DYNAMIC_DECAL = 1576614759,
+		HAIRTINT = 1264105798,
+		SKIN_TINT = 1483897208,
+		EMIT_ENABLED = 2262553490,
+		REFRACTION = 1957349758,
+		REFRACTION_FALLOFF = 902349195,
+		RGB_FALLOFF = 3448946507,
+		EXTERNAL_EMITTANCE = 2150459555,
+		// SF2
+		ZBUFFER_WRITE = 3166356979,
+		GLOWMAP = 2399422528,
+		TWO_SIDED = 759557230,
+		VERTEXCOLORS = 348504749,
+		NOFADE = 2994043788,
+		LOD_OBJECTS = 2896726515,
+		// Lighting only
+		PBR = 731263983,
+		FACE = 314919375,
+		CAST_SHADOWS = 1563274220,
+		MODELSPACENORMALS = 2548465567,
+		TRANSFORM_CHANGED = 3196772338,
+		INVERTED_FADE_PATTERN = 3030867718,
+		// Effect only
+		EFFECT_LIGHTING = 3473438218,
+		FALLOFF = 3980660124,
+		SOFT_EFFECT = 3503164976,
+		GRAYSCALE_TO_PALETTE_ALPHA = 2901038324,
+		WEAPON_BLOOD = 2078326675,
+		NO_EXPOSURE = 3707406987
+	};
+
+	static QMap<uint, uint64_t> CRC_TO_FLAG = {
+		// SF1
+		{CAST_SHADOWS, SLSF1_Cast_Shadows},
+		{ZBUFFER_TEST, SLSF1_ZBuffer_Test},
+		{SKINNED, SLSF1_Skinned},
+		{ENVMAP, SLSF1_Environment_Mapping},
+		{VERTEX_ALPHA, SLSF1_Vertex_Alpha},
+		{FACE, SLSF1_Facegen_Detail_Map},
+		{GRAYSCALE_TO_PALETTE_COLOR, SLSF1_Greyscale_To_PaletteColor},
+		{GRAYSCALE_TO_PALETTE_ALPHA, SLSF1_Greyscale_To_PaletteAlpha},
+		{DECAL, SLSF1_Decal},
+		{DYNAMIC_DECAL, SLSF1_Dynamic_Decal},
+		{EMIT_ENABLED, SLSF1_Own_Emit},
+		{REFRACTION, SLSF1_Refraction},
+		{SKIN_TINT, SLSF1_FaceGen_RGB_Tint},
+		{RGB_FALLOFF, SLSF1_Recieve_Shadows},
+		{EXTERNAL_EMITTANCE, SLSF1_External_Emittance},
+		{MODELSPACENORMALS, SLSF1_Model_Space_Normals},
+		{FALLOFF, SLSF1_Use_Falloff},
+		{SOFT_EFFECT, SLSF1_Soft_Effect},
+		// SF2
+		{ZBUFFER_WRITE, (uint64_t)SLSF2_ZBuffer_Write << 32},
+		{GLOWMAP, (uint64_t)SLSF2_Glow_Map << 32},
+		{TWO_SIDED, (uint64_t)SLSF2_Double_Sided << 32},
+		{VERTEXCOLORS, (uint64_t)SLSF2_Vertex_Colors << 32},
+		{NOFADE, (uint64_t)SLSF2_No_Fade << 32},
+		{WEAPON_BLOOD, (uint64_t)SLSF2_Weapon_Blood << 32},
+		{TRANSFORM_CHANGED, (uint64_t)SLSF2_Assume_Shadowmask << 32},
+		{EFFECT_LIGHTING, (uint64_t)SLSF2_Effect_Lighting << 32},
+		{LOD_OBJECTS, (uint64_t)SLSF2_LOD_Objects << 32},
+
+		// TODO
+		{PBR, 0},
+		{REFRACTION_FALLOFF, 0},
+		{INVERTED_FADE_PATTERN, 0},
+		{HAIRTINT, 0},
+		{NO_EXPOSURE, 0},
+	};
 }
 
 enum TexClampMode : unsigned int
@@ -597,8 +677,8 @@ public:
 	unsigned int getFlags1() const;
 	unsigned int getFlags2() const;
 
-	void setFlags1( unsigned int );
-	void setFlags2( unsigned int );
+	void setFlags1( const NifModel * nif, const QModelIndex & prop );
+	void setFlags2( const NifModel * nif, const QModelIndex & prop );
 
 	UVScale getUvScale() const;
 	UVOffset getUvOffset() const;
@@ -640,6 +720,8 @@ protected:
 	bool depthWrite = false;
 	bool isDoubleSided = false;
 	bool isTranslucent = false;
+
+	quint32 stream = 83;
 };
 
 REGISTER_PROPERTY( BSShaderLightingProperty, ShaderLighting )
@@ -739,6 +821,7 @@ protected:
 	Color3 emissiveColor;
 	Color3 specularColor;
 	Color3 tintColor;
+	Color3 subsurfaceColor;
 
 	float alpha = 1.0;
 
@@ -815,6 +898,8 @@ public:
 	};
 
 	Falloff falloff;
+
+	float lumEmittance = 0.0;
 
 protected:
 	void setController( const NifModel * nif, const QModelIndex & controller ) override final;

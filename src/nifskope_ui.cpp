@@ -608,6 +608,10 @@ void NifSkope::initToolBars()
 		}
 	} );
 
+	connect ( ogl->scene, &Scene::disableSave, [this]() {
+		ui->aSave->setDisabled(true);
+		ui->aSaveAs->setDisabled(true);
+	} );
 
 	// LOD Toolbar
 	QToolBar * tLOD = ui->tLOD;
@@ -775,10 +779,11 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 		mImport->setDisabled( true );
 	} else {
 		mExport->setDisabled( false );
+		mImport->setDisabled( false );
 		if ( nif->getUserVersion2() >= 100 )
-			mImport->setDisabled( true );
-		else
-			mImport->setDisabled( false );
+			mImport->actions().at(0)->setDisabled(true);
+		else if ( nif->getUserVersion2() == 0 )
+			mImport->actions().at(1)->setDisabled(true);
 	}
 
 	// Reconnect the models to the views
@@ -790,6 +795,9 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 	ogl->setUpdatesEnabled( true );
 	ogl->setEnabled( true );
 	setEnabled( true ); // IMPORTANT!
+
+	ui->aSave->setDisabled(false);
+	ui->aSaveAs->setDisabled(false);
 
 	int timeout = 2500;
 	if ( success ) {

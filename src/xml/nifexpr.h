@@ -46,7 +46,7 @@ class NifExpr final
 	enum Operator
 	{
 		e_nop, e_not_eq, e_eq, e_gte, e_lte, e_gt, e_lt, e_bit_and, e_bit_or,
-		e_add, e_sub, e_div, e_mul, e_bool_and, e_bool_or, e_not,
+		e_add, e_sub, e_div, e_mul, e_bool_and, e_bool_or, e_not, e_lsh, e_rsh
 	};
 	QVariant lhs;
 	QVariant rhs;
@@ -71,6 +71,11 @@ public:
 	}
 
 	QString toString() const;
+
+	bool noop() const
+	{
+		return opcode == NifExpr::e_nop;
+	}
 
 public:
 	template <class F>
@@ -111,6 +116,10 @@ public:
 			return QVariant::fromValue( l.toBool() && r.toBool() );
 		case NifExpr::e_bool_or:
 			return QVariant::fromValue( l.toBool() || r.toBool() );
+		case NifExpr::e_lsh:
+			return QVariant::fromValue( l.toULongLong() << r.toUInt() );
+		case NifExpr::e_rsh:
+			return QVariant::fromValue( l.toULongLong() >> r.toUInt() );
 		case NifExpr::e_nop:
 			return l;
 		}
@@ -128,6 +137,12 @@ public:
 	int evaluateUInt( const F & convert ) const
 	{
 		return evaluateValue( convert ).toUInt();
+	}
+
+	template <class F>
+	int evaluateUInt64( const F & convert ) const
+	{
+		return evaluateValue( convert ).toULongLong();
 	}
 
 private:

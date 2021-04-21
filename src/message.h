@@ -22,8 +22,8 @@ class Message : QObject
 	~Message();
 
 public:
-	static void message( QWidget *, const QString &, QMessageBox::Icon );
-	static void message( QWidget *, const QString &, const QString &, QMessageBox::Icon );
+	static QMessageBox* message( QWidget *, const QString &, QMessageBox::Icon );
+	static QMessageBox* message( QWidget *, const QString &, const QString &, QMessageBox::Icon );
 	static void message( QWidget *, const QString &, const QMessageLogContext *, QMessageBox::Icon );
 
 	static void append( const QString &, const QString &, QMessageBox::Icon = QMessageBox::Warning );

@@ -3,8 +3,8 @@
 checkgroup begin or
 	checkgroup begin and
 		# Skyrim
-		check HEADER/User Version 2 >= 83
-		check HEADER/User Version 2 <= 100
+		check HEADER/BS Header/BS Version >= 83
+		check HEADER/BS Header/BS Version <= 130
 	checkgroup end
 checkgroup end
 
@@ -19,7 +19,7 @@ checkgroup begin or
 	checkgroup begin and
 		check BSLightingShaderProperty
 		check BSTriShape
-		check not BSTriShape/Vertex Desc & 8
+		check not BSTriShape/Vertex Desc & 0x800000000000
 	checkgroup end
 checkgroup end
 

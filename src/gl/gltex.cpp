@@ -38,7 +38,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "model/nifmodel.h"
 
 #include <fsengine/fsengine.h>
-#include <fsengine/fsmanager.h>
+
+#include "gamemanager.h"
 
 #include <QDebug>
 #include <QDir>
@@ -155,12 +156,12 @@ TexCache::~TexCache()
 	//flush();
 }
 
-QString TexCache::find( const QString & file, const QString & nifdir )
+QString TexCache::find( const QString & file, const QString & nifdir, Game::GameMode game )
 {
-	return find( file, nifdir, *(new QByteArray()) );
+	return find( file, nifdir, *(new QByteArray()), game );
 }
 
-QString TexCache::find( const QString & file, const QString & nifdir, QByteArray & data )
+QString TexCache::find( const QString & file, const QString & nifdir, QByteArray & data, Game::GameMode game )
 {
 	if ( file.isEmpty() )
 		return QString();
@@ -178,7 +179,7 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 
 	bool textureAlternatives = settings.value( "Settings/Resources/Alternate Extensions", false ).toBool();
 	if ( textureAlternatives ) {
-		extensions << ".tga" << ".bmp" << ".nif" << ".texcache";
+		extensions << ".tga" << ".png" << ".bmp" << ".nif" << ".texcache";
 		for ( const QString ext : QStringList{ extensions } )
 		{
 			if ( filename.endsWith( ext, Qt::CaseInsensitive ) ) {
@@ -212,10 +213,7 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 			return dir.filePath( filename );
 		}
 
-		
-		QStringList folders = settings.value( "Settings/Resources/Folders", QStringList() ).toStringList();
-
-		for ( QString folder : folders ) {
+		for ( QString folder : Game::GameManager::folders(game) ) {
 			// TODO: Always search nifdir without requiring a relative entry
 			// in folders?  Not too intuitive to require ".\" in your texture folder list
 			// even if it is added by default.
@@ -233,7 +231,7 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 		}
 
 		// Search through archives last, and load any requested textures into memory.
-		for ( FSArchiveFile * archive : FSManager::archiveList() ) {
+		for ( FSArchiveFile * archive : Game::GameManager::opened_archives(game) ) {
 			if ( archive ) {
 				filename = QDir::fromNativeSeparators( filename.toLower() );
 				if ( archive->hasFile( filename ) ) {
@@ -263,7 +261,7 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 					filename.prepend( "textures\\" );
 			}
 
-			return find( filename, nifdir, data );
+			return find( filename, nifdir, data, game );
 		}
 
 		if ( !replaceExt )
@@ -272,6 +270,10 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 		// Remove file extension
 		filename = filename.left( filename.length() - ext.length() );
 	}
+
+	bool searchFallback = settings.value("Settings/Resources/Other Games Fallback", true).toBool();
+	if ( searchFallback && game != Game::OTHER )
+		return find(file, nifdir, data, Game::OTHER);
 
 	// Fix separators
 	filename = QDir::toNativeSeparators( filename );
@@ -295,6 +297,8 @@ QString TexCache::stripPath( const QString & filepath, const QString & nifFolder
 	QDir basePath;
 
 	QSettings settings;
+
+	// TODO: New asset manager support
 	QStringList folders = settings.value( "Settings/Resources/Folders", QStringList() ).toStringList();
 
 	for ( QString base : folders ) {
@@ -359,7 +363,7 @@ void TexCache::fileChanged( const QString & filepath )
 	}
 }
 
-int TexCache::bind( const QString & fname )
+int TexCache::bind( const QString & fname, Game::GameMode game )
 {
 	Tex * tx = textures.value( fname );
 	if ( !tx ) {
@@ -382,7 +386,7 @@ int TexCache::bind( const QString & fname )
 	QByteArray outData;
 
 	if ( tx->filepath.isEmpty() || tx->reload )
-		tx->filepath = find( tx->filename, nifFolder, outData );
+		tx->filepath = find( tx->filename, nifFolder, outData, game );
 
 	if ( !outData.isEmpty() || tx->reload ) {
 		tx->data = outData;
@@ -404,7 +408,7 @@ int TexCache::bind( const QString & fname )
 	return tx->mipmaps;
 }
 
-int TexCache::bind( const QModelIndex & iSource )
+int TexCache::bind( const QModelIndex & iSource, Game::GameMode game )
 {
 	const NifModel * nif = qobject_cast<const NifModel *>( iSource.model() );
 
@@ -436,7 +440,7 @@ int TexCache::bind( const QModelIndex & iSource )
 				return tx->mipmaps;
 			}
 		} else if ( !nif->get<QString>( iSource, "File Name" ).isEmpty() ) {
-			return bind( nif->get<QString>( iSource, "File Name" ) );
+			return bind( nif->get<QString>( iSource, "File Name" ), game );
 		}
 	}
 

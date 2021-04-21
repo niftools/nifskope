@@ -122,6 +122,8 @@ void Scene::clear( bool flushTextures )
 	textures->flush();
 
 	sceneBoundsValid = timeBoundsValid = false;
+
+	game = Game::OTHER;
 }
 
 void Scene::update( const NifModel * nif, const QModelIndex & index )
@@ -212,6 +214,10 @@ void Scene::make( NifModel * nif, bool flushTextures )
 
 	if ( !nif )
 		return;
+
+	game = Game::GameManager::get_game(nif->getVersionNumber(), nif->getUserVersion(), nif->getUserVersion2());
+	if ( game == Game::FALLOUT_76 )
+		emit disableSave();
 
 	update( nif, QModelIndex() );
 
@@ -467,7 +473,7 @@ int Scene::bindTexture( const QString & fname )
 	if ( !(options & DoTexturing) || fname.isEmpty() )
 		return 0;
 
-	return textures->bind( fname );
+	return textures->bind( fname, game );
 }
 
 int Scene::bindTexture( const QModelIndex & iSource )
@@ -475,6 +481,6 @@ int Scene::bindTexture( const QModelIndex & iSource )
 	if ( !(options & DoTexturing) || !iSource.isValid() )
 		return 0;
 
-	return textures->bind( iSource );
+	return textures->bind( iSource, game );
 }
 

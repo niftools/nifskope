@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MATERIAL_H
 
 #include "data/niftypes.h"
+#include "gamemanager.h"
 
 #include <QObject>
 #include <QByteArray>
@@ -54,15 +55,16 @@ class Material : public QObject
 	friend class BSEffectShaderProperty;
 
 public:
-	Material( QString name );
+	Material( QString name, Game::GameMode game );
 
 	bool isValid() const;
 	QStringList textures() const;
 	QString getPath() const;
 
 protected:
+	bool openFile();
 	virtual bool readFile();
-	QByteArray find( QString path );
+	QByteArray find( QString path, Game::GameMode game );
 	QString toLocalPath( QString path ) const;
 
 
@@ -108,6 +110,17 @@ protected:
 	quint8 bEnvironmentMapping = 0;
 	float fEnvironmentMappingMaskScale = 1.0;
 	quint8 bGrayscaleToPaletteColor = 1.0;
+	quint8 ucMaskWrites = 63;
+
+	float emitR = 0, emitG = 0, emitB = 0;
+	Color3 cEmittanceColor;
+
+	quint8 bGlowmap = 0;
+
+	float fLumEmittance = 100.0;
+	float fAdaptativeEmissive_ExposureOffset = 13.5;
+	float fAdaptativeEmissive_FinalExposureMin = 2.0;
+	float fAdaptativeEmissive_FinalExposureMax = 3.0;
 };
 
 
@@ -121,7 +134,7 @@ class ShaderMaterial : public Material
 	friend class BSLightingShaderProperty;
 
 public:
-	ShaderMaterial( QString name );
+	ShaderMaterial( QString name, Game::GameMode game );
 
 protected:
 	bool readFile() override final;
@@ -147,8 +160,6 @@ protected:
 	QString sRootMaterialPath;
 	quint8 bAnisoLighting = 0;
 	quint8 bEmitEnabled = 0;
-	float emitR = 0, emitG = 0, emitB = 0;
-	Color3 cEmittanceColor;
 	float fEmittanceMult = 0;
 	quint8 bModelSpaceNormals = 0;
 	quint8 bExternalEmittance = 0;
@@ -158,7 +169,6 @@ protected:
 	quint8 bCastShadows = 1;
 	quint8 bDissolveFade = 0;
 	quint8 bAssumeShadowmask = 0;
-	quint8 bGlowmap = 0;
 	quint8 bEnvironmentMappingWindow = 0;
 	quint8 bEnvironmentMappingEye = 0;
 	quint8 bHair = 0;
@@ -176,6 +186,25 @@ protected:
 	float fGrayscaleToPaletteScale = 0;
 	quint8 bSkewSpecularAlpha = 0;
 
+	quint8 bPBR = 0;
+
+	quint8 bTranslucency = 0;
+	quint8 bTranslucencyThickObject = 0;
+	quint8 bTranslucencyMixAlbedoWithSubsurfaceCol = 0;
+	float subR = 0, subG = 0, subB = 0;
+	Color3 cTranslucencySubsurfaceColor;
+	float fTranslucencyTransmissiveScale = 0.0;
+	float fTranslucencyTurbulence = 0.0;
+
+	quint8 bCustomPorosity = 0;
+	float fPorosityValue = 0.0;
+
+	quint8 bUseAdaptativeEmissive = 0;
+
+	quint8 bTerrain = 0;
+	float fTerrainThresholdFalloff = 0.0;
+	float fTerrainTilingDistance = 0.0;
+	float fTerrainRotationAngle = 0.0;
 };
 
 
@@ -189,7 +218,7 @@ class EffectMaterial : public Material
 	friend class BSEffectShaderProperty;
 
 public:
-	EffectMaterial( QString name );
+	EffectMaterial( QString name, Game::GameMode game );
 
 protected:
 	bool readFile() override final;
@@ -210,6 +239,8 @@ protected:
 	float fLightingInfluence = 1.0;
 	quint8 iEnvmapMinLOD = 0;
 	float fSoftDepth = 100.0;
+
+	quint8 bEffectPbrSpecular = 0;
 };
 
 

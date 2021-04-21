@@ -166,6 +166,8 @@ GLView::GLView( const QGLFormat & format, QWidget * p, const QGLWidget * shareWi
 
 	// Make the context current on this window
 	makeCurrent();
+	if ( !isValid() )
+		return;
 
 	// Create an OpenGL context
 	glContext = context()->contextHandle();
@@ -213,11 +215,15 @@ GLView::GLView( const QGLFormat & format, QWidget * p, const QGLWidget * shareWi
 	connect( lightVisTimer, &QTimer::timeout, [this]() { setVisMode( Scene::VisLightPos, false ); update(); } );
 
 	connect( NifSkope::getOptions(), &SettingsDialog::flush3D, textures, &TexCache::flush );
-	connect( NifSkope::getOptions(), &SettingsDialog::update3D, [this]() {
-		updateSettings();
-		qglClearColor( cfg.background );
-		update();
-	} );
+
+	connect(NifSkope::getOptions(), &SettingsDialog::update3D, this, static_cast<void (GLView::*)()>(&GLView::updateSettings));
+	connect(NifSkope::getOptions(), &SettingsDialog::update3D, [this]() {
+		// Calling update() here in a lambda can crash..
+		//updateSettings();
+		qglClearColor(clearColor());
+		//update();
+	});
+	connect(NifSkope::getOptions(), &SettingsDialog::update3D, this, static_cast<void (GLView::*)()>(&GLView::update));
 }
 
 GLView::~GLView()
@@ -320,6 +326,8 @@ void GLView::initializeGL()
 void GLView::updateShaders()
 {
 	makeCurrent();
+	if ( !isValid() )
+		return;
 	scene->updateShaders();
 	update();
 }
@@ -381,6 +389,8 @@ void GLView::glProjection( int x, int y )
 void GLView::paintEvent( QPaintEvent * event )
 {
 	makeCurrent();
+	if ( !isValid() )
+		return;
 
 	QPainter painter;
 	painter.begin( this );
@@ -402,7 +412,8 @@ void GLView::paintGL()
 	if ( scene->visMode & Scene::VisSilhouette ) {
 		qglClearColor( QColor( 255, 255, 255, 255 ) );
 	}
-	//glViewport( 0, 0, width(), height() );
+
+	glDisable(GL_FRAMEBUFFER_SRGB);
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT );
 	
 	
@@ -695,10 +706,13 @@ void GLView::resizeGL( int width, int height )
 	resize( width, height );
 
 	makeCurrent();
+	if ( !isValid() )
+		return;
 	aspect = (GLdouble)width / (GLdouble)height;
 	glViewport( 0, 0, width, height );
-	qglClearColor( cfg.background );
 
+	glDisable(GL_FRAMEBUFFER_SRGB);
+	qglClearColor(clearColor());
 	update();
 }
 
@@ -855,6 +869,8 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 		return QModelIndex();
 
 	makeCurrent();
+	if ( !isValid() )
+		return {};
 
 	glPushAttrib( GL_ALL_ATTRIB_BITS );
 	glMatrixMode( GL_PROJECTION );

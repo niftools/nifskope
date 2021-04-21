@@ -30,6 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+#include "xml/xmlconfig.h"
 #include "message.h"
 #include "model/kfmmodel.h"
 
@@ -152,7 +153,7 @@ public:
 				    KfmModel::version2number( ver2 )
 				);
 
-				bool isTemplated = (type == "TEMPLATE" || tmpl == "TEMPLATE");
+				bool isTemplated = (type == XMLTMPL || tmpl == XMLTMPL);
 				bool isCompound = KfmModel::compounds.contains( type );
 				bool isArray = !arr1.isEmpty();
 				bool isMultiArray = !arr2.isEmpty();
@@ -217,12 +218,12 @@ public:
 
 	bool checkType( const NifData & data )
 	{
-		return KfmModel::compounds.contains( data.type() ) || NifValue::type( data.type() ) != NifValue::tNone || data.type() == "TEMPLATE";
+		return KfmModel::compounds.contains( data.type() ) || NifValue::type( data.type() ) != NifValue::tNone || data.type() == XMLTMPL;
 	}
 
 	bool checkTemp( const NifData & data )
 	{
-		return data.temp().isEmpty() || NifValue::type( data.temp() ) != NifValue::tNone || data.temp() == "TEMPLATE";
+		return data.temp().isEmpty() || NifValue::type( data.temp() ) != NifValue::tNone || data.temp() == XMLTMPL;
 	}
 
 	bool endDocument() override final

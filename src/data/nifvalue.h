@@ -80,53 +80,55 @@ public:
 	enum Type
 	{
 		// all count types should come between tBool and tUInt
-		tBool           = 0,
-		tByte           = 1,
-		tWord           = 2,
-		tFlags          = 3,
-		tStringOffset   = 4,
-		tStringIndex    = 5,
-		tBlockTypeIndex = 6,
-		tInt            = 7,
-		tShort          = 8,
-		tULittle32      = 9,
-		tUInt           = 10,
-		//
-		tLink   = 11,
-		tUpLink = 12,
-		tFloat  = 13,
+		tBool = 0,
+		tByte,
+		tWord,
+		tFlags,
+		tStringOffset,
+		tStringIndex,
+		tBlockTypeIndex,
+		tInt,
+		tShort,
+		tULittle32,
+		tInt64,
+		tUInt64,
+		tUInt,
+		// all count types should come between tBool and tUInt
+		tLink,
+		tUpLink,
+		tFloat,
 		// all string types should come between tSizedString and tChar8String
-		tSizedString   = 14,
-		tText          = 15,
-		tShortString   = 16,
-		tHeaderString  = 18,
-		tLineString    = 19,
-		tChar8String   = 20,
-		//
-		tColor3        = 21,
-		tColor4        = 22,
-		tVector3       = 23,
-		tQuat          = 24,
-		tQuatXYZW      = 25,
-		tMatrix        = 26,
-		tMatrix4       = 27,
-		tVector2       = 28,
-		tVector4       = 29,
-		tTriangle      = 30,
-		tFileVersion   = 31,
-		tByteArray     = 32,
-		tStringPalette = 33,
-		tString        = 34, //!< not a regular string: an integer for nif versions 20.1.0.3 and up
-		tFilePath      = 35, //!< not a string: requires special handling for slash/backslash etc.
-		tByteMatrix    = 36,
-		tBlob          = 37,
-		tHfloat        = 38,
-		tHalfVector3   = 39,
-		tByteVector3   = 40,
-		tHalfVector2   = 41,
-		tByteColor4    = 42,
-		tBSVertexDesc  = 43,
-		tNone          = 0xff
+		tSizedString,
+		tText,
+		tShortString,
+		tHeaderString,
+		tLineString,
+		tChar8String,
+		// all string types should come between tSizedString and tChar8String
+		tColor3,
+		tColor4,
+		tVector3,
+		tQuat,
+		tQuatXYZW,
+		tMatrix,
+		tMatrix4,
+		tVector2,
+		tVector4,
+		tTriangle,
+		tFileVersion,
+		tByteArray,
+		tStringPalette,
+		tString,   //!< not a regular string: an integer for nif versions 20.1.0.3 and up
+		tFilePath, //!< not a string: requires special handling for slash/backslash etc.
+		tByteMatrix,
+		tBlob,
+		tHfloat,
+		tHalfVector3,
+		tByteVector3,
+		tHalfVector2,
+		tByteColor4,
+		tBSVertexDesc,
+		tNone= 0xff
 	};
 
 	enum EnumType
@@ -284,7 +286,7 @@ public:
 	//! Return the value of the data as a QColor, if applicable.
 	QColor toColor() const;
 	//! Return the value of the data as a count.
-	quint32 toCount() const;
+	quint64 toCount() const;
 	//! Return the value of the data as a float.
 	float toFloat() const;
 	//! Return the value of the data as a link, if applicable.
@@ -301,7 +303,7 @@ public:
 	 *
 	 * @return True if applicable, false otherwise
 	 */
-	bool setCount( quint32 );
+	bool setCount( quint64 );
 
 	/*! Set this value to a float.
 	 *
@@ -351,6 +353,8 @@ protected:
 		quint16 u16;
 		quint32 u32;
 		qint32 i32;
+		quint64 u64;
+		qint64 i64;
 		float f32;
 		void * data;
 	};
@@ -404,10 +408,10 @@ Q_DECLARE_METATYPE( NifValue )
 // documented above; should this really be inlined?
 // GCC only allows type punning via union (http://gcc.gnu.org/onlinedocs/gcc-4.2.1/gcc/Optimize-Options.html#index-fstrict_002daliasing-550)
 // This also works on GCC 3.4.5
-inline quint32 NifValue::toCount() const
+inline quint64 NifValue::toCount() const
 {
 	if ( isCount() || isFloat() )
-		return val.u32;
+		return val.u64;
 
 	return 0;
 }
@@ -436,10 +440,10 @@ inline quint32 NifValue::toFileVersion() const
 	return 0;
 }
 
-inline bool NifValue::setCount( quint32 c )
+inline bool NifValue::setCount( quint64 c )
 {
 	if ( isCount() ) {
-		val.u32 = c; return true;
+		val.u64 = c; return true;
 	}
 
 	return false;
@@ -494,6 +498,14 @@ template <typename T> inline bool NifValue::setType( Type t, T v )
 }
 
 template <> inline bool NifValue::get() const
+{
+	return toCount();
+}
+template <> inline qint64 NifValue::get() const
+{
+	return toCount();
+}
+template <> inline quint64 NifValue::get() const
 {
 	return toCount();
 }
@@ -621,7 +633,7 @@ template <> inline ByteMatrix * NifValue::get() const
 }
 template <> inline BSVertexDesc NifValue::get() const
 {
-	return getType<BSVertexDesc>( tBSVertexDesc );
+	return BSVertexDesc(toCount());
 }
 
 //! Set the data from a boolean. Return true if successful.
@@ -756,7 +768,7 @@ template <> inline bool NifValue::set( const Quat & x )
 //! Set the data from a BSVertexDesc. Return true if successful.
 template <> inline bool NifValue::set( const BSVertexDesc & x )
 {
-	return setType( tBSVertexDesc, x );
+	return setCount(x.Value());
 }
 
 

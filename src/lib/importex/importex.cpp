@@ -43,7 +43,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 void exportObj( const NifModel * nif, const QModelIndex & index );
 void exportCol( const NifModel * nif, QFileInfo );
-void importObj( NifModel * nif, const QModelIndex & index );
+void importObj( NifModel * nif, const QModelIndex & index, bool collision = false );
 void import3ds( NifModel * nif, const QModelIndex & index );
 
 
@@ -53,6 +53,7 @@ void NifSkope::fillImportExportMenus()
 	//mExport->addAction( tr( "Export .DAE" ) );
 	//mImport->addAction( tr( "Import .3DS" ) );
 	mImport->addAction( tr( "Import .OBJ" ) );
+	mImport->addAction( tr( "Import .OBJ as Collision" ) );
 }
 
 void NifSkope::sltImportExport( QAction * a )
@@ -80,18 +81,21 @@ void NifSkope::sltImportExport( QAction * a )
 		mImport->setDisabled( true );
 		return;
 	} else {
-		if ( nif->getUserVersion2() >= 100 )
-			mImport->setDisabled( true );
-		else
-			mImport->setDisabled( false );
-		
+		mImport->setDisabled( false );
 		mExport->setDisabled( false );
+
+		if ( nif->getUserVersion2() >= 100 )
+			mImport->actions().at(0)->setDisabled( true );
+		else if ( nif->getUserVersion2() == 0 )
+			mImport->actions().at(1)->setDisabled( true );
 	}
 
 	if ( a->text() == tr( "Export .OBJ" ) )
 		exportObj( nif, index );
 	else if ( a->text() == tr( "Import .OBJ" ) )
 		importObj( nif, index );
+	else if ( a->text() == tr( "Import .OBJ as Collision" ) )
+		importObj( nif, index, true );
 	//else if ( a->text() == tr( "Import .3DS" ) )
 	//	import3ds( nif, index );
 	//else if ( a->text() == tr( "Export .DAE" ) )

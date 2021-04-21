@@ -22,6 +22,7 @@
  */
 
 const char * B_ERR = QT_TR_NOOP( "%1 failed with errors." );
+const char * REF_MSG = QT_TR_NOOP( "Found %1 References" );
 
  // Use Unicode symbols for separators
  // to lessen chance of splitting incorrectly.
@@ -183,7 +184,7 @@ QStringList rootStringList =
 	"Shape Name",      // NiPhysXShapeDesc
 	"Actor Name",      // NiPhysXActorDesc
 	"Joint Name",      // NiPhysXJointDesc
-	"Wet Material",    // BSLightingShaderProperty FO4+
+	"Root Material",    // BSLightingShaderProperty FO4+
 	"Behaviour Graph File", // BSBehaviorGraphExtraData
 };
 
@@ -1047,6 +1048,7 @@ class spCopyBlock final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Copy" ); }
 	QString page() const override final { return Spell::tr( "Block" ); }
+	bool constant() const override final { return true; }
 	QKeySequence hotkey() const override final { return{ Qt::CTRL + Qt::SHIFT + Qt::Key_C }; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
@@ -2104,3 +2106,53 @@ public:
 
 REGISTER_SPELL( spAttachParentNode )
 
+//! List all blocks that reference this block
+class spReferencedBy final : public Spell
+{
+public:
+	QString name() const override final { return Spell::tr( "Referenced By" ); }
+	QString page() const override final { return Spell::tr( "" ); }
+	bool constant() const override final { return true; }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
+	{
+		return nif->isNiBlock( index );
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
+	{
+		int blockNum = nif->getBlockNumber( index );
+
+		QVector<int> parents;
+		QVector<int> children;
+		for ( int i = 0; i < nif->getBlockCount(); i++ ) {
+			if ( i == blockNum )
+				continue;
+
+			auto parentLinks = nif->getParentLinks( i );
+			if ( parentLinks.contains( blockNum ) )
+				children << i;
+
+			auto childLinks = nif->getChildLinks( i );
+			if ( childLinks.contains( blockNum ) )
+				parents << i;
+		}
+
+		int refCount = parents.count() + children.count();
+
+		for ( const int p : parents ) {
+			Message::append( tr( REF_MSG ).arg( refCount ), tr( "Parent: %1" ).arg( p ),
+							 QMessageBox::Information
+			);
+		}
+
+		for ( const int c : children ) {
+			Message::append( tr( REF_MSG ).arg( refCount ), tr( "Child: %1" ).arg( c ),
+							 QMessageBox::Information
+			);
+		}
+		return index;
+	}
+};
+
+REGISTER_SPELL( spReferencedBy )

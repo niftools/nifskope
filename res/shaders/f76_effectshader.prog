@@ -1,8 +1,8 @@
 # effect shader
 
 checkgroup begin and
-	# Fallout 4
-    check HEADER/BS Header/BS Version == 130
+	# Fallout 76
+    check HEADER/BS Header/BS Version == 155
 	check BSEffectShaderProperty
 checkgroup end
 
@@ -12,4 +12,4 @@ texcoords 2 bitangents
 texcoords 3 indices
 texcoords 4 weights
 
-shaders fo4_effectshader.vert fo4_effectshader.frag
+shaders f76_default.vert f76_effectshader.frag

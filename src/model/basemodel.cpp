@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "basemodel.h"
 
-#include "message.h"
+#include "xml/xmlconfig.h"
 
 #include <QByteArray>
 #include <QColor>
@@ -52,7 +52,7 @@ BaseModel::BaseModel( QObject * p ) : QAbstractItemModel( p )
 {
 	root = new NifItem( 0 );
 	parentWindow = qobject_cast<QWidget *>(p);
-	msgMode = TstMessage;
+	msgMode = MSG_TEST;
 }
 
 BaseModel::~BaseModel()
@@ -73,6 +73,25 @@ void BaseModel::setEmitChanges( bool e )
 void BaseModel::setMessageMode( MsgMode mode )
 {
 	msgMode = mode;
+}
+
+BaseModel::MsgMode BaseModel::getMessageMode() const
+{
+	return msgMode;
+}
+
+void BaseModel::logMessage( const QString & message, const QString & details, QMessageBox::Icon lvl ) const
+{
+	if ( msgMode == MSG_USER ) {
+		Message::append( nullptr, message, details, lvl );
+	} else {
+		testMsg( details );
+	}
+}
+
+void BaseModel::logWarning( const QString & details ) const
+{
+	logMessage(tr("Warnings were generated while reading the file."), details);
 }
 
 void BaseModel::testMsg( const QString & m ) const
@@ -827,14 +846,24 @@ QVariant BaseModelEval::operator()(const QVariant & v) const
 		QString left = v.toString();
 		const NifItem * i = item;
 
-		// resolve "ARG"
-		while ( left == "ARG" ) {
+		// Resolve "ARG"
+		bool argexpr = false;
+		while ( left == XMLARG ) {
 			if ( !i->parent() )
 				return false;
 
 			i = i->parent();
 			left = i->arg();
+			argexpr = !i->argexpr().noop();
 		}
+		// ARG is an expression
+		if ( argexpr )
+			return i->argexpr().evaluateUInt64( BaseModelEval( model, i ) );
+
+		bool numeric;
+		int val = left.toInt( &numeric, 10 );
+		if ( numeric )
+			return QVariant( val );
 
 		// resolve reference to sibling
 		const NifItem * sibling = model->getItem( i->parent(), left );

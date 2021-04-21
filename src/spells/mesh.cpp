@@ -670,8 +670,7 @@ QModelIndex spUpdateCenterRadius::cast( NifModel * nif, const QModelIndex & inde
 			radius = d;
 	}
 
-	nif->set<Vector3>( iData, "Center", center );
-	nif->set<float>( iData, "Radius", radius );
+	BoundSphere::setBounds( nif, iData, center, radius );
 
 	return index;
 }
@@ -705,11 +704,7 @@ public:
 
 		// Creating a bounding sphere from the verts
 		BoundSphere bounds = BoundSphere( verts );
-
-		// Update the bounding sphere
-		auto boundsIdx = nif->getIndex( index, "Bounding Sphere" );
-		nif->set<Vector3>( boundsIdx, "Center", bounds.center );
-		nif->set<float>( boundsIdx, "Radius", bounds.radius );
+		bounds.update( nif, index );
 
 		return index;
 	}
@@ -729,7 +724,7 @@ public:
 		if ( !nif || idx.isValid() )
 			return false;
 
-		if ( nif->getUserVersion2() == 130 )
+		if ( nif->getUserVersion2() >= 130 )
 			return true;
 
 		return false;
@@ -774,7 +769,7 @@ QModelIndex spUpdateTrianglesFromSkin::cast( NifModel * nif, const QModelIndex &
 		return QModelIndex();
 
 	QVector<Triangle> tris;
-	auto iParts = nif->getIndex( iSkinPart, "Skin Partition Blocks" );
+	auto iParts = nif->getIndex( iSkinPart, "Partitions" );
 	for ( int i = 0; i < nif->rowCount( iParts ) && iParts.isValid(); i++ )
 		tris << SkinPartition( nif, iParts.child( i, 0 ) ).getRemappedTriangles();
 

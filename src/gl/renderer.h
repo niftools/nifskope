@@ -93,6 +93,8 @@ public:
 		SAMP_BASE = 0,
 		SAMP_NORMAL,
 		SAMP_SPECULAR,
+		SAMP_REFLECTIVITY,
+		SAMP_LIGHTING,
 		SAMP_CUBE,
 		SAMP_ENV_MASK,
 		SAMP_GLOW,
@@ -151,8 +153,12 @@ public:
 		USE_FALLOFF,
 		UV_OFFSET,
 		UV_SCALE,
+		SKINNED,
 		GPU_SKINNED,
 		GPU_BONES,
+		WIREFRAME,
+		SOLID_COLOR,
+		LUM_EMIT,
 
 		NUM_UNIFORM_TYPES
 	} UniformType;
@@ -270,6 +276,8 @@ public:
 			"BaseMap",
 			"NormalMap",
 			"SpecularMap",
+			"ReflMap",
+			"LightingMap",
 			"CubeMap",
 			"EnvironmentMap",
 			"GlowMap",
@@ -327,8 +335,12 @@ public:
 			"useFalloff",
 			"uvOffset",
 			"uvScale",
+			"isSkinned",
 			"isGPUSkinned",
-			"boneTransforms"
+			"boneTransforms",
+			"isWireframe",
+			"solidColor",
+			"fLumEmittance"
 		} };
 
 		int uniformLocations[NUM_UNIFORM_TYPES];

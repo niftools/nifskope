@@ -53,6 +53,11 @@ class QGridLayout;
 class QMenu;
 class QUndoStack;
 
+namespace Game
+{
+	enum GameMode : int;
+}
+
 #undef None // conflicts with Qt
 
 //! Displays and allows editing of UV coordinate data
@@ -177,8 +182,8 @@ private:
 
 	void setupViewport( int width, int height );
 	void updateViewRect( int width, int height );
-	bool bindTexture( const QString & filename );
-	bool bindTexture( const QModelIndex & iSource );
+	bool bindTexture( const QString & filename, const Game::GameMode game );
+	bool bindTexture( const QModelIndex & iSource, const Game::GameMode game );
 
 	QVector<int> indices( const QPoint & p ) const;
 	QVector<int> indices( const QRegion & r ) const;
@@ -242,6 +247,8 @@ private:
 		QColor highlight;
 		QColor wireframe;
 	} cfg;
+
+	Game::GameMode game;
 };
 
 //! Dialog for getting scaling factors

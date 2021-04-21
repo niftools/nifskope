@@ -159,6 +159,7 @@ class spChooseTexture final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Choose" ); }
 	QString page() const override final { return Spell::tr( "Texture" ); }
+	bool constant() const override final { return true; }
 	bool instant() const override final { return true; }
 	QIcon icon() const override final
 	{
@@ -259,6 +260,7 @@ class spEditTexCoords final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Edit UV" ); }
 	QString page() const override final { return Spell::tr( "Texture" ); }
+	bool constant() const override final { return true; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
@@ -524,6 +526,7 @@ class spTextureTemplate final : public Spell
 {
 	QString name() const override final { return Spell::tr( "Export Template" ); }
 	QString page() const override final { return Spell::tr( "Texture" ); }
+	bool constant() const override final { return true; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
@@ -639,8 +642,8 @@ class spTextureTemplate final : public Spell
 				iVertData = nif->getIndex( iPartBlock, "Vertex Data" );
 
 				// Get triangles from all partitions
-				auto numParts = nif->get<int>( iPartBlock, "Num Skin Partition Blocks" );
-				auto iParts = nif->getIndex( iPartBlock, "Partition" );
+				auto numParts = nif->get<int>( iPartBlock, "Num Partitions" );
+				auto iParts = nif->getIndex( iPartBlock, "Partitions" );
 				for ( int i = 0; i < numParts; i++ )
 					tri << nif->getArray<Triangle>( iParts.child( i, 0 ), "Triangles" );
 
@@ -880,6 +883,7 @@ class spExportTexture final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Export" ); }
 	QString page() const override final { return Spell::tr( "Texture" ); }
+	bool constant() const override final { return true; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{

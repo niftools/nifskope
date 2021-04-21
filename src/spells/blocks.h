@@ -28,6 +28,7 @@ class spCopyBranch final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Copy Branch" ); }
 	QString page() const override final { return Spell::tr( "Block" ); }
+	bool constant() const override final { return true; }
 	QKeySequence hotkey() const override final { return QKeySequence( QKeySequence::Copy ); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final;

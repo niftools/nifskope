@@ -72,6 +72,12 @@ QList<SpellPtr> & SpellBook::sanitizers()
 	return _sanitizers;
 }
 
+QList<SpellPtr>& SpellBook::checkers()
+{
+	static QList<SpellPtr> _checkers = QList<SpellPtr>();
+	return _checkers;
+}
+
 SpellBook::SpellBook( NifModel * nif, const QModelIndex & index, QObject * receiver, const char * member ) : QMenu(), Nif( 0 )
 {
 	setTitle( "Spells" );
@@ -109,6 +115,13 @@ void SpellBook::cast( NifModel * nif, const QModelIndex & index, SpellPtr spell 
 	bool accepted = false;
 
 	QDialogButtonBox::StandardButton response = QDialogButtonBox::Yes;
+
+	// Cast non-modifying spells
+	if ( spell && spell->isApplicable( nif, index ) && spell->constant() ) {
+		auto idx = spell->cast( nif, index );
+		emit sigIndex( idx );
+		return;
+	}
 
 	if ( !suppressConfirm && spell->page() != "Array" ) {
 		response = CheckableMessageBox::question( this, "Confirmation", "This action cannot currently be undone. Do you want to continue?", "Do not ask me again", &accepted );
@@ -228,6 +241,9 @@ void SpellBook::registerSpell( SpellPtr spell )
 	if ( spell->sanity() )
 		sanitizers().append( spell );
 
+	if ( spell->checker() )
+		checkers().append( spell );
+
 	for ( SpellBook * book : books() ) {
 		book->newSpellRegistered( spell );
 	}
@@ -284,6 +300,22 @@ QModelIndex SpellBook::sanitize( NifModel * nif )
 	for ( SpellPtr spell : sanitizers() ) {
 		if ( spell->isApplicable( nif, QModelIndex() ) ) {
 			QModelIndex idx = spell->cast( nif, QModelIndex() );
+
+			if ( idx.isValid() && !ridx.isValid() )
+				ridx = idx;
+		}
+	}
+
+	return ridx;
+}
+
+QModelIndex SpellBook::check( NifModel * nif )
+{
+	QPersistentModelIndex ridx;
+
+	for ( SpellPtr spell : checkers() ) {
+		if ( spell->isApplicable(nif, QModelIndex()) ) {
+			QModelIndex idx = spell->cast(nif, QModelIndex());
 
 			if ( idx.isValid() && !ridx.isValid() )
 				ridx = idx;

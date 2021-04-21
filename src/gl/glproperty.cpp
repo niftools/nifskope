@@ -231,7 +231,7 @@ void AlphaProperty::update( const NifModel * nif, const QModelIndex & block )
 		alphaSort = ( flags & 0x2000 ) == 0;
 
 		// Temporary Weapon Blood fix for FO4
-		if ( nif->getUserVersion2() == 130 )
+		if ( nif->getUserVersion2() >= 130 )
 			alphaTest |= (flags == 20547);
 	}
 }
@@ -786,10 +786,10 @@ void StencilProperty::update( const NifModel * nif, const QModelIndex & block )
 		int drawMode = 0;
 		if ( nif->checkVersion( 0, 0x14000005 ) ) {
 			drawMode = nif->get<int>( iBlock, "Draw Mode" );
-			func = funcMap[std::max(nif->get<quint32>( iBlock, "Stencil Function" ), (quint32)TEST_MAX - 1 )];
-			failop = opMap[std::max( nif->get<quint32>( iBlock, "Fail Action" ), (quint32)ACTION_MAX - 1 )];
-			zfailop = opMap[std::max( nif->get<quint32>( iBlock, "Z Fail Action" ), (quint32)ACTION_MAX - 1 )];
-			zpassop = opMap[std::max( nif->get<quint32>( iBlock, "Pass Action" ), (quint32)ACTION_MAX - 1 )];
+			func = funcMap[std::min(nif->get<quint32>( iBlock, "Stencil Function" ), (quint32)TEST_MAX - 1 )];
+			failop = opMap[std::min( nif->get<quint32>( iBlock, "Fail Action" ), (quint32)ACTION_MAX - 1 )];
+			zfailop = opMap[std::min( nif->get<quint32>( iBlock, "Z Fail Action" ), (quint32)ACTION_MAX - 1 )];
+			zpassop = opMap[std::min( nif->get<quint32>( iBlock, "Pass Action" ), (quint32)ACTION_MAX - 1 )];
 			stencil = (nif->get<quint8>( iBlock, "Stencil Enabled" ) & ENABLE_MASK);
 		} else {
 			auto flags = nif->get<int>( iBlock, "Flags" );
@@ -861,7 +861,7 @@ void BSShaderLightingProperty::update( const NifModel * nif, const QModelIndex &
 		if ( !iTextureSet.isValid() )
 			iSourceTexture = iBlock;
 
-		iWetMaterial = nif->getIndex( iBlock, "Wet Material" );
+		iWetMaterial = nif->getIndex( iBlock, "Root Material" );
 	}
 }
 
@@ -959,6 +959,23 @@ bool BSShaderLightingProperty::bindCube( int id, const QString & fname )
 	return true;
 }
 
+enum
+{
+	BGSM1_DIFFUSE = 0,
+	BGSM1_NORMAL,
+	BGSM1_SPECULAR,
+	BGSM1_G2P,
+	BGSM1_ENV,
+	BGSM20_GLOW = 4,
+	BGSM1_GLOW = 5,
+	BGSM1_ENVMASK = 5,
+	BGSM20_REFLECT,
+	BGSM20_LIGHTING,
+
+	BGSM1_MAX = 9,
+	BGSM20_MAX = 10
+};
+
 QString BSShaderLightingProperty::fileName( int id ) const
 {
 	const NifModel * nif;
@@ -970,35 +987,50 @@ QString BSShaderLightingProperty::fileName( int id ) const
 		auto m = static_cast<ShaderMaterial *>(material);
 		if ( m && m->isValid() ) {
 			auto tex = m->textures();
-			if ( tex.count() == 9 ) {
+			if ( tex.count() >= BGSM1_MAX ) {
 				switch ( id ) {
 				case 0: // Diffuse
-					if ( !tex[0].isEmpty() )
-						return tex[0];
+					if ( !tex[BGSM1_DIFFUSE].isEmpty() )
+						return tex[BGSM1_DIFFUSE];
 					break;
 				case 1: // Normal
-					if ( !tex[1].isEmpty() )
-						return tex[1];
+					if ( !tex[BGSM1_NORMAL].isEmpty() )
+						return tex[BGSM1_NORMAL];
 					break;
 				case 2: // Glow
-					if ( m->bGlowmap && !tex[5].isEmpty() )
-						return tex[5];
+					if ( tex.count() == BGSM1_MAX && m->bGlowmap && !tex[BGSM1_GLOW].isEmpty() )
+						return tex[BGSM1_GLOW];
+
+					if ( tex.count() == BGSM20_MAX && m->bGlowmap && !tex[BGSM20_GLOW].isEmpty() )
+						return tex[BGSM20_GLOW];
 					break;
 				case 3: // Greyscale
-					if ( m->bGrayscaleToPaletteColor && !tex[3].isEmpty() )
-						return tex[3];
+					if ( m->bGrayscaleToPaletteColor && !tex[BGSM1_G2P].isEmpty() )
+						return tex[BGSM1_G2P];
 					break;
 				case 4: // Cubemap
-					if ( m->bEnvironmentMapping && !tex[4].isEmpty() )
-						return tex[4];
+					if ( tex.count() == BGSM1_MAX && m->bEnvironmentMapping && !tex[BGSM1_ENV].isEmpty() )
+						return tex[BGSM1_ENV];
 					break;
 				case 5: // Env Mask
-					if ( m->bEnvironmentMapping && !tex[5].isEmpty() )
-						return tex[5];
+					if ( m->bEnvironmentMapping && !tex[BGSM1_ENVMASK].isEmpty() )
+						return tex[BGSM1_ENVMASK];
 					break;
 				case 7: // Specular
-					if ( m->bSpecularEnabled && !tex[2].isEmpty() )
-						return tex[2];
+					if ( m->bSpecularEnabled && !tex[BGSM1_SPECULAR].isEmpty() )
+						return tex[BGSM1_SPECULAR];
+					break;
+				}
+			}
+			if ( tex.count() >= BGSM20_MAX ) {
+				switch ( id ) {
+				case 8:
+					if ( m->bSpecularEnabled && !tex[BGSM20_REFLECT].isEmpty() )
+						return tex[BGSM20_REFLECT];
+					break;
+				case 9:
+					if ( m->bSpecularEnabled && !tex[BGSM20_LIGHTING].isEmpty() )
+						return tex[BGSM20_LIGHTING];
 					break;
 				}
 			}
@@ -1029,6 +1061,10 @@ QString BSShaderLightingProperty::fileName( int id ) const
 				return nif->get<QString>( iSourceTexture, "Normal Texture" );
 			case 4:
 				return nif->get<QString>( iSourceTexture, "Env Mask Texture" );
+			case 6:
+				return nif->get<QString>( iSourceTexture, "Reflectance Texture" );
+			case 7:
+				return nif->get<QString>( iSourceTexture, "Lighting Texture" );
 			}
 		} else if ( m && m->isValid() ) {
 			auto tex = m->textures();
@@ -1070,14 +1106,38 @@ unsigned int BSShaderLightingProperty::getFlags2() const
 	return (unsigned int)flags2;
 }
 
-void BSShaderLightingProperty::setFlags1( unsigned int val )
+void BSShaderLightingProperty::setFlags1( const NifModel * nif, const QModelIndex & prop )
 {
-	flags1 = ShaderFlags::SF1( val );
+	flags1 = ShaderFlags::SF1( nif->get<unsigned int>( prop, "Shader Flags 1" ) );
+	if ( stream == 155 ) {
+		auto sf1 = nif->getArray<quint32>( prop, "SF1" );
+		auto sf2 = nif->getArray<quint32>( prop, "SF2" );
+		sf1.append( sf2 );
+
+		uint64_t flags = 0;
+		for ( auto sf : sf1 ) {
+			flags |= ShaderFlags::CRC_TO_FLAG.value( sf, 0 );
+		}
+
+		flags1 = ShaderFlags::SF1((uint32_t)flags);
+	}
 }
 
-void BSShaderLightingProperty::setFlags2( unsigned int val )
+void BSShaderLightingProperty::setFlags2( const NifModel * nif, const QModelIndex & prop )
 {
-	flags2 = ShaderFlags::SF2( val );
+	flags2 = ShaderFlags::SF2( nif->get<unsigned int>( prop, "Shader Flags 2" ) );
+	if ( stream == 155 ) {
+		auto sf1 = nif->getArray<quint32>( prop, "SF1" );
+		auto sf2 = nif->getArray<quint32>( prop, "SF2" );
+		sf1.append( sf2 );
+
+		uint64_t flags = 0;
+		for ( auto sf : sf1 ) {
+			flags |= ShaderFlags::CRC_TO_FLAG.value( sf, 0 );
+		}
+
+		flags2 = ShaderFlags::SF2( (uint32_t)(flags >> 32) );
+	}
 }
 
 UVScale BSShaderLightingProperty::getUvScale() const
@@ -1126,7 +1186,7 @@ void BSLightingShaderProperty::update( const NifModel * nif, const QModelIndex &
 	BSShaderLightingProperty::update( nif, property );
 
 	if ( name.endsWith( ".bgsm", Qt::CaseInsensitive ) )
-		material = new ShaderMaterial( name );
+		material = new ShaderMaterial( name, scene->game );
 
 	if ( material && !material->isValid() )
 		material = nullptr;
@@ -1144,15 +1204,22 @@ void BSLightingShaderProperty::updateParams( const NifModel * nif, const QModelI
 	if ( mat() && mat()->isValid() )
 		m = static_cast<ShaderMaterial *>(mat());
 
-	auto stream = nif->getUserVersion2();
+	stream = nif->getUserVersion2();
 	auto textures = nif->getArray<QString>( getTextureSet(), "Textures" );
 
-	setShaderType( nif->get<unsigned int>( prop, "Skyrim Shader Type" ) );
-	setFlags1( nif->get<unsigned int>( prop, "Shader Flags 1" ) );
-	setFlags2( nif->get<unsigned int>( prop, "Shader Flags 2" ) );
+	setShaderType( nif->get<unsigned int>( prop, "Shader Type" ) );
+	setFlags1( nif, prop );
+	setFlags2( nif, prop );
 
 	hasVertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
 	hasVertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
+
+	if ( stream == 155 ) {
+		shaderType = ShaderFlags::ShaderType::ST_EnvironmentMap;
+		hasVertexAlpha = true;
+		hasVertexColors = true;
+	}
+
 
 	if ( !m ) {
 		isDoubleSided = hasSF2( ShaderFlags::SLSF2_Double_Sided );
@@ -1275,7 +1342,8 @@ void BSLightingShaderProperty::updateParams( const NifModel * nif, const QModelI
 		greyscaleColor = m->bGrayscaleToPaletteColor;
 		paletteScale = m->fGrayscaleToPaletteScale;
 
-		hasSpecularMap = m->bSpecularEnabled && !m->textureList[2].isEmpty();
+		hasSpecularMap = m->bSpecularEnabled && (!m->textureList[2].isEmpty() 
+												  || (stream == 155 && !m->textureList[7].isEmpty()));
 		hasGlowMap = m->bGlowmap;
 		hasEmittance = m->bEmitEnabled;
 		hasBacklight = m->bBackLighting;
@@ -1287,8 +1355,8 @@ void BSLightingShaderProperty::updateParams( const NifModel * nif, const QModelI
 		depthTest = m->bZBufferTest;
 		depthWrite = m->bZBufferWrite;
 
-		hasEnvironmentMap = m->bEnvironmentMapping;
-		hasCubeMap = m->bEnvironmentMapping && !m->textureList[4].isEmpty();
+		hasEnvironmentMap = m->bEnvironmentMapping || m->bPBR;
+		hasCubeMap = m->bEnvironmentMapping && stream == 130 && !m->textureList[4].isEmpty();
 		useEnvironmentMask = hasEnvironmentMap && !m->bGlowmap && !m->textureList[5].isEmpty();
 		environmentReflection = m->fEnvironmentMappingMaskScale;
 
@@ -1458,7 +1526,7 @@ void BSEffectShaderProperty::update( const NifModel * nif, const QModelIndex & p
 	BSShaderLightingProperty::update( nif, property );
 
 	if ( name.endsWith( ".bgem", Qt::CaseInsensitive ) )
-		material = new EffectMaterial( name );
+		material = new EffectMaterial( name, scene->game);
 
 	if ( material && !material->isValid() )
 		material = nullptr;
@@ -1475,16 +1543,16 @@ void BSEffectShaderProperty::updateParams( const NifModel * nif, const QModelInd
 	if ( mat() && mat()->isValid() )
 		m = static_cast<EffectMaterial *>(mat());
 
-	auto stream = nif->getUserVersion2();
+	stream = nif->getUserVersion2();
 
-	setFlags1( nif->get<unsigned int>( prop, "Shader Flags 1" ) );
-	setFlags2( nif->get<unsigned int>( prop, "Shader Flags 2" ) );
+	setFlags1( nif, prop );
+	setFlags2( nif, prop );
 
 	hasVertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
 	hasVertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
 
 	if ( !m ) {
-		setEmissive( nif->get<Color4>( prop, "Emissive Color" ), nif->get<float>( prop, "Emissive Multiple" ) );
+		setEmissive( nif->get<Color4>( prop, "Base Color" ), nif->get<float>( prop, "Base Color Scale" ) );
 
 		hasSourceTexture = !nif->get<QString>( prop, "Source Texture" ).isEmpty();
 		hasGreyscaleMap = !nif->get<QString>( prop, "Greyscale Texture" ).isEmpty();
@@ -1548,6 +1616,8 @@ void BSEffectShaderProperty::updateParams( const NifModel * nif, const QModelInd
 		depthTest = m->bZBufferTest;
 		depthWrite = m->bZBufferWrite;
 		isDoubleSided = m->bTwoSided;
+
+		lumEmittance = m->fLumEmittance;
 
 		setUvScale( m->fUScale, m->fVScale );
 		setUvOffset( m->fUOffset, m->fVOffset );

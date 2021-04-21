@@ -1,12 +1,9 @@
 # default shader
 
 checkgroup begin and
-	# Fallout 4
-    check HEADER/BS Header/BS Version == 130
+	# Fallout 76
+    check HEADER/BS Header/BS Version == 155
     check BSLightingShaderProperty
-    #check BSLightingShaderProperty/Shader Type != 1
-    #check BSLightingShaderProperty/Shader Type != 16
-    check BSLightingShaderProperty/Shader Type != 18
     checkgroup begin or
         check BSTriShape
         check BSSubIndexTriShape
@@ -20,4 +17,4 @@ texcoords 2 bitangents
 texcoords 3 indices
 texcoords 4 weights
 
-shaders fo4_default.vert fo4_default.frag
+shaders f76_default.vert f76_default.frag
