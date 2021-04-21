@@ -1,6 +1,12 @@
 [submodule "docsys"]
-	path = docsys
-	url = git://niftools.git.sourceforge.net/gitroot/niftools/nifdocsys
+	path = build/docsys
+	url = https://github.com/niftools/nifdocsys.git
 [submodule "qhull"]
-	path = qhull
-	url = git://gitorious.org/qhull/qhull.git
+	path = lib/qhull
+	url = https://github.com/qhull/qhull.git
+[submodule "lib/zlib"]
+	path = lib/zlib
+	url = https://github.com/madler/zlib.git
+[submodule "lib/gli"]
+	path = lib/gli
+	url = https://github.com/g-truc/gli.git

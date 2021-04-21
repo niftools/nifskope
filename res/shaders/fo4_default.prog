@@ -1,0 +1,22 @@
+# default shader
+
+checkgroup begin and
+	# Fallout 4
+    check HEADER/User Version 2 >= 130
+    check BSLightingShaderProperty
+    #check BSLightingShaderProperty/Skyrim Shader Type != 1
+    #check BSLightingShaderProperty/Skyrim Shader Type != 16
+    checkgroup begin or
+        check BSTriShape
+        check BSSubIndexTriShape
+        check BSMeshLODTriShape
+    checkgroup end
+checkgroup end
+
+texcoords 0 base
+texcoords 1 tangents
+texcoords 2 bitangents
+texcoords 3 indices
+texcoords 4 weights
+
+shaders fo4_default.vert fo4_default.frag

@@ -1,0 +1,28 @@
+# model space normal mapping
+
+checkgroup begin or
+	checkgroup begin and
+		# Skyrim
+		check HEADER/User Version 2 >= 83
+		check HEADER/User Version 2 <= 100
+	checkgroup end
+checkgroup end
+
+checkgroup begin or
+	# Skyrim
+	checkgroup begin and
+		check BSLightingShaderProperty
+		check NiTriBasedGeomData
+		check NiTriBasedGeomData/Has Normals == 0
+	checkgroup end
+	# SSE
+	checkgroup begin and
+		check BSLightingShaderProperty
+		check BSTriShape
+		check not BSTriShape/Vertex Desc & 8
+	checkgroup end
+checkgroup end
+
+texcoords 0 base
+
+shaders sk_msn.vert sk_msn.frag

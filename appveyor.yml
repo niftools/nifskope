@@ -1,0 +1,50 @@
+version: "{build}"
+
+platform:
+    - win32
+    - x64
+
+configuration:
+    - debug
+    - release
+
+matrix:
+    fast_finish: true
+
+os: Visual Studio 2015
+
+# We want the git revision for versioning,
+# so shallow clones don't work.
+clone_depth: 1
+
+clone_folder: C:\projects\nifskope
+
+install:
+    - if %PLATFORM%==win32 set QTDIR=C:\Qt\5.7\msvc2015
+    - if %PLATFORM%==x64 set QTDIR=C:\Qt\5.7\msvc2015_64
+    - set PATH=%PATH%;%QTDIR%\bin;
+
+build_script:
+    - git submodule update --init --recursive # Appveyor doesn't clone recursively.
+    - qmake CONFIG+=%CONFIGURATION% -Wall -spec win32-msvc2015 -tp vc NifSkope.pro
+    - msbuild NifSkope.vcxproj /t:Build /p:Configuration=%configuration% /m:2 /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+
+after_build:
+    - if %CONFIGURATION%==debug set DEBUG_POSTFIX=_debug
+    - set BUILD_DIR=%APPVEYOR_BUILD_FOLDER%\bin\%CONFIGURATION%
+    - set BUILD_NAME=nifskope_%platform%%DEBUG_POSTFIX%.zip
+    - 7z a %BUILD_NAME% %BUILD_DIR%
+    - 7z rn %BUILD_NAME% %CONFIGURATION% NifSkope
+
+test: off
+
+artifacts:
+    - path: nifskope_win32.zip
+      name: nifskope_win32
+    - path: nifskope_x64.zip
+      name: nifskope_x64
+    - path: nifskope_win32_debug.zip
+      name: nifskope_win32_debug
+    - path: nifskope_x64_debug.zip
+      name: nifskope_x64_debug
+

@@ -1,0 +1,62 @@
+/* Variables:
+    Qt Colors:
+    palette(base)
+    palette(alternate-base)
+    palette(text)
+    palette(highlight)
+    palette(highlighted-text)
+    palette(bright-text)
+
+    Template Variables:
+    ${theme} = Theme name ("dark", "light") for icon path customization
+    ${rgb} = Highlight colors in an "R, G, B" string to combine with opacity in rgba()
+*/
+
+
+/* Remove light border for dark theme */
+QToolBar { border: 1px solid transparent; }
+
+/* Fix tooltip display */
+QToolTip { color: #ffffff; background-color: #555; border: 1px solid transparent; }
+
+/* Fix display of Settings category list */
+QListWidget#categoryList { padding: 10px; }
+QListWidget#categoryList::item { height: 20px; padding: 10px; }
+QListWidget#categoryList::item::text { padding-left: 10px; }
+
+/* Fix display of close/undock for dark themes */
+QDockWidget {
+    titlebar-close-icon: url(:/wnd/close);
+    titlebar-normal-icon: url(:/wnd/undock);
+}
+
+/* Toolbar Buttons */
+
+/* Flyout menus need padding for down arrow */
+#btnFlyoutMenu { padding-left: 2px; padding-right: 10px; }
+
+/* Fix toolbar button spacing */
+#tRender QToolButton#btnRender:enabled,
+#tAnim QToolButton:enabled,
+#mLight QAbstractButton {
+    padding: 1px 1px;
+    margin: 0px 0px 0px 1px;
+    border-radius: 2px;
+    border: 1px solid transparent;
+}
+
+/* Selected toolbar buttons */
+#tRender QToolButton#btnRender:enabled:checked,
+#tAnim QToolButton:enabled:checked,
+#mLight QAbstractButton:enabled:checked {
+    border: 1px solid rgba(0, 0, 0, 32);
+    background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.66, fx:0.5, fy:0.5, stop:0 rgba(255, 255, 255, 0), stop:0.5 rgba(${rgb}, 32), stop:1 rgba(${rgb}, 128));
+}
+
+/* Hovered toolbar buttons */
+#tRender QToolButton#btnRender:enabled:hover,
+#tAnim QToolButton:enabled:hover,
+#mLight QAbstractButton:enabled:hover {
+    border: 1px solid rgba(${rgb}, 255); 
+    background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.66, fx:0.5, fy:0.5, stop:0 rgba(255, 255, 255, 0), stop:0.33 rgba(${rgb}, 64), stop:1 rgba(${rgb}, 128));
+}

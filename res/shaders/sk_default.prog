@@ -1,0 +1,21 @@
+# default shader
+
+checkgroup begin and
+	# Skyrim
+	check HEADER/User Version 2 >= 83
+	check HEADER/User Version 2 <= 100
+	check BSLightingShaderProperty
+	check BSLightingShaderProperty/Skyrim Shader Type != 11
+	checkgroup begin or
+		check NiTriBasedGeomData/Has Normals == 1
+		check BSTriShape/Vertex Desc & 8
+	checkgroup end
+checkgroup end
+
+texcoords 0 base
+texcoords 1 tangents
+texcoords 2 bitangents
+texcoords 3 indices
+texcoords 4 weights
+
+shaders sk_default.vert sk_default.frag

@@ -1,0 +1,66 @@
+<RCC>
+    <qresource prefix="/res">
+        <file>nifskope.png</file>
+        <file>skel.dat</file>
+    </qresource>
+    <qresource prefix="/img">
+        <file alias="update">icon/img_update.png</file>
+        <file alias="link">icon/img_link.png</file>
+        <file alias="flag">icon/img_flag.png</file>
+        <file alias="havok_logo">img/havok_logo.png</file>
+        <file alias="qhull_logo">img/qhull_cone.gif</file>
+        <file alias="add">icon/add.png</file>
+    </qresource>
+    <qresource prefix="/wnd">
+        <file>icon/handle.png</file>
+        <file alias="sizeGrip">icon/sizegrip.png</file>
+        <file alias="close">icon/close.png</file>
+        <file alias="undock">icon/undock.png</file>
+    </qresource>
+    <qresource prefix="/btn">
+        <file alias="viewWalk">icon/button_view_walk.png</file>
+        <file alias="cubeTop16">icon/cube-top-16.png</file>
+        <file alias="cubeFront16">icon/cube-front-16.png</file>
+        <file alias="cubeSide16">icon/cube-side-16.png</file>
+        <file alias="viewFlip">icon/flip.png</file>
+        <file alias="cubeOrtho">icon/orthographic.png</file>
+        <file alias="cubePersp">icon/perspective.png</file>
+        <file alias="showAxes">icon/axes.png</file>
+        <file alias="showCollision">icon/collision-ball.png</file>
+        <file alias="showNodes">icon/node.png</file>
+        <file alias="showConstraints">icon/constraint.png</file>
+        <file alias="userViewActive">icon/view-active.png</file>
+        <file alias="screenshot">icon/screenshot.png</file>
+        <file alias="save">icon/save.png</file>
+        <file alias="load">icon/load.png</file>
+        <file alias="saveView">icon/save-view.png</file>
+        <file alias="loadView">icon/load-view.png</file>
+        <file alias="bulb">icon/bulb.png</file>
+        <file alias="bulbOff">icon/bulb-off.png</file>
+        <file alias="textures">icon/textures.png</file>
+        <file alias="vertexColors">icon/vertex-colors.png</file>
+        <file alias="pause">icon/pause.png</file>
+        <file alias="play">icon/play.png</file>
+        <file alias="repeatAll">icon/repeat-all.png</file>
+        <file alias="repeatSingle">icon/repeat-single.png</file>
+        <file alias="normals">icon/normals.png</file>
+        <file alias="lightHorizontal">icon/light-rot-horizontal.png</file>
+        <file alias="lightVertical">icon/light-rot-vertical.png</file>
+        <file alias="silhouette">icon/silhouette.png</file>
+        <file alias="specular">icon/specular.png</file>
+        <file alias="glow">icon/glow.png</file>
+        <file alias="showMarkers">icon/marker.png</file>
+        <file alias="undo">icon/undo.png</file>
+        <file alias="redo">icon/redo.png</file>
+        <file alias="sun">icon/sun.png</file>
+        <file alias="cloud">icon/cloud.png</file>
+        <file alias="cubemap">icon/cubemap.png</file>
+        <file alias="hidden">icon/hidden.png</file>
+        <file alias="hiddenDisabled">icon/hidden-disabled.png</file>
+        <file alias="selectObject">icon/select-object.png</file>
+        <file alias="selectVerts">icon/select-verts.png</file>
+        <file alias="skinned">icon/skinned.png</file>
+        <file alias="collapse">icon/collapse.png</file>
+        <file alias="expand">icon/expand.png</file>
+    </qresource>
+</RCC>
