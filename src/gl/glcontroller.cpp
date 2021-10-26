@@ -384,15 +384,24 @@ template <typename T> bool interpolate( T & value, const QModelIndex & array, fl
 			{
 				// Quadratic
 				/*
-					In general, for keyframe values v1 = 0, v2 = 1 it appears that
-					setting v1's corresponding "Backward" value to 1 and v2's
-					corresponding "Forward" to 1 results in a linear interpolation.
-				*/
+                  Interpolate X, Y, and Z values independently, along a segment between
+                  two points, at an arbitrary time "x", using an Hermite Cubic spline.
+                  * The "v1" keyframe is the one previous in time to "x",
+                  * The "v2" keyframe is the next one,
+                  * The segment's backward derivative, "t1" is stored as part of "v1"
+                  * The segment's forward derivative, "t2" is stored as part of "v2"
+                  N.B. v2's backward derivate does not "belong" to the segment with v1,
+                  but rather to the segment with v3. Otherwise said, the key at t=0.0
+                  can have a forward derivative, but it will not be used; the final key's
+                  backward derivative will also not be used.
+
+                  Setting the derivatives to zero results in linear interpolation.
+                */
 
 				// Tangent 1
-				float t1 = nif->get<float>( frames.child( last, 0 ), "Backward" );
+                T t1 = nif->get<T>( frames.child( last, 0 ), "Backward" );
 				// Tangent 2
-				float t2 = nif->get<float>( frames.child( next, 0 ), "Forward" );
+                T t2 = nif->get<T>( frames.child( next, 0 ), "Forward" );
 
 				float x2 = x * x;
 				float x3 = x2 * x;
@@ -400,7 +409,7 @@ template <typename T> bool interpolate( T & value, const QModelIndex & array, fl
 				// Cubic Hermite spline
 				//	x(t) = (2t^3 - 3t^2 + 1)P1  + (-2t^3 + 3t^2)P2 + (t^3 - 2t^2 + t)T1 + (t^3 - t^2)T2
 
-				value = v1 * (2.0f * x3 - 3.0f * x2 + 1.0f) + v2 * (-2.0f * x3 + 3.0f * x2) + t1 * (x3 - 2.0f * x2 + x) + t2 * (x3 - x2);
+                value = v1 * (2.0f * x3 - 3.0f * x2 + 1.0f) + v2 * (-2.0f * x3 + 3.0f * x2) + t1 * (x3 - 2.0f * x2 + x) + t2 * (x3 - x2);
 
 			}	return true;
 			
