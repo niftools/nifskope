@@ -607,6 +607,9 @@ bool NifModel::loadXML()
 #ifdef Q_OS_LINUX
 	                     << "/usr/share/nifskope/nif.xml"
 #endif
+#ifdef Q_OS_MACX
+                         << "../../../nif.xml"
+#endif
 	);
 	for ( const QString& str : xmlList ) {
 		if ( dir.exists( str ) ) {

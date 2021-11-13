@@ -346,6 +346,9 @@ gli {
 }
 
 zlib {
+    macx {
+        DEFINES += Z_HAVE_UNISTD_H
+    }
     !*msvc*:QMAKE_CFLAGS += -isystem ../nifskope/lib/zlib
     !*msvc*:QMAKE_CXXFLAGS += -isystem ../nifskope/lib/zlib
     else:INCLUDEPATH += lib/zlib
