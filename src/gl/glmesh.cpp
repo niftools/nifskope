@@ -992,13 +992,14 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
 		return;
 
 	auto nif = static_cast<const NifModel *>(iBlock.model());
-	
+    bool drawPolygons = true;
+
 	if ( Node::SELECTING ) {
 		if ( scene->selMode & Scene::SelObject ) {
 			int s_nodeId = ID2COLORKEY( nodeId );
 			glColor4ubv( (GLubyte *)&s_nodeId );
 		} else {
-			glColor4f( 0, 0, 0, 1 );
+            drawPolygons = false;
 		}
 	}
 
@@ -1035,94 +1036,97 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
 
 	// setup array pointers
 
-	// Render polygon fill slightly behind alpha transparency and wireframe
-	glEnable( GL_POLYGON_OFFSET_FILL );
-	glPolygonOffset( 1.0f, 2.0f );
+    if (drawPolygons) {
 
-	glEnableClientState( GL_VERTEX_ARRAY );
-	glVertexPointer( 3, GL_FLOAT, 0, transVerts.constData() );
+        // Render polygon fill slightly behind alpha transparency and wireframe
+        glEnable( GL_POLYGON_OFFSET_FILL );
+        glPolygonOffset( 1.0f, 2.0f );
 
-	if ( !Node::SELECTING ) {
-		if ( transNorms.count() ) {
-			glEnableClientState( GL_NORMAL_ARRAY );
-			glNormalPointer( GL_FLOAT, 0, transNorms.constData() );
-		}
+        glEnableClientState( GL_VERTEX_ARRAY );
+        glVertexPointer( 3, GL_FLOAT, 0, transVerts.constData() );
 
-		// Do VCs if legacy or if either bslsp or bsesp is set
-		bool doVCs = (!bssp) || (bssp && (bssp->getFlags2() & ShaderFlags::SLSF2_Vertex_Colors));
+        if ( !Node::SELECTING ) {
+            if ( transNorms.count() ) {
+                glEnableClientState( GL_NORMAL_ARRAY );
+                glNormalPointer( GL_FLOAT, 0, transNorms.constData() );
+            }
 
-		if ( transColors.count()
-			&& ( scene->options & Scene::DoVertexColors )
-			&& doVCs )
-		{
-			glEnableClientState( GL_COLOR_ARRAY );
-			glColorPointer( 4, GL_FLOAT, 0, transColors.constData() );
-		} else {
-			if ( !hasVertexColors && (bslsp && bslsp->hasVertexColors) ) {
-				// Correctly blacken the mesh if SLSF2_Vertex_Colors is still on
-				//	yet "Has Vertex Colors" is not.
-				glColor( Color3( 0.0f, 0.0f, 0.0f ) );
-			} else {
-				glColor( Color3( 1.0f, 1.0f, 1.0f ) );
-			}
-		}
-	}
+            // Do VCs if legacy or if either bslsp or bsesp is set
+            bool doVCs = (!bssp) || (bssp && (bssp->getFlags2() & ShaderFlags::SLSF2_Vertex_Colors));
 
-	// TODO: Hotspot.  See about optimizing this.
-	if ( !Node::SELECTING )
-		shader = scene->renderer->setupProgram( this, shader );
+            if ( transColors.count()
+                && ( scene->options & Scene::DoVertexColors )
+                && doVCs )
+            {
+                glEnableClientState( GL_COLOR_ARRAY );
+                glColorPointer( 4, GL_FLOAT, 0, transColors.constData() );
+            } else {
+                if ( !hasVertexColors && (bslsp && bslsp->hasVertexColors) ) {
+                    // Correctly blacken the mesh if SLSF2_Vertex_Colors is still on
+                    //	yet "Has Vertex Colors" is not.
+                    glColor( Color3( 0.0f, 0.0f, 0.0f ) );
+                } else {
+                    glColor( Color3( 1.0f, 1.0f, 1.0f ) );
+                }
+            }
+        }
 
-	if ( isDoubleSided ) {
-		glDisable( GL_CULL_FACE );
-	}
+        // TODO: Hotspot.  See about optimizing this.
+        if ( !Node::SELECTING )
+            shader = scene->renderer->setupProgram( this, shader );
 
-	if ( !isLOD ) {
-		// render the triangles
-		if ( sortedTriangles.count() )
-			glDrawElements( GL_TRIANGLES, sortedTriangles.count() * 3, GL_UNSIGNED_SHORT, sortedTriangles.constData() );
+        if ( isDoubleSided ) {
+            glDisable( GL_CULL_FACE );
+        }
 
-	} else if ( sortedTriangles.count() ) {
-		auto lod0 = nif->get<uint>( iBlock, "LOD0 Size" );
-		auto lod1 = nif->get<uint>( iBlock, "LOD1 Size" );
-		auto lod2 = nif->get<uint>( iBlock, "LOD2 Size" );
+        if ( !isLOD ) {
+            // render the triangles
+            if ( sortedTriangles.count() )
+                glDrawElements( GL_TRIANGLES, sortedTriangles.count() * 3, GL_UNSIGNED_SHORT, sortedTriangles.constData() );
 
-		auto lod0tris = sortedTriangles.mid( 0, lod0 );
-		auto lod1tris = sortedTriangles.mid( lod0, lod1 );
-		auto lod2tris = sortedTriangles.mid( lod0 + lod1, lod2 );
+        } else if ( sortedTriangles.count() ) {
+            auto lod0 = nif->get<uint>( iBlock, "LOD0 Size" );
+            auto lod1 = nif->get<uint>( iBlock, "LOD1 Size" );
+            auto lod2 = nif->get<uint>( iBlock, "LOD2 Size" );
 
-		// If Level2, render all
-		// If Level1, also render Level0
-		switch ( scene->lodLevel ) {
-		case Scene::Level2:
-			if ( lod2tris.count() )
-				glDrawElements( GL_TRIANGLES, lod2tris.count() * 3, GL_UNSIGNED_SHORT, lod2tris.constData() );
-		case Scene::Level1:
-			if ( lod1tris.count() )
-				glDrawElements( GL_TRIANGLES, lod1tris.count() * 3, GL_UNSIGNED_SHORT, lod1tris.constData() );
-		case Scene::Level0:
-		default:
-			if ( lod0tris.count() )
-				glDrawElements( GL_TRIANGLES, lod0tris.count() * 3, GL_UNSIGNED_SHORT, lod0tris.constData() );
-			break;
-		}
-	}
+            auto lod0tris = sortedTriangles.mid( 0, lod0 );
+            auto lod1tris = sortedTriangles.mid( lod0, lod1 );
+            auto lod2tris = sortedTriangles.mid( lod0 + lod1, lod2 );
 
-	// render the tristrips
-	for ( auto & s : tristrips )
-		glDrawElements( GL_TRIANGLE_STRIP, s.count(), GL_UNSIGNED_SHORT, s.constData() );
+            // If Level2, render all
+            // If Level1, also render Level0
+            switch ( scene->lodLevel ) {
+            case Scene::Level2:
+                if ( lod2tris.count() )
+                    glDrawElements( GL_TRIANGLES, lod2tris.count() * 3, GL_UNSIGNED_SHORT, lod2tris.constData() );
+            case Scene::Level1:
+                if ( lod1tris.count() )
+                    glDrawElements( GL_TRIANGLES, lod1tris.count() * 3, GL_UNSIGNED_SHORT, lod1tris.constData() );
+            case Scene::Level0:
+            default:
+                if ( lod0tris.count() )
+                    glDrawElements( GL_TRIANGLES, lod0tris.count() * 3, GL_UNSIGNED_SHORT, lod0tris.constData() );
+                break;
+            }
+        }
 
-	if ( isDoubleSided ) {
-		glEnable( GL_CULL_FACE );
-	}
+        // render the tristrips
+        for ( auto & s : tristrips )
+            glDrawElements( GL_TRIANGLE_STRIP, s.count(), GL_UNSIGNED_SHORT, s.constData() );
 
-	if ( !Node::SELECTING )
-		scene->renderer->stopProgram();
+        if ( isDoubleSided ) {
+            glEnable( GL_CULL_FACE );
+        }
 
-	glDisableClientState( GL_VERTEX_ARRAY );
-	glDisableClientState( GL_NORMAL_ARRAY );
-	glDisableClientState( GL_COLOR_ARRAY );
+        if ( !Node::SELECTING )
+            scene->renderer->stopProgram();
 
-	glDisable( GL_POLYGON_OFFSET_FILL );
+        glDisableClientState( GL_VERTEX_ARRAY );
+        glDisableClientState( GL_NORMAL_ARRAY );
+        glDisableClientState( GL_COLOR_ARRAY );
+
+        glDisable( GL_POLYGON_OFFSET_FILL );
+    }
 
 	glPointSize( 8.5 );
 	if ( scene->selMode & Scene::SelVertex ) {
@@ -1138,7 +1142,7 @@ void Mesh::drawVerts() const
 	glDisable( GL_LIGHTING );
 	glNormalColor();
 
-	glBegin( GL_POINTS );
+    glBegin( GL_POINTS );
 
 	for ( int i = 0; i < transVerts.count(); i++ ) {
 		if ( Node::SELECTING ) {
