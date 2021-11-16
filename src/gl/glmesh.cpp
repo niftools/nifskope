@@ -995,7 +995,7 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
     bool drawPolygons = true;
 
 	if ( Node::SELECTING ) {
-		if ( scene->selMode & Scene::SelObject ) {
+        if ( scene->actionMode & Scene::Object ) {
 			int s_nodeId = ID2COLORKEY( nodeId );
 			glColor4ubv( (GLubyte *)&s_nodeId );
 		} else {
@@ -1129,7 +1129,7 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
     }
 
 	glPointSize( 8.5 );
-	if ( scene->selMode & Scene::SelVertex ) {
+    if ( scene->actionMode & Scene::Vertex ) {
 		drawVerts();
 	}
 
@@ -1169,7 +1169,7 @@ void Mesh::drawSelection() const
 	if ( scene->options & Scene::ShowNodes )
 		Node::drawSelection();
 
-	if ( isHidden() || !(scene->selMode & Scene::SelObject) )
+    if ( isHidden() || !(scene->actionMode & Scene::Object) )
 		return;
 
 	auto idx = scene->currentIndex;

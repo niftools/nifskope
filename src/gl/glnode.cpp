@@ -530,7 +530,7 @@ void Node::draw()
 	if ( isHidden() || iBlock == scene->currentBlock )
 		return;
 
-	if ( !(scene->selMode & Scene::SelObject) )
+    if ( !(scene->actionMode & Scene::Object) )
 		return;
 
 	if ( Node::SELECTING ) {
@@ -587,7 +587,7 @@ void Node::drawSelection() const
 	if ( !nif )
 		return;
 
-	if ( !(scene->selMode & Scene::SelObject) )
+    if ( !(scene->actionMode & Scene::Object) )
 		return;
 
 	bool extraData = false;
@@ -776,7 +776,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	if ( (!nif || !iShape.isValid() || stack.contains( iShape )) && !extraData )
 		return;
 
-	if ( !(scene->selMode & Scene::SelObject) )
+    if ( !(scene->actionMode & Scene::Object) )
 		return;
 
 	stack.push( iShape );
@@ -1079,7 +1079,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 	if ( !( nif && iConstraint.isValid() && scene && (scene->options & Scene::ShowConstraints) ) )
 		return;
 
-	if ( !(scene->selMode & Scene::SelObject) )
+    if ( !(scene->actionMode & Scene::Object) )
 		return;
 
 	QList<Transform> tBodies;
@@ -1396,7 +1396,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 
 void Node::drawHavok()
 {
-	if ( !(scene->selMode & Scene::SelObject) )
+    if ( !(scene->actionMode & Scene::Object) )
 		return;
 
 	// TODO: Why are all these here - "drawNodes", "drawFurn", "drawHavok"?
@@ -1810,7 +1810,7 @@ void Node::drawFurn()
 	if ( !( iBlock.isValid() && nif ) )
 		return;
 
-	if ( !(scene->selMode & Scene::SelObject) )
+    if ( !(scene->actionMode & Scene::Object) )
 		return;
 
 	QModelIndex iExtraDataList = nif->getIndex( iBlock, "Extra Data List" );

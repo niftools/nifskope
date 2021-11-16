@@ -1352,6 +1352,16 @@ public:
 		return c;
 	}
 
+    Color4 operator*( const Color4& o ) const
+    {
+        Color4 c( *this );
+        c.rgba[0] *= o.rgba[0];
+        c.rgba[1] *= o.rgba[1];
+        c.rgba[2] *= o.rgba[2];
+        c.rgba[3] *= o.rgba[3];
+        return c;
+    }
+
 	//! Add-equals operator
 	Color4 & operator+=( const Color4 & o )
 	{
@@ -1452,6 +1462,7 @@ protected:
 
 	friend class NifIStream;
 	friend class NifOStream;
+    friend class ByteColor4;
 
 	friend QDataStream & operator>>( QDataStream & ds, Color4 & c );
 };
@@ -1461,6 +1472,15 @@ class ByteColor4 : public Color4
 public:
 	//! Default constructor
 	ByteColor4() { rgba[0] = rgba[1] = rgba[2] = rgba[3] = 1.0; }
+    static ByteColor4 fromColor4(const Color4& c)
+    {
+        ByteColor4 o;
+        o.rgba[0] = c.rgba[0];
+        o.rgba[1] = c.rgba[1];
+        o.rgba[2] = c.rgba[2];
+        o.rgba[3] = c.rgba[3];
+        return o;
+    }
 };
 
 

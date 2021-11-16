@@ -359,7 +359,7 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 	auto nif = static_cast<const NifModel *>(iBlock.model());
     bool drawPolygons = true;
 	if ( Node::SELECTING ) {
-		if ( scene->selMode & Scene::SelObject ) {
+        if ( scene->actionMode & Scene::Object ) {
 			int s_nodeId = ID2COLORKEY( nodeId );
 			glColor4ubv( (GLubyte *)&s_nodeId );
         } else {
@@ -464,7 +464,7 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
         glDisable( GL_POLYGON_OFFSET_FILL );
     }
 
-	if ( scene->selMode & Scene::SelVertex ) {
+    if ( scene->actionMode & Scene::Vertex ) {
 		drawVerts();
 	}
 
@@ -517,7 +517,7 @@ void BSShape::drawSelection() const
 	if ( scene->options & Scene::ShowNodes )
 		Node::drawSelection();
 
-	if ( isHidden() || !(scene->selMode & Scene::SelObject) )
+    if ( isHidden() || !(scene->actionMode & Scene::Object) )
 		return;
 
 	auto idx = scene->currentIndex;

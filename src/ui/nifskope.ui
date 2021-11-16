@@ -10,7 +10,33 @@
     <height>800</height>
    </rect>
   </property>
-  <widget class="QWidget" name="centralwidget" />
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QPushButton" name="paintColorPicker_2">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>114</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="autoFillBackground">
+     <bool>true</bool>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="flat">
+     <bool>true</bool>
+    </property>
+   </widget>
+  </widget>
   <widget class="QToolBar" name="tFile">
    <property name="sizePolicy">
     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -69,6 +95,7 @@
    </attribute>
    <addaction name="aSelectObject"/>
    <addaction name="aSelectVertex"/>
+   <addaction name="aPaintVertex"/>
    <addaction name="separator"/>
    <addaction name="aViewTop"/>
    <addaction name="aViewFront"/>
@@ -278,6 +305,7 @@
      <addaction name="aToggleArchiveBrowser"/>
      <addaction name="aToggleKfm"/>
      <addaction name="aToggleInspect"/>
+     <addaction name="aTogglePaintSettings"/>
     </widget>
     <addaction name="menuShow"/>
     <addaction name="mToolbars"/>
@@ -1016,6 +1044,222 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
        <property name="allColumnsShowFocus">
         <bool>true</bool>
        </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="PaintDock">
+   <property name="windowTitle">
+    <string>Paint Vertex</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_11">
+    <layout class="QFormLayout" name="formLayout">
+     <item row="0" column="0">
+      <widget class="QLabel" name="paintBrushLabel">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <horstretch>1</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Brush Size</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QWidget" name="widget_3" native="true">
+       <layout class="QHBoxLayout" name="horizontalLayout_6">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QDoubleSpinBox" name="paintBrushSize">
+          <property name="maximum">
+           <double>4096.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="paintColorLabel">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Color</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QWidget" name="widget" native="true">
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QDoubleSpinBox" name="paintColorR">
+          <property name="maximum">
+           <double>1.000000000000000</double>
+          </property>
+          <property name="singleStep">
+           <double>0.003906000000000</double>
+          </property>
+          <property name="value">
+           <double>1.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDoubleSpinBox" name="paintColorG">
+          <property name="maximum">
+           <double>1.000000000000000</double>
+          </property>
+          <property name="singleStep">
+           <double>0.003906000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDoubleSpinBox" name="paintColorB">
+          <property name="maximum">
+           <double>1.000000000000000</double>
+          </property>
+          <property name="singleStep">
+           <double>0.003906000000000</double>
+          </property>
+          <property name="value">
+           <double>1.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDoubleSpinBox" name="paintColorA">
+          <property name="maximum">
+           <double>1.000000000000000</double>
+          </property>
+          <property name="singleStep">
+           <double>0.003906000000000</double>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="paintOpacityLabel">
+       <property name="text">
+        <string>Opacity</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QWidget" name="widget_2" native="true">
+       <layout class="QHBoxLayout" name="horizontalLayout_5">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QSlider" name="paintOpacitySlider">
+          <property name="maximum">
+           <number>255</number>
+          </property>
+          <property name="value">
+           <number>255</number>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="paintOpacity">
+          <property name="maximum">
+           <number>255</number>
+          </property>
+          <property name="value">
+           <number>255</number>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="paintBlendLabel">
+       <property name="text">
+        <string>Blend Mode</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QWidget" name="widget_4" native="true">
+       <layout class="QHBoxLayout" name="horizontalLayout_8">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QComboBox" name="paintBlendMode">
+          <property name="currentText">
+           <string/>
+          </property>
+          <property name="currentIndex">
+           <number>-1</number>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="paintOpacityMode"/>
+        </item>
+       </layout>
       </widget>
      </item>
     </layout>
@@ -2093,6 +2337,32 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <string>Error Color</string>
    </property>
   </action>
+  <action name="aPaintVertex">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/paintVerts</normaloff>:/btn/paintVerts</iconset>
+   </property>
+   <property name="text">
+    <string>Paint Vertex</string>
+   </property>
+   <property name="toolTip">
+    <string>Paint Vertex</string>
+   </property>
+  </action>
+  <action name="aTogglePaintSettings">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Paint</string>
+   </property>
+   <property name="toolTip">
+    <string>Paint</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -2651,6 +2921,102 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <hint type="destinationlabel">
      <x>639</x>
      <y>399</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>aTogglePaintSettings</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>PaintDock</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1112</x>
+     <y>466</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>PaintDock</sender>
+   <signal>visibilityChanged(bool)</signal>
+   <receiver>aTogglePaintSettings</receiver>
+   <slot>setChecked(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1112</x>
+     <y>466</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>aTogglePaintSettings</sender>
+   <signal>triggered()</signal>
+   <receiver>PaintDock</receiver>
+   <slot>raise()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1112</x>
+     <y>466</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>aPaintVertex</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>aTogglePaintSettings</receiver>
+   <slot>setChecked(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>paintOpacitySlider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>paintOpacity</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1080</x>
+     <y>483</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1160</x>
+     <y>483</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>paintOpacity</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>paintOpacitySlider</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1160</x>
+     <y>483</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1080</x>
+     <y>483</y>
     </hint>
    </hints>
   </connection>

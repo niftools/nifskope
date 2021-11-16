@@ -175,6 +175,8 @@ public slots:
 
 	void updateSettings();
 
+    void updateVertexPaintSettings();
+
 	//! Select a NIF index
 	void select( const QModelIndex & );
 
@@ -379,6 +381,7 @@ private:
 	QDockWidget * dKfm;
 	QDockWidget * dRefr;
 	QDockWidget * dInsp;
+    QDockWidget * dPaint;
 	QDockWidget * dBrowser;
 
 	QToolBar * tool;

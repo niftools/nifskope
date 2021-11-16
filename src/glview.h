@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define GLVIEW
 
 #include "gl/glscene.h"
+#include "data/nifitem.h"
 
 #include <QGLWidget> // Inherited
 #include <QGraphicsView>
@@ -119,6 +120,13 @@ public:
 		ZAxis = 2
 	};
 
+    enum PaintBlendMode
+    {
+        BlendNormal = 0,
+        BlendAdd = 1,
+        BlendMultiply = 2
+    };
+
 	void setNif( NifModel * );
 
 	Scene * getScene();
@@ -131,6 +139,10 @@ public:
 	void move( float, float, float );
 	void rotate( float, float, float );
 	void zoom( float );
+
+    void startVertexPaint(const QPoint&);
+    void vertexPaint(const QPoint&);
+    void endVertexPaint();
 
 	void setCenter();
 	void setDistance( float );
@@ -147,8 +159,13 @@ public:
 
 	QColor clearColor() const;
 
+    QImage renderIndexImage();
+    QModelIndex sampleIndexImagePoint(const QImage& img, const QPoint & p, NifModel* model);
+    QVector<QModelIndex> sampleIndexImageCircle(const QImage& img, const QPoint & p, float radius, NifModel* model);
 
-	QModelIndex indexAt( const QPoint & p, int cycle = 0 );
+    QModelIndex colorIndexToModelIndex(const QColor& color, NifModel* model);
+
+    QModelIndex indexAt( const QPoint & p, int cycle = 0 );
 
 	// UI
 
@@ -243,6 +260,10 @@ private:
 	QPoint pressPos;
 	Vector3 mouseMov;
 	Vector3 mouseRot;
+    bool mousePaint;
+    QVector<QModelIndex> mousePaintVerts;
+    QImage mousePaintHitDetectImg;
+
 	int cycleSelect;
 
 	QPersistentModelIndex iDragTarget;
@@ -262,6 +283,11 @@ private:
 		float rotSpd = 45;
 
 		UpAxis upAxis = ZAxis;
+
+        float brushSize = 24.0f;
+        Color4 brushColor = {1.0f, 0.0f, 1.0f, 1.0f};
+        Color4 brushOpacity = {1.0f, 1.0f, 1.0f, 0.0f};
+        PaintBlendMode brushMode = PaintBlendMode::BlendNormal;
 	} cfg;
 
 private slots:

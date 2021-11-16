@@ -764,150 +764,198 @@ void GLView::setVisMode( Scene::VisMode mode, bool checked )
 
 typedef void (Scene::* DrawFunc)( void );
 
-int indexAt( /*GLuint *buffer,*/ NifModel * model, Scene * scene, QList<DrawFunc> drawFunc, int cycle, const QPoint & pos, int & furn )
+QImage GLView::renderIndexImage()
 {
-	Q_UNUSED( model ); Q_UNUSED( cycle );
-	// Color Key O(1) selection
-	//	Open GL 3.0 says glRenderMode is deprecated
-	//	ATI OpenGL API implementation of GL_SELECT corrupts NifSkope memory
-	//
-	// Create FBO for sharp edges and no shading.
-	// Texturing, blending, dithering, lighting and smooth shading should be disabled.
-	// The FBO can be used for the drawing operations to keep the drawing operations invisible to the user.
+    makeCurrent();
 
-	GLint viewport[4];
-	glGetIntegerv( GL_VIEWPORT, viewport );
+    glPushAttrib( GL_ALL_ATTRIB_BITS );
+    glMatrixMode( GL_PROJECTION );
+    glPushMatrix();
+    glMatrixMode( GL_MODELVIEW );
+    glPushMatrix();
 
-	// Create new FBO with multisampling disabled
-	QOpenGLFramebufferObjectFormat fboFmt;
-	fboFmt.setTextureTarget( GL_TEXTURE_2D );
-	fboFmt.setInternalTextureFormat( GL_RGB32F_ARB );
-	fboFmt.setAttachment( QOpenGLFramebufferObject::Attachment::CombinedDepthStencil );
+    glViewport( 0, 0, width(), height() );
+    glProjection();
 
-	QOpenGLFramebufferObject fbo( viewport[2], viewport[3], fboFmt );
-	fbo.bind();
+    QList<DrawFunc> drawFuncs;
+    if ( scene->options & Scene::ShowCollision )
+        drawFuncs << &Scene::drawHavok;
 
-	glEnable( GL_LIGHTING );
-	glDisable( GL_MULTISAMPLE );
-	glDisable( GL_MULTISAMPLE_ARB );
-	glDisable( GL_LINE_SMOOTH );
-	glDisable( GL_POINT_SMOOTH );
-	glDisable( GL_POLYGON_SMOOTH );
-	glDisable( GL_TEXTURE_1D );
-	glDisable( GL_TEXTURE_2D );
-	glDisable( GL_TEXTURE_3D );
-	glDisable( GL_BLEND );
-	glDisable( GL_DITHER );
-	glDisable( GL_FOG );
-	glDisable( GL_LIGHTING );
-	glShadeModel( GL_FLAT );
-	glEnable( GL_DEPTH_TEST );
-	glDepthFunc( GL_LEQUAL );
-	glClearColor( 0, 0, 0, 1 );
-	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    if ( scene->options & Scene::ShowNodes )
+        drawFuncs << &Scene::drawNodes;
 
-	// Rasterize the scene
-	Node::SELECTING = 1;
-	for ( DrawFunc df : drawFunc ) {
-		(scene->*df)();
-	}
-	Node::SELECTING = 0;
+    if ( scene->options & Scene::ShowMarkers )
+        drawFuncs << &Scene::drawFurn;
 
-	fbo.release();
+    drawFuncs << &Scene::drawShapes;
+    // Color Key O(1) selection
+    //	Open GL 3.0 says glRenderMode is deprecated
+    //	ATI OpenGL API implementation of GL_SELECT corrupts NifSkope memory
+    //
+    // Create FBO for sharp edges and no shading.
+    // Texturing, blending, dithering, lighting and smooth shading should be disabled.
+    // The FBO can be used for the drawing operations to keep the drawing operations invisible to the user.
 
-	QImage img( fbo.toImage() );
-	QColor pixel = img.pixel( pos );
+    GLint viewport[4];
+    glGetIntegerv( GL_VIEWPORT, viewport );
 
-#ifndef QT_NO_DEBUG
-	img.save( "fbo.png" );
-#endif
+    // Create new FBO with multisampling disabled
+    QOpenGLFramebufferObjectFormat fboFmt;
+    fboFmt.setTextureTarget( GL_TEXTURE_2D );
+    fboFmt.setInternalTextureFormat( GL_RGB32F_ARB );
+    fboFmt.setAttachment( QOpenGLFramebufferObject::Attachment::CombinedDepthStencil );
 
-	// Encode RGB to Int
-	int a = 0;
-	a |= pixel.red()   << 0;
-	a |= pixel.green() << 8;
-	a |= pixel.blue()  << 16;
+    QOpenGLFramebufferObject fbo( viewport[2], viewport[3], fboFmt );
+    fbo.bind();
 
-	// Decode:
-	// R = (id & 0x000000FF) >> 0
-	// G = (id & 0x0000FF00) >> 8
-	// B = (id & 0x00FF0000) >> 16
+    glEnable( GL_LIGHTING );
+    glDisable( GL_MULTISAMPLE );
+    glDisable( GL_MULTISAMPLE_ARB );
+    glDisable( GL_LINE_SMOOTH );
+    glDisable( GL_POINT_SMOOTH );
+    glDisable( GL_POLYGON_SMOOTH );
+    glDisable( GL_TEXTURE_1D );
+    glDisable( GL_TEXTURE_2D );
+    glDisable( GL_TEXTURE_3D );
+    glDisable( GL_BLEND );
+    glDisable( GL_DITHER );
+    glDisable( GL_FOG );
+    glDisable( GL_LIGHTING );
+    glShadeModel( GL_FLAT );
+    glEnable( GL_DEPTH_TEST );
+    glDepthFunc( GL_LEQUAL );
+    glClearColor( 0, 0, 0, 1 );
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-	int choose = COLORKEY2ID( a );
+    // Rasterize the scene
+    Node::SELECTING = 1;
+    for ( DrawFunc df : drawFuncs ) {
+        (scene->*df)();
+    }
+    Node::SELECTING = 0;
 
-	// Pick BSFurnitureMarker
-	if ( choose > 0 ) {
-		auto furnBlock = model->getBlock( model->index( 3, 0, model->getBlock( choose & 0x0ffff ) ), "BSFurnitureMarker" );
+    fbo.release();
 
-		if ( furnBlock.isValid() ) {
-			furn = choose >> 16;
-			choose &= 0x0ffff;
-		}
-	}
+    glPopAttrib();
+    glMatrixMode( GL_MODELVIEW );
+    glPopMatrix();
+    glMatrixMode( GL_PROJECTION );
+    glPopMatrix();
 
-	//qDebug() << "Key:" << a << " R" << pixel.red() << " G" << pixel.green() << " B" << pixel.blue();
-	return choose;
+    return fbo.toImage();
 }
 
-QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
+QModelIndex GLView::sampleIndexImagePoint(const QImage& img, const QPoint& pos, NifModel* model)
 {
+    if (img.rect().contains(pos))
+    {
+        QColor pixel = img.pixel( pos );
+        return colorIndexToModelIndex(pixel, model);
+    }
+    return QModelIndex();
+}
+
+QVector<QModelIndex> GLView::sampleIndexImageCircle(const QImage& img, const QPoint& pos, float radius, NifModel* model)
+{
+    QVector<QModelIndex> indices;
+    if (img.rect().contains(pos))
+    {
+        QPointF startf = (QPointF)pos - QPointF(radius, radius);
+        QPointF endf = (QPointF)pos + QPointF(radius, radius);
+
+        QPoint start(std::round(startf.x()), std::round(startf.y()));
+        QPoint end(std::round(endf.x()), std::round(endf.y()));
+
+        QVector2D origin(pos);
+        QVector<QColor> colors;
+        for (int y=start.y(); y <= end.y(); y++)
+        {
+            for (int x=start.x(); x <= end.x(); x++)
+            {
+                if (img.rect().contains(x,y))
+                {
+                    float dist = (QVector2D(x,y) - origin).length();
+                    QColor pixel = img.pixel(x,y);
+                    if (dist <= radius && !colors.contains(pixel))
+                    {
+                        colors.push_back(pixel);
+                    }
+                }
+            }
+        }
+
+        for (const QColor& indColor : colors)
+        {
+            QModelIndex modelInd = colorIndexToModelIndex(indColor, model);
+            if (modelInd.isValid())
+                indices.push_back(modelInd);
+        }
+    }
+    return indices;
+}
+
+QModelIndex GLView::colorIndexToModelIndex(const QColor& color, NifModel* model)
+{
+    // Encode RGB to Int
+    int a = 0;
+    a |= color.red()   << 0;
+    a |= color.green() << 8;
+    a |= color.blue()  << 16;
+
+    // Decode:
+    // R = (id & 0x000000FF) >> 0
+    // G = (id & 0x0000FF00) >> 8
+    // B = (id & 0x00FF0000) >> 16
+
+    int choose = COLORKEY2ID( a );
+    int furn = -1;
+
+    // Pick BSFurnitureMarker
+    if ( choose > 0 ) {
+        auto furnBlock = model->getBlock( model->index( 3, 0, model->getBlock( choose & 0x0ffff ) ), "BSFurnitureMarker" );
+
+        if ( furnBlock.isValid() ) {
+            furn = choose >> 16;
+            choose &= 0x0ffff;
+        }
+    }
+
+    QModelIndex chooseIndex;
+
+    if (scene->actionMode & Scene::Vertex ) {
+        // Vertex
+        int block = choose >> 16;
+        int vert = choose - (block << 16);
+
+        auto shape = scene->shapes.value( block );
+        if ( shape )
+            chooseIndex = shape->vertexAt( vert );
+    } else if ( choose != -1 ) {
+        // Block Index
+        chooseIndex = model->getBlock( choose );
+
+        if ( furn != -1 ) {
+            // Furniture Row @ Block Index
+            chooseIndex = model->index( furn, 0, model->index( 3, 0, chooseIndex ) );
+        }
+    }
+
+    return chooseIndex;
+}
+
+QModelIndex GLView::indexAt(const QPoint & pos, int cycle)
+{
+    Q_UNUSED(cycle);
+
 	if ( !(model && isVisible() && height()) )
 		return QModelIndex();
 
-	makeCurrent();
+    QImage img = renderIndexImage();
+#ifndef QT_NO_DEBUG
+    img.save( "fbo.png" );
+#endif
 
-	glPushAttrib( GL_ALL_ATTRIB_BITS );
-	glMatrixMode( GL_PROJECTION );
-	glPushMatrix();
-	glMatrixMode( GL_MODELVIEW );
-	glPushMatrix();
-
-	glViewport( 0, 0, width(), height() );
-	glProjection( pos.x(), pos.y() );
-
-	QList<DrawFunc> df;
-
-	if ( scene->options & Scene::ShowCollision )
-		df << &Scene::drawHavok;
-
-	if ( scene->options & Scene::ShowNodes )
-		df << &Scene::drawNodes;
-
-	if ( scene->options & Scene::ShowMarkers )
-		df << &Scene::drawFurn;
-
-	df << &Scene::drawShapes;
-
-	int choose = -1, furn = -1;
-	choose = ::indexAt( model, scene, df, cycle, pos, /*out*/ furn );
-
-	glPopAttrib();
-	glMatrixMode( GL_MODELVIEW );
-	glPopMatrix();
-	glMatrixMode( GL_PROJECTION );
-	glPopMatrix();
-
-	QModelIndex chooseIndex;
-
-	if ( scene->selMode & Scene::SelVertex ) {
-		// Vertex
-		int block = choose >> 16;
-		int vert = choose - (block << 16);
-
-		auto shape = scene->shapes.value( block );
-		if ( shape )
-			chooseIndex = shape->vertexAt( vert );
-	} else if ( choose != -1 ) {
-		// Block Index
-		chooseIndex = model->getBlock( choose );
-
-		if ( furn != -1 ) {
-			// Furniture Row @ Block Index
-			chooseIndex = model->index( furn, 0, model->index( 3, 0, chooseIndex ) );
-		}			
-	}
-
-	return chooseIndex;
+    return sampleIndexImagePoint(img, pos, model);
 }
 
 void GLView::center()
@@ -941,6 +989,54 @@ void GLView::zoom( float z )
 		Zoom = ZOOM_MAX;
 
 	update();
+}
+
+void GLView::startVertexPaint(const QPoint& point)
+{
+    mousePaint = true;
+    mousePaintVerts.clear();
+    mousePaintHitDetectImg = renderIndexImage();
+    vertexPaint(point);
+}
+
+void GLView::vertexPaint(const QPoint& point)
+{
+    if (mousePaint)
+    {
+        // Let's do an absolutely shit job and act like it's decent
+        auto inds = sampleIndexImageCircle(mousePaintHitDetectImg, point, cfg.brushSize, model);
+
+        for (const auto& ind : inds)
+        {
+            if ( ind.isValid() && !mousePaintVerts.contains(ind))
+            {
+                mousePaintVerts.push_back(ind);
+                Color4 base = model->get<ByteColor4>(ind.parent(), "Vertex Colors");
+                Color4 blend;
+
+                if (cfg.brushMode == PaintBlendMode::BlendNormal)
+                {
+                   blend = (cfg.brushColor * cfg.brushOpacity) + (base * (Color4() - cfg.brushOpacity));
+                }
+                else if (cfg.brushMode == PaintBlendMode::BlendMultiply)
+                {
+                    blend = ((cfg.brushColor * cfg.brushOpacity) + (Color4() - cfg.brushOpacity)) * base;
+                }
+                else if (cfg.brushMode == PaintBlendMode::BlendAdd)
+                {
+                    blend = (cfg.brushColor * cfg.brushOpacity) + base;
+                }
+
+                model->set(ind.parent(), "Vertex Colors", ByteColor4::fromColor4(blend));
+            }
+        }
+    }
+}
+
+void GLView::endVertexPaint()
+{
+    mousePaint = false;
+    mousePaintVerts.clear();
 }
 
 void GLView::setCenter()
@@ -1710,6 +1806,11 @@ void GLView::mouseDoubleClickEvent( QMouseEvent * )
 
 void GLView::mouseMoveEvent( QMouseEvent * event )
 {
+    if ( (scene->actionMode & (Scene::Paint | Scene::Vertex)) == (Scene::Paint | Scene::Vertex)) {
+        vertexPaint(event->pos());
+        return;
+    }
+
 	int dx = event->x() - lastPos.x();
 	int dy = event->y() - lastPos.y();
 
@@ -1732,6 +1833,11 @@ void GLView::mousePressEvent( QMouseEvent * event )
 		return;
 	}
 
+    if ( (scene->actionMode & (Scene::Paint | Scene::Vertex)) == (Scene::Paint | Scene::Vertex)) {
+        startVertexPaint(event->pos());
+        return;
+    }
+
 	lastPos = event->pos();
 
 	if ( (pressPos - event->pos()).manhattanLength() <= 3 )
@@ -1744,6 +1850,11 @@ void GLView::mousePressEvent( QMouseEvent * event )
 
 void GLView::mouseReleaseEvent( QMouseEvent * event )
 {
+    if ( (scene->actionMode & (Scene::Paint | Scene::Vertex)) == (Scene::Paint | Scene::Vertex)) {
+        endVertexPaint();
+        return;
+    }
+
 	if ( !(model && (pressPos - event->pos()).manhattanLength() <= 3) )
 		return;
 

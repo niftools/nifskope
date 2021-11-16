@@ -225,8 +225,9 @@ void NifSkope::initActions()
 	ui->aLighting->setData( Scene::DoLighting );
 	ui->aDisableShading->setData( Scene::DisableShaders );
 
-	ui->aSelectObject->setData( Scene::SelObject );
-	ui->aSelectVertex->setData( Scene::SelVertex );
+    ui->aSelectObject->setData( (int)( Scene::Select | Scene::Object ) );
+    ui->aSelectVertex->setData( (int)( Scene::Select | Scene::Vertex ) );
+    ui->aPaintVertex->setData( (int)( Scene::Paint | Scene::Vertex ) );
 
 	auto agroup = [this]( QVector<QAction *> actions, bool exclusive ) {
 		QActionGroup * ag = new QActionGroup( this );
@@ -239,8 +240,8 @@ void NifSkope::initActions()
 		return ag;
 	};
 
-	selectActions = agroup( { ui->aSelectObject, ui->aSelectVertex }, true );
-	connect( selectActions, &QActionGroup::triggered, ogl->getScene(), &Scene::updateSelectMode );
+    selectActions = agroup( { ui->aSelectObject, ui->aSelectVertex, ui->aPaintVertex }, true );
+    connect( selectActions, &QActionGroup::triggered, ogl->getScene(), &Scene::updateSelectMode );
 
 	showActions = agroup( { ui->aShowAxes, ui->aShowGrid, ui->aShowNodes, ui->aShowCollision,
 						  ui->aShowConstraints, ui->aShowMarkers, ui->aShowHidden, ui->aDoSkinning
@@ -372,6 +373,7 @@ void NifSkope::initDockWidgets()
 	dTree = ui->TreeDock;
 	dHeader = ui->HeaderDock;
 	dInsp = ui->InspectDock;
+    dPaint = ui->PaintDock;
 	dKfm = ui->KfmDock;
 	dBrowser = ui->BrowserDock;
 
@@ -385,17 +387,40 @@ void NifSkope::initDockWidgets()
 	// Hide certain docks by default
 	dRefr->toggleViewAction()->setChecked( false );
 	dInsp->toggleViewAction()->setChecked( false );
+    dPaint->toggleViewAction()->setChecked( false );
 	dKfm->toggleViewAction()->setChecked( false );
 
 	dRefr->setVisible( false );
 	dInsp->setVisible( false );
+    dPaint->setVisible( false );
 	dKfm->setVisible( false );
 
 	// Set Inspect widget
 	dInsp->setWidget( inspect );
 
-	connect( dList->toggleViewAction(), &QAction::triggered, tree, &NifTreeView::clearRootIndex );
+    // Push paint values to controls and hook up event
+    ui->paintBrushSize->setValue(ogl->cfg.brushSize);
+    ui->paintColorR->setValue(ogl->cfg.brushColor.red());
+    ui->paintColorG->setValue(ogl->cfg.brushColor.green());
+    ui->paintColorB->setValue(ogl->cfg.brushColor.blue());
+    ui->paintColorA->setValue(ogl->cfg.brushColor.alpha());
+    ui->paintOpacity->setValue(std::round(ogl->cfg.brushOpacity.red() * 255.0f));
+    ui->paintOpacityMode->addItems({"Color", "Alpha", "Both"});
+    ui->paintBlendMode->setCurrentIndex(0);
+    ui->paintBlendMode->addItems({"Normal","Add","Multiply"});
+    ui->paintBlendMode->setCurrentIndex((int)ogl->cfg.brushMode);
 
+    // Hookup change events to update the paint config
+    connect(ui->paintBrushSize, SIGNAL(valueChanged(double)), this, SLOT(updateVertexPaintSettings()));
+    connect(ui->paintColorR, SIGNAL(valueChanged(double)), this, SLOT(updateVertexPaintSettings()));
+    connect(ui->paintColorG, SIGNAL(valueChanged(double)), this, SLOT(updateVertexPaintSettings()));
+    connect(ui->paintColorB, SIGNAL(valueChanged(double)), this, SLOT(updateVertexPaintSettings()));
+    connect(ui->paintColorA, SIGNAL(valueChanged(double)), this, SLOT(updateVertexPaintSettings()));
+    connect(ui->paintOpacity, SIGNAL(valueChanged(int)), this, SLOT(updateVertexPaintSettings()));
+    connect(ui->paintOpacityMode, SIGNAL(currentIndexChanged(int)), this, SLOT(updateVertexPaintSettings()));
+    connect(ui->paintBlendMode, SIGNAL(currentIndexChanged(int)), this, SLOT(updateVertexPaintSettings()));
+
+	connect( dList->toggleViewAction(), &QAction::triggered, tree, &NifTreeView::clearRootIndex );
 }
 
 void NifSkope::initMenu()
@@ -510,7 +535,6 @@ void NifSkope::initMenu()
 		grpTheme->addAction( a );
 	}
 }
-
 
 void NifSkope::initToolBars()
 {
@@ -645,7 +669,6 @@ void NifSkope::initConnections()
 	connect( this, &NifSkope::completeSave, this, &NifSkope::onSaveComplete );
 }
 
-
 QMenu * NifSkope::lightingWidget()
 {
 	QMenu * mLight = new QMenu( this );
@@ -664,7 +687,6 @@ QMenu * NifSkope::lightingWidget()
 
 	return mLight;
 }
-
 
 QWidget * NifSkope::filePathWidget( QWidget * parent )
 {
@@ -726,7 +748,6 @@ QWidget * NifSkope::filePathWidget( QWidget * parent )
 
 	return filepathWidget;
 }
-
 
 void NifSkope::archiveDlg()
 {
@@ -836,7 +857,6 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 	QTimer::singleShot( timeout, progress, SLOT( hide() ) );
 }
 
-
 void NifSkope::saveAsDlg()
 {
 	QString filename = QFileDialog::getSaveFileName( this, tr( "Save File" ), nif->getFileInfo().absoluteFilePath(),
@@ -934,7 +954,6 @@ void NifSkope::saveUi() const
 	//settings.setValue( "GLView/Switch Animation", ui->aAnimSwitch->isChecked() );
 	settings.setValue( "GLView/Perspective", ui->aViewPerspective->isChecked() );
 }
-
 
 void NifSkope::restoreUi()
 {
@@ -1219,7 +1238,6 @@ void NifSkope::resizeDone()
 	ogl->resizeGL( centralWidget()->width(), centralWidget()->height() );
 }
 
-
 bool NifSkope::eventFilter( QObject * o, QEvent * e )
 {
 	// TODO: This doesn't seem to be doing anything extra
@@ -1306,6 +1324,31 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 * **********************
 */
 
+void NifSkope::updateVertexPaintSettings()
+{
+    ogl->cfg.brushColor = Color4(ui->paintColorR->value(),
+                                 ui->paintColorG->value(),
+                                 ui->paintColorB->value(),
+                                 ui->paintColorA->value());
+
+    ogl->cfg.brushSize = ui->paintBrushSize->value();
+
+    float opacity = (float)ui->paintOpacity->value() / 255.0f;
+    if (ui->paintOpacityMode->currentIndex() == 0)  // Color only
+    {
+        ogl->cfg.brushOpacity = Color4(opacity,opacity,opacity,0.0f);
+    }
+    else if (ui->paintOpacityMode->currentIndex() == 1)  // Alpha only
+    {
+        ogl->cfg.brushOpacity = Color4(0,0,0,opacity);
+    }
+    else if (ui->paintOpacityMode->currentIndex() == 3)  // Both
+    {
+        ogl->cfg.brushOpacity = Color4(opacity,opacity,opacity,opacity);
+    }
+
+    ogl->cfg.brushMode = (GLView::PaintBlendMode)ui->paintBlendMode->currentIndex();
+}
 
 void NifSkope::contextMenu( const QPoint & pos )
 {
