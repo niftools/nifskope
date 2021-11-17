@@ -1087,9 +1087,34 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
          <number>0</number>
         </property>
         <item>
-         <widget class="QDoubleSpinBox" name="paintBrushSize">
+         <widget class="QSlider" name="paintBrushSizeSlider">
           <property name="maximum">
-           <double>4096.000000000000000</double>
+           <number>128</number>
+          </property>
+          <property name="singleStep">
+           <number>1</number>
+          </property>
+          <property name="pageStep">
+           <number>10</number>
+          </property>
+          <property name="value">
+           <number>24</number>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="paintBrushSize">
+          <property name="minimum">
+           <number>1</number>
+          </property>
+          <property name="maximum">
+           <number>128</number>
+          </property>
+          <property name="value">
+           <number>24</number>
           </property>
          </widget>
         </item>
@@ -1129,6 +1154,9 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
         </property>
         <item>
          <widget class="QDoubleSpinBox" name="paintColorR">
+          <property name="decimals">
+           <number>3</number>
+          </property>
           <property name="maximum">
            <double>1.000000000000000</double>
           </property>
@@ -1142,6 +1170,9 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
         </item>
         <item>
          <widget class="QDoubleSpinBox" name="paintColorG">
+          <property name="decimals">
+           <number>3</number>
+          </property>
           <property name="maximum">
            <double>1.000000000000000</double>
           </property>
@@ -1152,6 +1183,9 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
         </item>
         <item>
          <widget class="QDoubleSpinBox" name="paintColorB">
+          <property name="decimals">
+           <number>3</number>
+          </property>
           <property name="maximum">
            <double>1.000000000000000</double>
           </property>
@@ -1165,6 +1199,9 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
         </item>
         <item>
          <widget class="QDoubleSpinBox" name="paintColorA">
+          <property name="decimals">
+           <number>3</number>
+          </property>
           <property name="maximum">
            <double>1.000000000000000</double>
           </property>
@@ -3017,6 +3054,38 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <hint type="destinationlabel">
      <x>1080</x>
      <y>483</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>paintBrushSizeSlider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>paintBrushSize</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1124</x>
+     <y>410</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1246</x>
+     <y>410</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>paintBrushSize</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>paintBrushSizeSlider</receiver>
+   <slot>setFocus()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1246</x>
+     <y>410</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1124</x>
+     <y>410</y>
     </hint>
    </hints>
   </connection>

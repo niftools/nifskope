@@ -101,7 +101,7 @@ GLGraphicsView::GLGraphicsView( QWidget * parent ) : QGraphicsView()
 	setContextMenuPolicy( Qt::CustomContextMenu );
 	setFocusPolicy( Qt::ClickFocus );
 	setAcceptDrops( true );
-	
+
 	installEventFilter( parent );
 }
 
@@ -156,6 +156,7 @@ GLView::GLView( const QGLFormat & format, QWidget * p, const QGLWidget * shareWi
 	//setAttribute( Qt::WA_NoSystemBackground );
 	setAutoFillBackground( false );
 	setAcceptDrops( true );
+    setMouseTracking( true );
 	setContextMenuPolicy( Qt::CustomContextMenu );
 
 	// Manually handle the buffer swap
@@ -622,7 +623,7 @@ void GLView::paintGL()
 	if ( scene->options & Scene::ShowAxes ) {
 		// Resize viewport to small corner of screen
 		int axesSize = std::min( width() / 10, 125 );
-		glViewport( 0, 0, axesSize, axesSize );
+        glViewport( 0, 0, axesSize*devicePixelRatioF(), axesSize*devicePixelRatioF() );
 
 		// Reset matrices
 		glMatrixMode( GL_PROJECTION );
@@ -662,10 +663,33 @@ void GLView::paintGL()
 		glPopMatrix();
 
 		// Restore viewport size
-		glViewport( 0, 0, width(), height() );
+        glViewport( 0, 0, width()*devicePixelRatioF(), height()*devicePixelRatioF());
+
 		// Restore matrices
 		glProjection();
 	}
+
+    // Draw mouse tool
+    if (scene->actionMode & Scene::Paint)
+    {
+        // Reset matrices
+        glViewport( 0, 0, width()*devicePixelRatioF(), height()*devicePixelRatioF());
+        glMatrixMode( GL_PROJECTION );
+        glLoadIdentity();
+        glOrtho(0, width(), height(), 0, -1, 1);
+        glMatrixMode( GL_MODELVIEW );
+        glLoadIdentity();
+        glDisable( GL_LIGHTING );
+        glDepthFunc( GL_ALWAYS );
+        glLineWidth( 2.0f );
+        glColor3f( 1.0, 0.0, 0.0 );
+        //drawCircle(Vector3(0, 0, 0), Vector3(0,0,1), 0.2);
+        drawCircle(Vector3(lastPos.x(), lastPos.y(), 0), Vector3(0,0,1), cfg.brushSize + 2.0f);
+
+        // Restore viewport and projection
+        glViewport( 0, 0, width()*devicePixelRatioF(), height()*devicePixelRatioF());
+        glProjection();
+    }
 
 	// Restore GL state
 	glPopAttrib();
@@ -997,10 +1021,14 @@ void GLView::startVertexPaint(const QPoint& point)
     mousePaintVerts.clear();
     mousePaintHitDetectImg = renderIndexImage();
     vertexPaint(point);
+    QCursor cursor(Qt::BlankCursor);
+    QApplication::setOverrideCursor(cursor);
+    QApplication::changeOverrideCursor(cursor);
 }
 
 void GLView::vertexPaint(const QPoint& point)
 {
+    bool updated = false;
     if (mousePaint)
     {
         // Let's do an absolutely shit job and act like it's decent
@@ -1028,8 +1056,14 @@ void GLView::vertexPaint(const QPoint& point)
                 }
 
                 model->set(ind.parent(), "Vertex Colors", ByteColor4::fromColor4(blend));
+                updated = true;
             }
         }
+    }
+
+    if (!updated)
+    {
+        update();
     }
 }
 
@@ -1037,6 +1071,7 @@ void GLView::endVertexPaint()
 {
     mousePaint = false;
     mousePaintVerts.clear();
+    QApplication::restoreOverrideCursor();
 }
 
 void GLView::setCenter()
@@ -1806,15 +1841,12 @@ void GLView::mouseDoubleClickEvent( QMouseEvent * )
 
 void GLView::mouseMoveEvent( QMouseEvent * event )
 {
+    int dx = event->x() - lastPos.x();
+    int dy = event->y() - lastPos.y();
+
     if ( (scene->actionMode & (Scene::Paint | Scene::Vertex)) == (Scene::Paint | Scene::Vertex)) {
         vertexPaint(event->pos());
-        return;
-    }
-
-	int dx = event->x() - lastPos.x();
-	int dy = event->y() - lastPos.y();
-
-	if ( event->buttons() & Qt::LeftButton && !kbd[Qt::Key_Space] ) {
+    } else if ( event->buttons() & Qt::LeftButton && !kbd[Qt::Key_Space] ) {
 		mouseRot += Vector3( dy * .5, 0, dx * .5 );
 	} else if ( (event->buttons() & Qt::MidButton) || (event->buttons() & Qt::LeftButton && kbd[Qt::Key_Space]) ) {
 		float d = axis / (qMax( width(), height() ) + 1);
@@ -1835,16 +1867,14 @@ void GLView::mousePressEvent( QMouseEvent * event )
 
     if ( (scene->actionMode & (Scene::Paint | Scene::Vertex)) == (Scene::Paint | Scene::Vertex)) {
         startVertexPaint(event->pos());
-        return;
+    } else {
+        if ( (pressPos - event->pos()).manhattanLength() <= 3 )
+            cycleSelect++;
+        else
+            cycleSelect = 0;
     }
 
-	lastPos = event->pos();
-
-	if ( (pressPos - event->pos()).manhattanLength() <= 3 )
-		cycleSelect++;
-	else
-		cycleSelect = 0;
-
+    lastPos = event->pos();
 	pressPos = event->pos();
 }
 

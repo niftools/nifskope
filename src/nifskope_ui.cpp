@@ -128,7 +128,7 @@ NifSkope * NifSkope::createWindow( const QString & fname )
 
 	if ( !fname.isEmpty() ) {
 		skope->loadFile( fname );
-	}
+    }
 
 	return skope;
 }
@@ -405,13 +405,13 @@ void NifSkope::initDockWidgets()
     ui->paintColorB->setValue(ogl->cfg.brushColor.blue());
     ui->paintColorA->setValue(ogl->cfg.brushColor.alpha());
     ui->paintOpacity->setValue(std::round(ogl->cfg.brushOpacity.red() * 255.0f));
-    ui->paintOpacityMode->addItems({"Color", "Alpha", "Both"});
+    ui->paintOpacityMode->addItems({"Color", "Alpha", "Color + Alpha"});
     ui->paintBlendMode->setCurrentIndex(0);
     ui->paintBlendMode->addItems({"Normal","Add","Multiply"});
     ui->paintBlendMode->setCurrentIndex((int)ogl->cfg.brushMode);
 
     // Hookup change events to update the paint config
-    connect(ui->paintBrushSize, SIGNAL(valueChanged(double)), this, SLOT(updateVertexPaintSettings()));
+    connect(ui->paintBrushSize, SIGNAL(valueChanged(int)), this, SLOT(updateVertexPaintSettings()));
     connect(ui->paintColorR, SIGNAL(valueChanged(double)), this, SLOT(updateVertexPaintSettings()));
     connect(ui->paintColorG, SIGNAL(valueChanged(double)), this, SLOT(updateVertexPaintSettings()));
     connect(ui->paintColorB, SIGNAL(valueChanged(double)), this, SLOT(updateVertexPaintSettings()));
@@ -849,6 +849,9 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 	setWindowModified( false );
 	nif->undoStack->clear();
 	indexStack->clear();
+
+    // Update widget sizes to fixup ogl view
+    resizeDone();
 
 	// Center the model on load
 	ogl->center();
@@ -1331,7 +1334,8 @@ void NifSkope::updateVertexPaintSettings()
                                  ui->paintColorB->value(),
                                  ui->paintColorA->value());
 
-    ogl->cfg.brushSize = ui->paintBrushSize->value();
+    ogl->cfg.brushSize = (float)ui->paintBrushSize->value();
+    ogl->update();
 
     float opacity = (float)ui->paintOpacity->value() / 255.0f;
     if (ui->paintOpacityMode->currentIndex() == 0)  // Color only
@@ -1342,12 +1346,13 @@ void NifSkope::updateVertexPaintSettings()
     {
         ogl->cfg.brushOpacity = Color4(0,0,0,opacity);
     }
-    else if (ui->paintOpacityMode->currentIndex() == 3)  // Both
+    else if (ui->paintOpacityMode->currentIndex() == 2)  // Color+Alpha
     {
         ogl->cfg.brushOpacity = Color4(opacity,opacity,opacity,opacity);
     }
 
     ogl->cfg.brushMode = (GLView::PaintBlendMode)ui->paintBlendMode->currentIndex();
+    ogl->update();
 }
 
 void NifSkope::contextMenu( const QPoint & pos )
