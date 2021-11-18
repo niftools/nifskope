@@ -18,17 +18,25 @@ public:
 
 public slots:
     void setValue( const GLView::PaintSettings& value );
+    void showColorPicker();
 
 signals:
     void valueChanged( const GLView::PaintSettings& value );
 
 protected slots:
+    void setColorFromHex();
+    void setColorFromWheel();
+    void setPreviewFromValue();
+    void setHexFromColor();
+    void setWheelFromColor();
     void updateValue();
 
 private:
     Ui::PaintSettingsWidget *ui;
     GLView::PaintSettings value_;
     bool supressUpdate_;
+    bool supressHexUpdate_;
+    bool supressWheelUpdate_;
 };
 
 #endif // VERTEXPAINTWIDGET_H
