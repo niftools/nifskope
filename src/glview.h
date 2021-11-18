@@ -127,6 +127,14 @@ public:
         BlendMultiply = 2
     };
 
+    struct PaintSettings
+    {
+        float brushSize = 24.0f;
+        Color4 brushColor = {1.0f, 0.0f, 1.0f, 1.0f};
+        Color4 brushOpacity = {1.0f, 1.0f, 1.0f, 0.0f};
+        PaintBlendMode brushMode = PaintBlendMode::BlendNormal;
+    };
+
 	void setNif( NifModel * );
 
 	Scene * getScene();
@@ -187,6 +195,7 @@ public slots:
 	void updateAnimationState( bool checked );
 	void setVisMode( Scene::VisMode, bool checked = true );
 	void updateSettings();
+    void setVertexPaintSettings(GLView::PaintSettings settings);
 
 signals:
 	void clicked( const QModelIndex & );
@@ -284,10 +293,7 @@ private:
 
 		UpAxis upAxis = ZAxis;
 
-        float brushSize = 24.0f;
-        Color4 brushColor = {1.0f, 0.0f, 1.0f, 1.0f};
-        Color4 brushOpacity = {1.0f, 1.0f, 1.0f, 0.0f};
-        PaintBlendMode brushMode = PaintBlendMode::BlendNormal;
+        PaintSettings vertexPaintSettings;
 	} cfg;
 
 private slots:

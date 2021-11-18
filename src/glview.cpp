@@ -684,7 +684,7 @@ void GLView::paintGL()
         glLineWidth( 2.0f );
         glColor3f( 1.0, 0.0, 0.0 );
         //drawCircle(Vector3(0, 0, 0), Vector3(0,0,1), 0.2);
-        drawCircle(Vector3(lastPos.x(), lastPos.y(), 0), Vector3(0,0,1), cfg.brushSize + 2.0f);
+        drawCircle(Vector3(lastPos.x(), lastPos.y(), 0), Vector3(0,0,1), cfg.vertexPaintSettings.brushSize + 2.0f);
 
         // Restore viewport and projection
         glViewport( 0, 0, width()*devicePixelRatioF(), height()*devicePixelRatioF());
@@ -1015,6 +1015,12 @@ void GLView::zoom( float z )
 	update();
 }
 
+void GLView::setVertexPaintSettings(GLView::PaintSettings settings)
+{
+    cfg.vertexPaintSettings = settings;
+    update();
+}
+
 void GLView::startVertexPaint(const QPoint& point)
 {
     mousePaint = true;
@@ -1032,7 +1038,7 @@ void GLView::vertexPaint(const QPoint& point)
     if (mousePaint)
     {
         // Let's do an absolutely shit job and act like it's decent
-        auto inds = sampleIndexImageCircle(mousePaintHitDetectImg, point, cfg.brushSize, model);
+        auto inds = sampleIndexImageCircle(mousePaintHitDetectImg, point, cfg.vertexPaintSettings.brushSize, model);
 
         for (const auto& ind : inds)
         {
@@ -1042,17 +1048,17 @@ void GLView::vertexPaint(const QPoint& point)
                 Color4 base = model->get<ByteColor4>(ind.parent(), "Vertex Colors");
                 Color4 blend;
 
-                if (cfg.brushMode == PaintBlendMode::BlendNormal)
+                if (cfg.vertexPaintSettings.brushMode == PaintBlendMode::BlendNormal)
                 {
-                   blend = (cfg.brushColor * cfg.brushOpacity) + (base * (Color4() - cfg.brushOpacity));
+                   blend = (cfg.vertexPaintSettings.brushColor * cfg.vertexPaintSettings.brushOpacity) + (base * (Color4() - cfg.vertexPaintSettings.brushOpacity));
                 }
-                else if (cfg.brushMode == PaintBlendMode::BlendMultiply)
+                else if (cfg.vertexPaintSettings.brushMode == PaintBlendMode::BlendMultiply)
                 {
-                    blend = ((cfg.brushColor * cfg.brushOpacity) + (Color4() - cfg.brushOpacity)) * base;
+                    blend = ((cfg.vertexPaintSettings.brushColor * cfg.vertexPaintSettings.brushOpacity) + (Color4() - cfg.vertexPaintSettings.brushOpacity)) * base;
                 }
-                else if (cfg.brushMode == PaintBlendMode::BlendAdd)
+                else if (cfg.vertexPaintSettings.brushMode == PaintBlendMode::BlendAdd)
                 {
-                    blend = (cfg.brushColor * cfg.brushOpacity) + base;
+                    blend = (cfg.vertexPaintSettings.brushColor * cfg.vertexPaintSettings.brushOpacity) + base;
                 }
 
                 model->set(ind.parent(), "Vertex Colors", ByteColor4::fromColor4(blend));

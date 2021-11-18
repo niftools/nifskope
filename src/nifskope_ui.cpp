@@ -48,6 +48,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ui/widgets/nifview.h"
 #include "ui/widgets/refrbrowser.h"
 #include "ui/widgets/inspect.h"
+#include "ui/widgets/vertexpaintwidget.h"
 #include "ui/widgets/xmlcheck.h"
 #include "ui/about_dialog.h"
 #include "ui/settingsdialog.h"
@@ -398,27 +399,11 @@ void NifSkope::initDockWidgets()
 	// Set Inspect widget
 	dInsp->setWidget( inspect );
 
-    // Push paint values to controls and hook up event
-    ui->paintBrushSize->setValue(ogl->cfg.brushSize);
-    ui->paintColorR->setValue(ogl->cfg.brushColor.red());
-    ui->paintColorG->setValue(ogl->cfg.brushColor.green());
-    ui->paintColorB->setValue(ogl->cfg.brushColor.blue());
-    ui->paintColorA->setValue(ogl->cfg.brushColor.alpha());
-    ui->paintOpacity->setValue(std::round(ogl->cfg.brushOpacity.red() * 255.0f));
-    ui->paintOpacityMode->addItems({"Color", "Alpha", "Color + Alpha"});
-    ui->paintBlendMode->setCurrentIndex(0);
-    ui->paintBlendMode->addItems({"Normal","Add","Multiply"});
-    ui->paintBlendMode->setCurrentIndex((int)ogl->cfg.brushMode);
+    // Push the initial brush settings to the vertex paint widget
+    ui->vertexPaintSettings->setValue(ogl->cfg.vertexPaintSettings);
 
-    // Hookup change events to update the paint config
-    connect(ui->paintBrushSize, SIGNAL(valueChanged(int)), this, SLOT(updateVertexPaintSettings()));
-    connect(ui->paintColorR, SIGNAL(valueChanged(double)), this, SLOT(updateVertexPaintSettings()));
-    connect(ui->paintColorG, SIGNAL(valueChanged(double)), this, SLOT(updateVertexPaintSettings()));
-    connect(ui->paintColorB, SIGNAL(valueChanged(double)), this, SLOT(updateVertexPaintSettings()));
-    connect(ui->paintColorA, SIGNAL(valueChanged(double)), this, SLOT(updateVertexPaintSettings()));
-    connect(ui->paintOpacity, SIGNAL(valueChanged(int)), this, SLOT(updateVertexPaintSettings()));
-    connect(ui->paintOpacityMode, SIGNAL(currentIndexChanged(int)), this, SLOT(updateVertexPaintSettings()));
-    connect(ui->paintBlendMode, SIGNAL(currentIndexChanged(int)), this, SLOT(updateVertexPaintSettings()));
+    // Connect vertex paint widget to glview
+    connect(ui->vertexPaintSettings, &PaintSettingsWidget::valueChanged, ogl, &GLView::setVertexPaintSettings);
 
 	connect( dList->toggleViewAction(), &QAction::triggered, tree, &NifTreeView::clearRootIndex );
 }
@@ -1326,34 +1311,6 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 * Slots
 * **********************
 */
-
-void NifSkope::updateVertexPaintSettings()
-{
-    ogl->cfg.brushColor = Color4(ui->paintColorR->value(),
-                                 ui->paintColorG->value(),
-                                 ui->paintColorB->value(),
-                                 ui->paintColorA->value());
-
-    ogl->cfg.brushSize = (float)ui->paintBrushSize->value();
-    ogl->update();
-
-    float opacity = (float)ui->paintOpacity->value() / 255.0f;
-    if (ui->paintOpacityMode->currentIndex() == 0)  // Color only
-    {
-        ogl->cfg.brushOpacity = Color4(opacity,opacity,opacity,0.0f);
-    }
-    else if (ui->paintOpacityMode->currentIndex() == 1)  // Alpha only
-    {
-        ogl->cfg.brushOpacity = Color4(0,0,0,opacity);
-    }
-    else if (ui->paintOpacityMode->currentIndex() == 2)  // Color+Alpha
-    {
-        ogl->cfg.brushOpacity = Color4(opacity,opacity,opacity,opacity);
-    }
-
-    ogl->cfg.brushMode = (GLView::PaintBlendMode)ui->paintBlendMode->currentIndex();
-    ogl->update();
-}
 
 void NifSkope::contextMenu( const QPoint & pos )
 {

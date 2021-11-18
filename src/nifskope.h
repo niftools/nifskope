@@ -173,9 +173,7 @@ public slots:
 
 	void enableUi();
 
-	void updateSettings();
-
-    void updateVertexPaintSettings();
+    void updateSettings();
 
 	//! Select a NIF index
 	void select( const QModelIndex & );
