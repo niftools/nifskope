@@ -388,14 +388,19 @@ template <typename T> bool interpolate( T & value, const QModelIndex & array, fl
                   two points, at an arbitrary time "x", using an Hermite Cubic spline.
                   * The "v1" keyframe is the one previous in time to "x",
                   * The "v2" keyframe is the next one,
-                  * The segment's backward derivative, "t1" is stored as part of "v1"
-                  * The segment's forward derivative, "t2" is stored as part of "v2"
+                  * The segment's backward derivative, "tangent 1" is stored as part of "v1"
+                  * The segment's forward derivative, "tangent 2" is stored as part of "v2"
                   N.B. v2's backward derivate does not "belong" to the segment with v1,
                   but rather to the segment with v3. Otherwise said, the key at t=0.0
                   can have a forward derivative, but it will not be used; the final key's
-                  backward derivative will also not be used.
+                  backward derivative will also not be used. The segment between time 1 and 2
+				  uses time 1's backward derivative and 2's forward derivative, not the 1's
+				  forward derivative and 2's backward derivative.
 
-                  Setting the derivatives to zero results in linear interpolation.
+                  The XYZ vectors used in the derivatives, if directed from V1 to V2, can appear 
+				  as linear interpolation, however if their magnitude is not correct, then
+				  temporally there will be a speed up/down, even if the spacial trajectory is
+				  a straight line.
                 */
 
 				// Tangent 1
