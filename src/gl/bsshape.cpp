@@ -9,7 +9,7 @@
 
 BSShape::BSShape( Scene * s, const QModelIndex & b ) : Shape( s, b )
 {
-	
+
 }
 
 void BSShape::clear()
@@ -222,8 +222,8 @@ void BSShape::transform()
 	if ( !nif || !iBlock.isValid() ) {
 		clear();
 		return;
-	}	
-	
+	}
+
 	if ( updateData ) {
 		updateData = false;
 	}
@@ -357,13 +357,13 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 		return;
 
 	auto nif = static_cast<const NifModel *>(iBlock.model());
-    bool drawPolygons = true;
+	bool drawPolygons = true;
 	if ( Node::SELECTING ) {
-        if ( scene->actionMode & Scene::Object ) {
+		if ( scene->actionMode & Scene::Object ) {
 			int s_nodeId = ID2COLORKEY( nodeId );
 			glColor4ubv( (GLubyte *)&s_nodeId );
-        } else {
-            drawPolygons = false;
+		} else {
+			drawPolygons = false;
 		}
 	}
 
@@ -384,87 +384,87 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 		glMultMatrix( viewTrans() );
 	}
 
-    if (drawPolygons) {
+	if (drawPolygons) {
 
-        // Render polygon fill slightly behind alpha transparency and wireframe
-        if ( !drawSecond ) {
-            glEnable( GL_POLYGON_OFFSET_FILL );
-            glPolygonOffset( 1.0f, 2.0f );
-        }
+		// Render polygon fill slightly behind alpha transparency and wireframe
+		if ( !drawSecond ) {
+			glEnable( GL_POLYGON_OFFSET_FILL );
+			glPolygonOffset( 1.0f, 2.0f );
+		}
 
-        glEnableClientState( GL_VERTEX_ARRAY );
-        glVertexPointer( 3, GL_FLOAT, 0, transVerts.constData() );
+		glEnableClientState( GL_VERTEX_ARRAY );
+		glVertexPointer( 3, GL_FLOAT, 0, transVerts.constData() );
 
-        if ( !Node::SELECTING ) {
-            glEnableClientState( GL_NORMAL_ARRAY );
-            glNormalPointer( GL_FLOAT, 0, transNorms.constData() );
+		if ( !Node::SELECTING ) {
+			glEnableClientState( GL_NORMAL_ARRAY );
+			glNormalPointer( GL_FLOAT, 0, transNorms.constData() );
 
-            bool doVCs = (bssp && (bssp->getFlags2() & ShaderFlags::SLSF2_Vertex_Colors));
-            // Always do vertex colors for FO4 if colors present
-            if ( nifVersion == 130 && hasVertexColors && colors.count() )
-                doVCs = true;
+			bool doVCs = (bssp && (bssp->getFlags2() & ShaderFlags::SLSF2_Vertex_Colors));
+			// Always do vertex colors for FO4 if colors present
+			if ( nifVersion == 130 && hasVertexColors && colors.count() )
+				doVCs = true;
 
-            if ( transColors.count() && (scene->options & Scene::DoVertexColors) && doVCs ) {
-                glEnableClientState( GL_COLOR_ARRAY );
-                glColorPointer( 4, GL_FLOAT, 0, transColors.constData() );
-            } else if ( !hasVertexColors && (bslsp && bslsp->hasVertexColors) ) {
-                // Correctly blacken the mesh if SLSF2_Vertex_Colors is still on
-                //	yet "Has Vertex Colors" is not.
-                glColor( Color3( 0.0f, 0.0f, 0.0f ) );
-            } else {
-                glColor( Color3( 1.0f, 1.0f, 1.0f ) );
-            }
-        }
+			if ( transColors.count() && (scene->options & Scene::DoVertexColors) && doVCs ) {
+				glEnableClientState( GL_COLOR_ARRAY );
+				glColorPointer( 4, GL_FLOAT, 0, transColors.constData() );
+			} else if ( !hasVertexColors && (bslsp && bslsp->hasVertexColors) ) {
+				// Correctly blacken the mesh if SLSF2_Vertex_Colors is still on
+				//	yet "Has Vertex Colors" is not.
+				glColor( Color3( 0.0f, 0.0f, 0.0f ) );
+			} else {
+				glColor( Color3( 1.0f, 1.0f, 1.0f ) );
+			}
+		}
 
 
-        if ( !Node::SELECTING )
-            shader = scene->renderer->setupProgram( this, shader );
+		if ( !Node::SELECTING )
+			shader = scene->renderer->setupProgram( this, shader );
 
-        if ( isDoubleSided ) {
-            glCullFace( GL_FRONT );
-            glDrawElements( GL_TRIANGLES, triangles.count() * 3, GL_UNSIGNED_SHORT, triangles.constData() );
-            glCullFace( GL_BACK );
-        }
+		if ( isDoubleSided ) {
+			glCullFace( GL_FRONT );
+			glDrawElements( GL_TRIANGLES, triangles.count() * 3, GL_UNSIGNED_SHORT, triangles.constData() );
+			glCullFace( GL_BACK );
+		}
 
-        if ( !isLOD ) {
-            glDrawElements( GL_TRIANGLES, triangles.count() * 3, GL_UNSIGNED_SHORT, triangles.constData() );
-        } else if ( triangles.count() ) {
-            auto lod0 = nif->get<uint>( iBlock, "LOD0 Size" );
-            auto lod1 = nif->get<uint>( iBlock, "LOD1 Size" );
-            auto lod2 = nif->get<uint>( iBlock, "LOD2 Size" );
+		if ( !isLOD ) {
+			glDrawElements( GL_TRIANGLES, triangles.count() * 3, GL_UNSIGNED_SHORT, triangles.constData() );
+		} else if ( triangles.count() ) {
+			auto lod0 = nif->get<uint>( iBlock, "LOD0 Size" );
+			auto lod1 = nif->get<uint>( iBlock, "LOD1 Size" );
+			auto lod2 = nif->get<uint>( iBlock, "LOD2 Size" );
 
-            auto lod0tris = triangles.mid( 0, lod0 );
-            auto lod1tris = triangles.mid( lod0, lod1 );
-            auto lod2tris = triangles.mid( lod0 + lod1, lod2 );
+			auto lod0tris = triangles.mid( 0, lod0 );
+			auto lod1tris = triangles.mid( lod0, lod1 );
+			auto lod2tris = triangles.mid( lod0 + lod1, lod2 );
 
-            // If Level2, render all
-            // If Level1, also render Level0
-            switch ( scene->lodLevel ) {
-            case Scene::Level2:
-                if ( lod2tris.count() )
-                    glDrawElements( GL_TRIANGLES, lod2tris.count() * 3, GL_UNSIGNED_SHORT, lod2tris.constData() );
-            case Scene::Level1:
-                if ( lod1tris.count() )
-                    glDrawElements( GL_TRIANGLES, lod1tris.count() * 3, GL_UNSIGNED_SHORT, lod1tris.constData() );
-            case Scene::Level0:
-            default:
-                if ( lod0tris.count() )
-                    glDrawElements( GL_TRIANGLES, lod0tris.count() * 3, GL_UNSIGNED_SHORT, lod0tris.constData() );
-                break;
-            }
-        }
+			// If Level2, render all
+			// If Level1, also render Level0
+			switch ( scene->lodLevel ) {
+			case Scene::Level2:
+				if ( lod2tris.count() )
+					glDrawElements( GL_TRIANGLES, lod2tris.count() * 3, GL_UNSIGNED_SHORT, lod2tris.constData() );
+			case Scene::Level1:
+				if ( lod1tris.count() )
+					glDrawElements( GL_TRIANGLES, lod1tris.count() * 3, GL_UNSIGNED_SHORT, lod1tris.constData() );
+			case Scene::Level0:
+			default:
+				if ( lod0tris.count() )
+					glDrawElements( GL_TRIANGLES, lod0tris.count() * 3, GL_UNSIGNED_SHORT, lod0tris.constData() );
+				break;
+			}
+		}
 
-        if ( !Node::SELECTING )
-            scene->renderer->stopProgram();
+		if ( !Node::SELECTING )
+			scene->renderer->stopProgram();
 
-        glDisableClientState( GL_VERTEX_ARRAY );
-        glDisableClientState( GL_NORMAL_ARRAY );
-        glDisableClientState( GL_COLOR_ARRAY );
+		glDisableClientState( GL_VERTEX_ARRAY );
+		glDisableClientState( GL_NORMAL_ARRAY );
+		glDisableClientState( GL_COLOR_ARRAY );
 
-        glDisable( GL_POLYGON_OFFSET_FILL );
-    }
+		glDisable( GL_POLYGON_OFFSET_FILL );
+	}
 
-    if ( scene->actionMode & Scene::Vertex ) {
+	if ( scene->actionMode & Scene::Vertex ) {
 		drawVerts();
 	}
 
@@ -517,7 +517,7 @@ void BSShape::drawSelection() const
 	if ( scene->options & Scene::ShowNodes )
 		Node::drawSelection();
 
-    if ( isHidden() || !(scene->actionMode & Scene::Object) )
+	if ( isHidden() || !(scene->actionMode & Scene::Object) )
 		return;
 
 	auto idx = scene->currentIndex;
@@ -547,7 +547,7 @@ void BSShape::drawSelection() const
 	// Parent index
 	auto pBlock = nif->getBlock( nif->getParent( blk ) );
 
-	auto push = [this] ( const Transform & t ) {	
+	auto push = [this] ( const Transform & t ) {
 		if ( transformRigid ) {
 			glPushMatrix();
 			glMultMatrix( t );
@@ -593,7 +593,7 @@ void BSShape::drawSelection() const
 	if ( normalScale < 0.1f )
 		normalScale = 0.1f;
 
-	
+
 
 	// Draw All Verts lambda
 	auto allv = [this]( float size ) {
@@ -613,7 +613,7 @@ void BSShape::drawSelection() const
 			drawSphereSimple( sph.center, sph.radius, 72 );
 		}
 	}
-	
+
 	if ( blockName.startsWith( "BSPackedCombined" ) && pBlock == iBlock ) {
 		QVector<QModelIndex> idxs;
 		if ( n == "Bounding Sphere" ) {
@@ -701,8 +701,8 @@ void BSShape::drawSelection() const
 			glVertex( transVerts.value( s ) );
 			glEnd();
 		}
-	} 
-	
+	}
+
 	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
 	// Draw Lines lambda
@@ -734,7 +734,7 @@ void BSShape::drawSelection() const
 			glLineWidth( lineWidth );
 		}
 	};
-	
+
 	// Draw Normals
 	if ( n.contains( "Normal" ) ) {
 		lines( transNorms );
@@ -768,7 +768,7 @@ void BSShape::drawSelection() const
 		int s;
 
 		QVector<QColor> cols = { { 255, 0, 0, 128 }, { 0, 255, 0, 128 }, { 0, 0, 255, 128 }, { 255, 255, 0, 128 },
-								{ 0, 255, 255, 128 }, { 255, 0, 255, 128 }, { 255, 255, 255, 128 } 
+								{ 0, 255, 255, 128 }, { 255, 0, 255, 128 }, { 255, 255, 255, 128 }
 		};
 
 		glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
@@ -840,7 +840,7 @@ void BSShape::drawSelection() const
 				for ( int i = off; i < cnt + off; i++ ) {
 					if ( i >= maxTris )
 						continue;
-			
+
 					Triangle tri = triangles[i];
 					glBegin( GL_TRIANGLES );
 					glVertex( transVerts.value( tri.v1() ) );

@@ -526,8 +526,8 @@ public:
 	bool checkType( const NifData & d )
 	{
 		return ( NifModel::compounds.contains( d.type() )
-		        || NifValue::type( d.type() ) != NifValue::tNone
-		        || d.type() == "TEMPLATE"
+				|| NifValue::type( d.type() ) != NifValue::tNone
+				|| d.type() == "TEMPLATE"
 		);
 	}
 
@@ -535,10 +535,10 @@ public:
 	bool checkTemp( const NifData & d )
 	{
 		return ( d.temp().isEmpty()
-		        || NifValue::type( d.temp() ) != NifValue::tNone
-		        || d.temp() == "TEMPLATE"
-		        || NifModel::blocks.contains( d.temp() )
-		        || NifModel::compounds.contains( d.temp() )
+				|| NifValue::type( d.temp() ) != NifValue::tNone
+				|| d.temp() == "TEMPLATE"
+				|| NifModel::blocks.contains( d.temp() )
+				|| NifModel::compounds.contains( d.temp() )
 		);
 	}
 
@@ -603,12 +603,12 @@ bool NifModel::loadXML()
 	QDir        dir( QCoreApplication::applicationDirPath() );
 	QString     fname;
 	QStringList xmlList( QStringList()
-	                     << "nif.xml"
+						 << "nif.xml"
 #ifdef Q_OS_LINUX
-	                     << "/usr/share/nifskope/nif.xml"
+						 << "/usr/share/nifskope/nif.xml"
 #endif
 #ifdef Q_OS_MACX
-                         << "../../../nif.xml"
+						 << "../../../nif.xml"
 #endif
 	);
 	for ( const QString& str : xmlList ) {

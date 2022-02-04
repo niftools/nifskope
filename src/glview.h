@@ -120,20 +120,20 @@ public:
 		ZAxis = 2
 	};
 
-    enum PaintBlendMode
-    {
-        BlendNormal = 0,
-        BlendAdd = 1,
-        BlendMultiply = 2
-    };
+	enum PaintBlendMode
+	{
+		BlendNormal = 0,
+		BlendAdd = 1,
+		BlendMultiply = 2
+	};
 
-    struct PaintSettings
-    {
-        float brushSize = 24.0f;
-        Color4 brushColor = {1.0f, 0.0f, 1.0f, 1.0f};
-        Color4 brushOpacity = {1.0f, 1.0f, 1.0f, 0.0f};
-        PaintBlendMode brushMode = PaintBlendMode::BlendNormal;
-    };
+	struct PaintSettings
+	{
+		float brushSize = 24.0f;
+		Color4 brushColor = {1.0f, 0.0f, 1.0f, 1.0f};
+		Color4 brushOpacity = {1.0f, 1.0f, 1.0f, 0.0f};
+		PaintBlendMode brushMode = PaintBlendMode::BlendNormal;
+	};
 
 	void setNif( NifModel * );
 
@@ -148,9 +148,9 @@ public:
 	void rotate( float, float, float );
 	void zoom( float );
 
-    void startVertexPaint(const QPoint&);
-    void vertexPaint(const QPoint&);
-    void endVertexPaint();
+	void startVertexPaint(const QPoint&);
+	void vertexPaint(const QPoint&);
+	void endVertexPaint();
 
 	void setCenter();
 	void setDistance( float );
@@ -167,13 +167,13 @@ public:
 
 	QColor clearColor() const;
 
-    QImage renderIndexImage();
-    QModelIndex sampleIndexImagePoint(const QImage& img, const QPoint & p, NifModel* model);
-    QVector<QModelIndex> sampleIndexImageCircle(const QImage& img, const QPoint & p, float radius, NifModel* model);
+	QImage renderIndexImage();
+	QModelIndex sampleIndexImagePoint(const QImage& img, const QPoint & p, NifModel* model);
+	QVector<QModelIndex> sampleIndexImageCircle(const QImage& img, const QPoint & p, float radius, NifModel* model);
 
-    QModelIndex colorIndexToModelIndex(const QColor& color, NifModel* model);
+	QModelIndex colorIndexToModelIndex(const QColor& color, NifModel* model);
 
-    QModelIndex indexAt( const QPoint & p, int cycle = 0 );
+	QModelIndex indexAt( const QPoint & p, int cycle = 0 );
 
 	// UI
 
@@ -195,7 +195,7 @@ public slots:
 	void updateAnimationState( bool checked );
 	void setVisMode( Scene::VisMode, bool checked = true );
 	void updateSettings();
-    void setVertexPaintSettings(GLView::PaintSettings settings);
+	void setVertexPaintSettings(GLView::PaintSettings settings);
 
 signals:
 	void clicked( const QModelIndex & );
@@ -263,15 +263,15 @@ private:
 	Transform viewTrans;
 
 	GLdouble aspect;
-	
+
 	QHash<int, bool> kbd;
 	QPoint lastPos;
 	QPoint pressPos;
 	Vector3 mouseMov;
 	Vector3 mouseRot;
-    bool mousePaint;
-    QVector<QModelIndex> mousePaintVerts;
-    QImage mousePaintHitDetectImg;
+	bool mousePaint;
+	QVector<QModelIndex> mousePaintVerts;
+	QImage mousePaintHitDetectImg;
 
 	int cycleSelect;
 
@@ -293,7 +293,7 @@ private:
 
 		UpAxis upAxis = ZAxis;
 
-        PaintSettings vertexPaintSettings;
+		PaintSettings vertexPaintSettings;
 	} cfg;
 
 private slots:

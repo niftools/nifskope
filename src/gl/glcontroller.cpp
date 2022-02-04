@@ -344,7 +344,7 @@ bool Controller::timeIndex( float time, const NifModel * nif, const QModelIndex 
 			//	Previously, this branch was causing x to decrement from 1.0.
 			//	(This works fine for linear interpolation apparently)
 			x = 1.0 - x;
-			
+
 			// Swap I and J
 			//	With x inverted, we must swap I and J or the animation will reverse.
 			auto tmpI = i;
@@ -379,34 +379,34 @@ template <typename T> bool interpolate( T & value, const QModelIndex & array, fl
 			T v2 = nif->get<T>( frames.child( next, 0 ), "Value" );
 
 			switch ( nif->get<int>( array, "Interpolation" ) ) {
-			
+
 			case 2:
 			{
 				// Quadratic
 				/*
-                  Interpolate X, Y, and Z values independently, along a segment between
-                  two points, at an arbitrary time "x", using an Hermite Cubic spline.
-                  * The "v1" keyframe is the one previous in time to "x",
-                  * The "v2" keyframe is the next one,
-                  * The segment's backward derivative, "tangent 1" is stored as part of "v1"
-                  * The segment's forward derivative, "tangent 2" is stored as part of "v2"
-                  N.B. v2's backward derivate does not "belong" to the segment with v1,
-                  but rather to the segment with v3. Otherwise said, the key at t=0.0
-                  can have a forward derivative, but it will not be used; the final key's
-                  backward derivative will also not be used. The segment between time 1 and 2
+				  Interpolate X, Y, and Z values independently, along a segment between
+				  two points, at an arbitrary time "x", using an Hermite Cubic spline.
+				  * The "v1" keyframe is the one previous in time to "x",
+				  * The "v2" keyframe is the next one,
+				  * The segment's backward derivative, "tangent 1" is stored as part of "v1"
+				  * The segment's forward derivative, "tangent 2" is stored as part of "v2"
+				  N.B. v2's backward derivate does not "belong" to the segment with v1,
+				  but rather to the segment with v3. Otherwise said, the key at t=0.0
+				  can have a forward derivative, but it will not be used; the final key's
+				  backward derivative will also not be used. The segment between time 1 and 2
 				  uses time 1's backward derivative and 2's forward derivative, not the 1's
 				  forward derivative and 2's backward derivative.
 
-                  The XYZ vectors used in the derivatives, if directed from V1 to V2, can appear 
+				  The XYZ vectors used in the derivatives, if directed from V1 to V2, can appear
 				  as linear interpolation, however if their magnitude is not correct, then
 				  temporally there will be a speed up/down, even if the spacial trajectory is
 				  a straight line.
-                */
+				*/
 
 				// Tangent 1
-                T t1 = nif->get<T>( frames.child( last, 0 ), "Backward" );
+				T t1 = nif->get<T>( frames.child( last, 0 ), "Backward" );
 				// Tangent 2
-                T t2 = nif->get<T>( frames.child( next, 0 ), "Forward" );
+				T t2 = nif->get<T>( frames.child( next, 0 ), "Forward" );
 
 				float x2 = x * x;
 				float x3 = x2 * x;
@@ -414,10 +414,10 @@ template <typename T> bool interpolate( T & value, const QModelIndex & array, fl
 				// Cubic Hermite spline
 				//	x(t) = (2t^3 - 3t^2 + 1)P1  + (-2t^3 + 3t^2)P2 + (t^3 - 2t^2 + t)T1 + (t^3 - t^2)T2
 
-                value = v1 * (2.0f * x3 - 3.0f * x2 + 1.0f) + v2 * (-2.0f * x3 + 3.0f * x2) + t1 * (x3 - 2.0f * x2 + x) + t2 * (x3 - x2);
+				value = v1 * (2.0f * x3 - 3.0f * x2 + 1.0f) + v2 * (-2.0f * x3 + 3.0f * x2) + t1 * (x3 - 2.0f * x2 + x) + t2 * (x3 - x2);
 
 			}	return true;
-			
+
 			case 5:
 				// Constant
 				if ( x < 0.5 )
@@ -518,8 +518,8 @@ template <> bool Controller::interpolate( Matrix & value, const QModelIndex & ar
 					float a = acos( Quat::dotproduct( v1, v2 ) );
 					if ( fabs( a ) >= 0.00005 )
 					{
-					    float i = 1.0 / sin( a );
-					    v4 = v1 * sin( ( 1.0 - x ) * a ) * i + v2 * sin( x * a ) * i;
+						float i = 1.0 / sin( a );
+						v4 = v1 * sin( ( 1.0 - x ) * a ) * i + v2 * sin( x * a ) * i;
 					}
 					*/
 					value.fromQuat( v3 );
@@ -647,7 +647,7 @@ static float blend( int k, int t, int * u, float v )
 			value = (v - u[k]) / (u[k + t - 1] - u[k]) * blend( k, t - 1, u, v );
 		else
 			value = ( v - u[k] ) / ( u[k + t - 1] - u[k] ) * blend( k, t - 1, u, v )
-			        + ( u[k + t] - v ) / ( u[k + t] - u[k + 1] ) * blend( k + 1, t - 1, u, v );
+					+ ( u[k + t] - v ) / ( u[k + t] - u[k + 1] ) * blend( k + 1, t - 1, u, v );
 	}
 
 	return value;

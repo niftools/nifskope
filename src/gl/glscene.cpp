@@ -66,9 +66,9 @@ Scene::Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * 
 
 	lodLevel = Level2;
 
-    visMode = VisNone;
+	visMode = VisNone;
 
-    actionMode = ( Select | Object );
+	actionMode = ( Select | Object );
 
 	// Startup Defaults
 
@@ -197,7 +197,7 @@ void Scene::updateSelectMode( QAction * action )
 	if ( !action )
 		return;
 
-    actionMode = ActionMode( action->data().toInt() );
+	actionMode = ActionMode( action->data().toInt() );
 	emit sceneUpdated();
 }
 

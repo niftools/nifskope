@@ -140,16 +140,16 @@ public:
 				QString abs = list.value( "abstract" );
 
 				NifData data(
-				    list.value( "name" ),
+					list.value( "name" ),
 					type,
 					tmpl,
-				    NifValue( NifValue::type( type ) ),
-				    list.value( "arg" ),
+					NifValue( NifValue::type( type ) ),
+					list.value( "arg" ),
 					arr1,
 					arr2,
 					cond,
-				    KfmModel::version2number( ver1 ),
-				    KfmModel::version2number( ver2 )
+					KfmModel::version2number( ver1 ),
+					KfmModel::version2number( ver2 )
 				);
 
 				bool isTemplated = (type == "TEMPLATE" || tmpl == "TEMPLATE");
@@ -263,12 +263,12 @@ bool KfmModel::loadXML()
 	QDir dir( QCoreApplication::applicationDirPath() );
 	QString fname;
 	QStringList xmlList( QStringList()
-	                     << "kfm.xml"
+						 << "kfm.xml"
 #ifdef Q_OS_LINUX
-	                     << "/usr/share/nifskope/kfm.xml"
+						 << "/usr/share/nifskope/kfm.xml"
 #endif
 #ifdef Q_OS_MACX
-                         << "../../../kfm.xml"
+						 << "../../../kfm.xml"
 #endif
 	);
 	for ( const QString& str : xmlList ) {

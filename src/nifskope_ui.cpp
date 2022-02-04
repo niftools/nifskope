@@ -129,7 +129,7 @@ NifSkope * NifSkope::createWindow( const QString & fname )
 
 	if ( !fname.isEmpty() ) {
 		skope->loadFile( fname );
-    }
+	}
 
 	return skope;
 }
@@ -144,8 +144,8 @@ void NifSkope::initActions()
 	aSelectFont = ui->aSelectFont;
 
 	// Build all actions list
-	allActions = QSet<QAction *>::fromList( 
-		ui->tFile->actions() 
+	allActions = QSet<QAction *>::fromList(
+		ui->tFile->actions()
 		<< ui->mRender->actions()
 		<< ui->tRender->actions()
 		<< ui->tAnim->actions()
@@ -184,12 +184,12 @@ void NifSkope::initActions()
 
 	connect( ui->aBrowseArchive, &QAction::triggered, this, &NifSkope::archiveDlg );
 	connect( ui->aOpen, &QAction::triggered, this, &NifSkope::openDlg );
-	connect( ui->aSave, &QAction::triggered, this, &NifSkope::save );  
+	connect( ui->aSave, &QAction::triggered, this, &NifSkope::save );
 	connect( ui->aSaveAs, &QAction::triggered, this, &NifSkope::saveAsDlg );
 
 	// TODO: Assure Actions and Scene state are synced
 	// Set Data for Actions to pass onto Scene when clicking
-	/*	
+	/*
 		ShowAxes = 0x1,
 		ShowGrid = 0x2,
 		ShowNodes = 0x4,
@@ -226,9 +226,9 @@ void NifSkope::initActions()
 	ui->aLighting->setData( Scene::DoLighting );
 	ui->aDisableShading->setData( Scene::DisableShaders );
 
-    ui->aSelectObject->setData( (int)( Scene::Select | Scene::Object ) );
-    ui->aSelectVertex->setData( (int)( Scene::Select | Scene::Vertex ) );
-    ui->aPaintVertex->setData( (int)( Scene::Paint | Scene::Vertex ) );
+	ui->aSelectObject->setData( (int)( Scene::Select | Scene::Object ) );
+	ui->aSelectVertex->setData( (int)( Scene::Select | Scene::Vertex ) );
+	ui->aPaintVertex->setData( (int)( Scene::Paint | Scene::Vertex ) );
 
 	auto agroup = [this]( QVector<QAction *> actions, bool exclusive ) {
 		QActionGroup * ag = new QActionGroup( this );
@@ -241,8 +241,8 @@ void NifSkope::initActions()
 		return ag;
 	};
 
-    selectActions = agroup( { ui->aSelectObject, ui->aSelectVertex, ui->aPaintVertex }, true );
-    connect( selectActions, &QActionGroup::triggered, ogl->getScene(), &Scene::updateSelectMode );
+	selectActions = agroup( { ui->aSelectObject, ui->aSelectVertex, ui->aPaintVertex }, true );
+	connect( selectActions, &QActionGroup::triggered, ogl->getScene(), &Scene::updateSelectMode );
 
 	showActions = agroup( { ui->aShowAxes, ui->aShowGrid, ui->aShowNodes, ui->aShowCollision,
 						  ui->aShowConstraints, ui->aShowMarkers, ui->aShowHidden, ui->aDoSkinning
@@ -317,7 +317,7 @@ void NifSkope::initActions()
 			ogl->setDebugMode( GLView::DbgColorPicker );
 		else
 			ogl->setDebugMode( GLView::DbgNone );
-		
+
 		ogl->update();
 	} );
 
@@ -374,7 +374,7 @@ void NifSkope::initDockWidgets()
 	dTree = ui->TreeDock;
 	dHeader = ui->HeaderDock;
 	dInsp = ui->InspectDock;
-    dPaint = ui->PaintDock;
+	dPaint = ui->PaintDock;
 	dKfm = ui->KfmDock;
 	dBrowser = ui->BrowserDock;
 
@@ -388,22 +388,22 @@ void NifSkope::initDockWidgets()
 	// Hide certain docks by default
 	dRefr->toggleViewAction()->setChecked( false );
 	dInsp->toggleViewAction()->setChecked( false );
-    dPaint->toggleViewAction()->setChecked( false );
+	dPaint->toggleViewAction()->setChecked( false );
 	dKfm->toggleViewAction()->setChecked( false );
 
 	dRefr->setVisible( false );
 	dInsp->setVisible( false );
-    dPaint->setVisible( false );
+	dPaint->setVisible( false );
 	dKfm->setVisible( false );
 
 	// Set Inspect widget
 	dInsp->setWidget( inspect );
 
-    // Push the initial brush settings to the vertex paint widget
-    ui->vertexPaintSettings->setValue(ogl->cfg.vertexPaintSettings);
+	// Push the initial brush settings to the vertex paint widget
+	ui->vertexPaintSettings->setValue(ogl->cfg.vertexPaintSettings);
 
-    // Connect vertex paint widget to glview
-    connect(ui->vertexPaintSettings, &PaintSettingsWidget::valueChanged, ogl, &GLView::setVertexPaintSettings);
+	// Connect vertex paint widget to glview
+	connect(ui->vertexPaintSettings, &PaintSettingsWidget::valueChanged, ogl, &GLView::setVertexPaintSettings);
 
 	connect( dList->toggleViewAction(), &QAction::triggered, tree, &NifTreeView::clearRootIndex );
 }
@@ -511,7 +511,7 @@ void NifSkope::initMenu()
 
 	QActionGroup * grpTheme = new QActionGroup( this );
 
-	// Fill the action data with the integer correlating to 
+	// Fill the action data with the integer correlating to
 	// their position in WindowTheme and add to the action group.
 	int i = 0;
 	auto themes = ui->mTheme->actions();
@@ -530,7 +530,7 @@ void NifSkope::initToolBars()
 	// Status Bar
 	ui->statusbar->setContentsMargins( 0, 0, 0, 0 );
 	ui->statusbar->addPermanentWidget( progress );
-	
+
 	// TODO: Split off into own widget
 	ui->statusbar->addPermanentWidget( filePathWidget( this ) );
 
@@ -584,7 +584,7 @@ void NifSkope::initToolBars()
 	connect( animSlider, &FloatSlider::valueChanged, animSliderEdit, &FloatEdit::setValue );
 	connect( animSliderEdit, static_cast<void (FloatEdit::*)(float)>(&FloatEdit::sigEdited), ogl, &GLView::setSceneTime );
 	connect( animSliderEdit, static_cast<void (FloatEdit::*)(float)>(&FloatEdit::sigEdited), animSlider, &FloatSlider::setValue );
-	
+
 	// Animations
 	animGroups = new QComboBox( ui->tAnim );
 	animGroups->setMinimumWidth( 60 );
@@ -658,7 +658,7 @@ QMenu * NifSkope::lightingWidget()
 {
 	QMenu * mLight = new QMenu( this );
 	mLight->setObjectName( "mLight" );
-	
+
 
 	auto lightingWidget = new LightingWidget( ogl, mLight );
 	lightingWidget->setActions( {ui->aLighting, ui->aTextures, ui->aVertexColors,
@@ -814,7 +814,7 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 
 	} else {
 		// File failed to load
-		Message::append( this, NifModel::tr( readFail ), 
+		Message::append( this, NifModel::tr( readFail ),
 						 NifModel::tr( readFailFinal ).arg( fname ), QMessageBox::Critical );
 
 		nif->clear();
@@ -835,8 +835,8 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 	nif->undoStack->clear();
 	indexStack->clear();
 
-    // Update widget sizes to fixup ogl view
-    resizeDone();
+	// Update widget sizes to fixup ogl view
+	resizeDone();
 
 	// Center the model on load
 	ogl->center();
@@ -1103,7 +1103,7 @@ void NifSkope::loadTheme()
 	pal.setColor( QPalette::ColorGroup::Disabled, QPalette::HighlightedText, baseCTxtHighlightDark );
 
 	// Set Palette and Stylesheet
-	
+
 	QDir qssDir( QApplication::applicationDirPath() );
 	QStringList qssList( QStringList()
 						 << "style.qss"
@@ -1456,7 +1456,7 @@ void NifSkope::on_aViewWalk_triggered( bool checked )
 
 
 void NifSkope::on_aViewUserSave_triggered( bool checked )
-{ 
+{
 	Q_UNUSED( checked );
 	ogl->saveUserView();
 	ui->aViewUser->setChecked( true );

@@ -129,18 +129,18 @@ public:
 
 	VisMode visMode;
 
-    enum ActionModes
-    {
-        Deselect = 0x0,
-        Select = 0x1,
-        Paint = 0x2,
-        Object = 0x10000,
-        Vertex = 0x20000
-    };
+	enum ActionModes
+	{
+		Deselect = 0x0,
+		Select = 0x1,
+		Paint = 0x2,
+		Object = 0x10000,
+		Vertex = 0x20000
+	};
 
-    Q_DECLARE_FLAGS( ActionMode, ActionModes );
+	Q_DECLARE_FLAGS( ActionMode, ActionModes );
 
-    ActionMode actionMode;
+	ActionMode actionMode;
 
 	enum LodLevel
 	{
@@ -151,7 +151,7 @@ public:
 
 	LodLevel lodLevel;
 
-	
+
 	Renderer * renderer;
 
 	NodeList nodes;

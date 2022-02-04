@@ -530,7 +530,7 @@ void Node::draw()
 	if ( isHidden() || iBlock == scene->currentBlock )
 		return;
 
-    if ( !(scene->actionMode & Scene::Object) )
+	if ( !(scene->actionMode & Scene::Object) )
 		return;
 
 	if ( Node::SELECTING ) {
@@ -587,7 +587,7 @@ void Node::drawSelection() const
 	if ( !nif )
 		return;
 
-    if ( !(scene->actionMode & Scene::Object) )
+	if ( !(scene->actionMode & Scene::Object) )
 		return;
 
 	bool extraData = false;
@@ -776,7 +776,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	if ( (!nif || !iShape.isValid() || stack.contains( iShape )) && !extraData )
 		return;
 
-    if ( !(scene->actionMode & Scene::Object) )
+	if ( !(scene->actionMode & Scene::Object) )
 		return;
 
 	stack.push( iShape );
@@ -1079,7 +1079,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 	if ( !( nif && iConstraint.isValid() && scene && (scene->options & Scene::ShowConstraints) ) )
 		return;
 
-    if ( !(scene->actionMode & Scene::Object) )
+	if ( !(scene->actionMode & Scene::Object) )
 		return;
 
 	QList<Transform> tBodies;
@@ -1218,13 +1218,13 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 
 		if ( nif->checkVersion( 0, 0x14000002 ) )
 		{
-		    Vector3 axleB1temp( axleB[1], axleB[2], axleB[0] );
-		    Vector3 axleB2temp( Vector3::crossproduct( axleB, axleB1temp ) );
+			Vector3 axleB1temp( axleB[1], axleB[2], axleB[0] );
+			Vector3 axleB2temp( Vector3::crossproduct( axleB, axleB1temp ) );
 		}
 		else if ( nif->checkVersion( 0x14020007, 0 ) )
 		{
-		    Vector3 axleB1temp( nif->get<Vector4>( iHinge, "Perp2 Axle In B1" ) );
-		    Vector3 axleB2temp( nif->get<Vector4>( iHinge, "Perp2 Axle In B2" ) );
+			Vector3 axleB1temp( nif->get<Vector4>( iHinge, "Perp2 Axle In B1" ) );
+			Vector3 axleB2temp( nif->get<Vector4>( iHinge, "Perp2 Axle In B2" ) );
 		}
 
 		const Vector3 axleB1( axleB1temp );
@@ -1396,7 +1396,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 
 void Node::drawHavok()
 {
-    if ( !(scene->actionMode & Scene::Object) )
+	if ( !(scene->actionMode & Scene::Object) )
 		return;
 
 	// TODO: Why are all these here - "drawNodes", "drawFurn", "drawHavok"?
@@ -1482,7 +1482,7 @@ void Node::drawHavok()
 				t.translation = center;
 				glMultMatrix( t );
 			}
-			
+
 			if ( Node::SELECTING ) {
 				int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iBSMultiBoundData ) );
 				glColor4ubv( (GLubyte *)&s_nodeId );
@@ -1578,8 +1578,8 @@ void Node::drawHavok()
 		if ( scene->currentBlock == nif->getBlock( nif->getLink( iBody, "Shape" ) ) ) {
 			// fix: add selected visual to havok meshes
 			glHighlightColor(); // TODO: idea: I do not recommend mimicking the Open GL API
-			                    // It confuses the one who reads the code. And the Open GL API is
-			                    // in constant development.
+								// It confuses the one who reads the code. And the Open GL API is
+								// in constant development.
 			glLineWidth( 2.5 );
 			//glPointSize( 8.5 );
 		}
@@ -1810,7 +1810,7 @@ void Node::drawFurn()
 	if ( !( iBlock.isValid() && nif ) )
 		return;
 
-    if ( !(scene->actionMode & Scene::Object) )
+	if ( !(scene->actionMode & Scene::Object) )
 		return;
 
 	QModelIndex iExtraDataList = nif->getIndex( iBlock, "Extra Data List" );
@@ -1872,7 +1872,7 @@ void Node::drawShapes( NodeList * secondPass, bool presort )
 		return;
 
 	const NifModel * nif = static_cast<const NifModel *>(iBlock.model());
-	
+
 	// BSOrderedNode support
 	//	Only set if true (|=) so that it propagates to all children
 	presort |= nif->getBlock( iBlock, "BSOrderedNode" ).isValid();
@@ -1893,11 +1893,11 @@ QString trans2string( Transform t )
 	float xr, yr, zr;
 	t.rotation.toEuler( xr, yr, zr );
 	return QString( "translation  X %1, Y %2, Z %3\n" ).Farg( t.translation[0] ).Farg( t.translation[1] ).Farg( t.translation[2] )
-	       +   QString( "rotation     Y %1, P %2, R %3  " ).Farg( xr * 180 / PI ).Farg( yr * 180 / PI ).Farg( zr * 180 / PI )
-	       +   QString( "( (%1, %2, %3), " ).Farg( t.rotation( 0, 0 ) ).Farg( t.rotation( 0, 1 ) ).Farg( t.rotation( 0, 2 ) )
-	       +   QString( "(%1, %2, %3), " ).Farg( t.rotation( 1, 0 ) ).Farg( t.rotation( 1, 1 ) ).Farg( t.rotation( 1, 2 ) )
-	       +   QString( "(%1, %2, %3) )\n" ).Farg( t.rotation( 2, 0 ) ).Farg( t.rotation( 2, 1 ) ).Farg( t.rotation( 2, 2 ) )
-	       +   QString( "scale        %1\n" ).Farg( t.scale );
+		   +   QString( "rotation     Y %1, P %2, R %3  " ).Farg( xr * 180 / PI ).Farg( yr * 180 / PI ).Farg( zr * 180 / PI )
+		   +   QString( "( (%1, %2, %3), " ).Farg( t.rotation( 0, 0 ) ).Farg( t.rotation( 0, 1 ) ).Farg( t.rotation( 0, 2 ) )
+		   +   QString( "(%1, %2, %3), " ).Farg( t.rotation( 1, 0 ) ).Farg( t.rotation( 1, 1 ) ).Farg( t.rotation( 1, 2 ) )
+		   +   QString( "(%1, %2, %3) )\n" ).Farg( t.rotation( 2, 0 ) ).Farg( t.rotation( 2, 1 ) ).Farg( t.rotation( 2, 2 ) )
+		   +   QString( "scale        %1\n" ).Farg( t.scale );
 }
 
 QString Node::textStats() const
@@ -1989,7 +1989,7 @@ void LODNode::update( const NifModel * nif, const QModelIndex & index )
 		if ( iLevels.isValid() ) {
 			for ( int r = 0; r < nif->rowCount( iLevels ); r++ ) {
 				ranges.append( { nif->get<float>( iLevels.child( r, 0 ), "Near Extent" ),
-				                 nif->get<float>( iLevels.child( r, 0 ), "Far Extent" ) }
+								 nif->get<float>( iLevels.child( r, 0 ), "Far Extent" ) }
 				);
 			}
 		}

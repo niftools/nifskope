@@ -432,11 +432,11 @@ public:
 	QString toHtml() const
 	{
 		return tr( "X %1 Y %2 Z %3\nlength %4" ).arg(
-		           NumOrMinMax( xyz[0] ),
-		           NumOrMinMax( xyz[1] ),
-		           NumOrMinMax( xyz[2] ),
-		           QString::number( length() )
-		       );
+				   NumOrMinMax( xyz[0] ),
+				   NumOrMinMax( xyz[1] ),
+				   NumOrMinMax( xyz[2] ),
+				   QString::number( length() )
+			   );
 	}
 
 protected:
@@ -687,12 +687,12 @@ public:
 	QString toHtml() const
 	{
 		return tr( "X %1 Y %2 Z %3 W %4\nlength %5" ).arg(
-		           NumOrMinMax( xyzw[0] ),
-		           NumOrMinMax( xyzw[1] ),
-		           NumOrMinMax( xyzw[2] ),
-		           NumOrMinMax( xyzw[3] ),
-		           QString::number( length() )
-		       );
+				   NumOrMinMax( xyzw[0] ),
+				   NumOrMinMax( xyzw[1] ),
+				   NumOrMinMax( xyzw[2] ),
+				   NumOrMinMax( xyzw[3] ),
+				   QString::number( length() )
+			   );
 	}
 
 protected:
@@ -748,10 +748,10 @@ public:
 	void normalize ()
 	{
 		float mag = (
-		    (wxyz[0] * wxyz[0])
-		    + (wxyz[1] * wxyz[1])
-		    + (wxyz[2] * wxyz[2])
-		    + (wxyz[3] * wxyz[3])
+			(wxyz[0] * wxyz[0])
+			+ (wxyz[1] * wxyz[1])
+			+ (wxyz[2] * wxyz[2])
+			+ (wxyz[3] * wxyz[3])
 		);
 		wxyz[0] /= mag;
 		wxyz[1] /= mag;
@@ -833,11 +833,11 @@ public:
 	QString toHtml() const
 	{
 		return tr( "W %1\nX %2\nY %3\nZ %4" ).arg(
-		           NumOrMinMax( wxyz[0] ),
-		           NumOrMinMax( wxyz[1] ),
-		           NumOrMinMax( wxyz[2] ),
-		           NumOrMinMax( wxyz[3] )
-		       );
+				   NumOrMinMax( wxyz[0] ),
+				   NumOrMinMax( wxyz[1] ),
+				   NumOrMinMax( wxyz[2] ),
+				   NumOrMinMax( wxyz[3] )
+			   );
 	}
 
 protected:
@@ -874,8 +874,8 @@ public:
 		for ( int r = 0; r < 3; r++ ) {
 			for ( int c = 0; c < 3; c++ ) {
 				m3.m[r][c] = m[r][0] * m2.m[0][c]
-				           + m[r][1] * m2.m[1][c]
-				           + m[r][2] * m2.m[2][c];
+						   + m[r][1] * m2.m[1][c]
+						   + m[r][2] * m2.m[2][c];
 			}
 		}
 
@@ -968,9 +968,9 @@ public:
 		for ( int r = 0; r < 4; r++ ) {
 			for ( int c = 0; c < 4; c++ ) {
 				m3.m[r][c] = m[r][0] * m2.m[0][c]
-				           + m[r][1] * m2.m[1][c]
-				           + m[r][2] * m2.m[2][c]
-				           + m[r][3] * m2.m[3][c];
+						   + m[r][1] * m2.m[1][c]
+						   + m[r][2] * m2.m[2][c]
+						   + m[r][3] * m2.m[3][c];
 			}
 		}
 
@@ -1352,15 +1352,15 @@ public:
 		return c;
 	}
 
-    Color4 operator*( const Color4& o ) const
-    {
-        Color4 c( *this );
-        c.rgba[0] *= o.rgba[0];
-        c.rgba[1] *= o.rgba[1];
-        c.rgba[2] *= o.rgba[2];
-        c.rgba[3] *= o.rgba[3];
-        return c;
-    }
+	Color4 operator*( const Color4& o ) const
+	{
+		Color4 c( *this );
+		c.rgba[0] *= o.rgba[0];
+		c.rgba[1] *= o.rgba[1];
+		c.rgba[2] *= o.rgba[2];
+		c.rgba[3] *= o.rgba[3];
+		return c;
+	}
 
 	//! Add-equals operator
 	Color4 & operator+=( const Color4 & o )
@@ -1462,7 +1462,7 @@ protected:
 
 	friend class NifIStream;
 	friend class NifOStream;
-    friend class ByteColor4;
+	friend class ByteColor4;
 
 	friend QDataStream & operator>>( QDataStream & ds, Color4 & c );
 };
@@ -1472,15 +1472,15 @@ class ByteColor4 : public Color4
 public:
 	//! Default constructor
 	ByteColor4() { rgba[0] = rgba[1] = rgba[2] = rgba[3] = 1.0; }
-    static ByteColor4 fromColor4(const Color4& c)
-    {
-        ByteColor4 o;
-        o.rgba[0] = c.rgba[0];
-        o.rgba[1] = c.rgba[1];
-        o.rgba[2] = c.rgba[2];
-        o.rgba[3] = c.rgba[3];
-        return o;
-    }
+	static ByteColor4 fromColor4(const Color4& c)
+	{
+		ByteColor4 o;
+		o.rgba[0] = c.rgba[0];
+		o.rgba[1] = c.rgba[1];
+		o.rgba[2] = c.rgba[2];
+		o.rgba[3] = c.rgba[3];
+		return o;
+	}
 };
 
 
@@ -1956,71 +1956,71 @@ struct DataStreamMetadata
 };
 
 typedef enum {
-    F_UNKNOWN             = 0x00000000,
-    F_INT8_1              = 0x00010101,
-    F_INT8_2              = 0x00020102,
-    F_INT8_3              = 0x00030103,
-    F_INT8_4              = 0x00040104,
-    F_UINT8_1             = 0x00010105,
-    F_UINT8_2             = 0x00020106,
-    F_UINT8_3             = 0x00030107,
-    F_UINT8_4             = 0x00040108,
-    F_NORMINT8_1          = 0x00010109,
-    F_NORMINT8_2          = 0x0002010A,
-    F_NORMINT8_3          = 0x0003010B,
-    F_NORMINT8_4          = 0x0004010C,
-    F_NORMUINT8_1         = 0x0001010D,
-    F_NORMUINT8_2         = 0x0002010E,
-    F_NORMUINT8_3         = 0x0003010F,
-    F_NORMUINT8_4         = 0x00040110,
-    F_INT16_1             = 0x00010211,
-    F_INT16_2             = 0x00020212,
-    F_INT16_3             = 0x00030213,
-    F_INT16_4             = 0x00040214,
-    F_UINT16_1            = 0x00010215,
-    F_UINT16_2            = 0x00020216,
-    F_UINT16_3            = 0x00030217,
-    F_UINT16_4            = 0x00040218,
-    F_NORMINT16_1         = 0x00010219,
-    F_NORMINT16_2         = 0x0002021A,
-    F_NORMINT16_3         = 0x0003021B,
-    F_NORMINT16_4         = 0x0004021C,
-    F_NORMUINT16_1        = 0x0001021D,
-    F_NORMUINT16_2        = 0x0002021E,
-    F_NORMUINT16_3        = 0x0003021F,
-    F_NORMUINT16_4        = 0x00040220,
-    F_INT32_1             = 0x00010421,
-    F_INT32_2             = 0x00020422,
-    F_INT32_3             = 0x00030423,
-    F_INT32_4             = 0x00040424,
-    F_UINT32_1            = 0x00010425,
-    F_UINT32_2            = 0x00020426,
-    F_UINT32_3            = 0x00030427,
-    F_UINT32_4            = 0x00040428,
-    F_NORMINT32_1         = 0x00010429,
-    F_NORMINT32_2         = 0x0002042A,
-    F_NORMINT32_3         = 0x0003042B,
-    F_NORMINT32_4         = 0x0004042C,
-    F_NORMUINT32_1        = 0x0001042D,
-    F_NORMUINT32_2        = 0x0002042E,
-    F_NORMUINT32_3        = 0x0003042F,
-    F_NORMUINT32_4        = 0x00040430,
-    F_FLOAT16_1           = 0x00010231,
-    F_FLOAT16_2           = 0x00020232,
-    F_FLOAT16_3           = 0x00030233,
-    F_FLOAT16_4           = 0x00040234,
-    F_FLOAT32_1           = 0x00010435,
-    F_FLOAT32_2           = 0x00020436,
-    F_FLOAT32_3           = 0x00030437,
-    F_FLOAT32_4           = 0x00040438,
-    F_UINT_10_10_10_L1    = 0x00010439,
-    F_NORMINT_10_10_10_L1 = 0x0001043A,
-    F_NORMINT_11_11_10    = 0x0001043B,
-    F_NORMUINT8_4_BGRA    = 0x0004013C,
-    F_NORMINT_10_10_10_2  = 0x0001043D,
-    F_UINT_10_10_10_2     = 0x0001043E,
-    F_TYPE_COUNT = 63,
-    F_MAX_COMP_SIZE = 16
+	F_UNKNOWN             = 0x00000000,
+	F_INT8_1              = 0x00010101,
+	F_INT8_2              = 0x00020102,
+	F_INT8_3              = 0x00030103,
+	F_INT8_4              = 0x00040104,
+	F_UINT8_1             = 0x00010105,
+	F_UINT8_2             = 0x00020106,
+	F_UINT8_3             = 0x00030107,
+	F_UINT8_4             = 0x00040108,
+	F_NORMINT8_1          = 0x00010109,
+	F_NORMINT8_2          = 0x0002010A,
+	F_NORMINT8_3          = 0x0003010B,
+	F_NORMINT8_4          = 0x0004010C,
+	F_NORMUINT8_1         = 0x0001010D,
+	F_NORMUINT8_2         = 0x0002010E,
+	F_NORMUINT8_3         = 0x0003010F,
+	F_NORMUINT8_4         = 0x00040110,
+	F_INT16_1             = 0x00010211,
+	F_INT16_2             = 0x00020212,
+	F_INT16_3             = 0x00030213,
+	F_INT16_4             = 0x00040214,
+	F_UINT16_1            = 0x00010215,
+	F_UINT16_2            = 0x00020216,
+	F_UINT16_3            = 0x00030217,
+	F_UINT16_4            = 0x00040218,
+	F_NORMINT16_1         = 0x00010219,
+	F_NORMINT16_2         = 0x0002021A,
+	F_NORMINT16_3         = 0x0003021B,
+	F_NORMINT16_4         = 0x0004021C,
+	F_NORMUINT16_1        = 0x0001021D,
+	F_NORMUINT16_2        = 0x0002021E,
+	F_NORMUINT16_3        = 0x0003021F,
+	F_NORMUINT16_4        = 0x00040220,
+	F_INT32_1             = 0x00010421,
+	F_INT32_2             = 0x00020422,
+	F_INT32_3             = 0x00030423,
+	F_INT32_4             = 0x00040424,
+	F_UINT32_1            = 0x00010425,
+	F_UINT32_2            = 0x00020426,
+	F_UINT32_3            = 0x00030427,
+	F_UINT32_4            = 0x00040428,
+	F_NORMINT32_1         = 0x00010429,
+	F_NORMINT32_2         = 0x0002042A,
+	F_NORMINT32_3         = 0x0003042B,
+	F_NORMINT32_4         = 0x0004042C,
+	F_NORMUINT32_1        = 0x0001042D,
+	F_NORMUINT32_2        = 0x0002042E,
+	F_NORMUINT32_3        = 0x0003042F,
+	F_NORMUINT32_4        = 0x00040430,
+	F_FLOAT16_1           = 0x00010231,
+	F_FLOAT16_2           = 0x00020232,
+	F_FLOAT16_3           = 0x00030233,
+	F_FLOAT16_4           = 0x00040234,
+	F_FLOAT32_1           = 0x00010435,
+	F_FLOAT32_2           = 0x00020436,
+	F_FLOAT32_3           = 0x00030437,
+	F_FLOAT32_4           = 0x00040438,
+	F_UINT_10_10_10_L1    = 0x00010439,
+	F_NORMINT_10_10_10_L1 = 0x0001043A,
+	F_NORMINT_11_11_10    = 0x0001043B,
+	F_NORMUINT8_4_BGRA    = 0x0004013C,
+	F_NORMINT_10_10_10_2  = 0x0001043D,
+	F_UINT_10_10_10_2     = 0x0001043E,
+	F_TYPE_COUNT = 63,
+	F_MAX_COMP_SIZE = 16
 } DataStreamFormat;
 
 typedef enum
