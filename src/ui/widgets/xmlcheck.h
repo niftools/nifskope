@@ -43,7 +43,7 @@ enum OpType
 
 static std::array<QString, 10> ops_ord = { 
 	// EQ, NEQ, AND, AND_S, NAND, STR_E, STR_S, STR_NS, STR_NE, CONT
-	"==", "!=", "&", "& 1<<", "!&", "^", "$", "!^", "!$", u8"⊂" 
+	"==", "!=", "&", "& 1<<", "!&", "^", "$", "!^", "!$", QChar(0x2282) // ⊂
 };
 
 static std::map<QString, QPair<OpType, QString>> ops = {
