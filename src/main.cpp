@@ -50,6 +50,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 QCoreApplication * createApplication( int &argc, char *argv[] )
 {
+	QApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
 	// Iterate over args
 	for ( int i = 1; i < argc; ++i ) {
 		// -no-gui: start as core app without all the GUI overhead
@@ -71,7 +72,6 @@ int main( int argc, char * argv[] )
 	QScopedPointer<QCoreApplication> app( createApplication( argc, argv ) );
 
 	if ( auto a = qobject_cast<QApplication *>(app.data()) ) {
-		QApplication::setAttribute( Qt::AA_UseDesktopOpenGL );
 		a->setOrganizationName( "NifTools" );
 		a->setOrganizationDomain( "niftools.org" );
 		a->setApplicationName( "NifSkope " + NifSkopeVersion::rawToMajMin( NIFSKOPE_VERSION ) );
