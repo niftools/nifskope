@@ -413,7 +413,7 @@ margin-top: -2px;
 }
 
 #statusbar QSizeGrip {
-background: url(&quot;:/img/sizeGrip&quot;) no-repeat;
+background: url(&quot;:/wnd/sizeGrip&quot;) no-repeat;
 width: 10px; height: 10px;
 }
 
