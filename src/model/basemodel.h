@@ -332,7 +332,7 @@ protected:
 	virtual bool evalVersion( NifItem * item, bool chkParents = false ) const = 0;
 
 	//! Set the header string
-	virtual bool setHeaderString( const QString & ) = 0;
+	virtual bool setHeaderString( const QString &, uint ver = 0 ) = 0;
 
 	//! Get an item by name
 	template <typename T> T get( NifItem * parent, const QString & name ) const;

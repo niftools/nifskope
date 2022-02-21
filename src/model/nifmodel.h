@@ -319,7 +319,7 @@ protected:
 
 	bool evalVersion( NifItem * item, bool chkParents = false ) const override final;
 
-	bool setHeaderString( const QString & ) override final;
+	bool setHeaderString( const QString &, uint ver = 0 ) override final;
 
 	template <typename T> T get( NifItem * parent, const QString & name ) const;
 	template <typename T> T get( NifItem * item ) const;

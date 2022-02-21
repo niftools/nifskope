@@ -96,7 +96,7 @@ protected:
 
 	bool setItemValue( NifItem * item, const NifValue & v ) override final;
 
-	bool setHeaderString( const QString & ) override final;
+	bool setHeaderString( const QString &, uint ver = 0 ) override final;
 
 	bool evalVersion( NifItem * item, bool chkParents = false ) const override final;
 

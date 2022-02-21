@@ -1683,7 +1683,7 @@ QModelIndex NifModel::buddy( const QModelIndex & index ) const
  *  load and save
  */
 
-bool NifModel::setHeaderString( const QString & s )
+bool NifModel::setHeaderString( const QString & s, uint ver )
 {
 	if ( !( s.startsWith( "NetImmerse File Format" ) || s.startsWith( "Gamebryo" ) // official
 	        || s.startsWith( "NDSNIF" )                                            // altantica
@@ -1697,8 +1697,13 @@ bool NifModel::setHeaderString( const QString & s )
 		return false;
 	}
 
-	int p = s.indexOf( "Version", 0, Qt::CaseInsensitive );
+	// Early Accept
+	if ( isVersionSupported(ver) ) {
+		version = ver;
+		return true;
+	}
 
+	int p = s.indexOf( "Version", 0, Qt::CaseInsensitive );
 	if ( p >= 0 ) {
 		QString v = s;
 
@@ -1720,10 +1725,6 @@ bool NifModel::setHeaderString( const QString & s )
 			return false;
 		}
 
-		return true;
-	} else if ( s.startsWith( "NS" ) ) {
-		// Dodgy version for NeoSteam
-		version = 0x0a010000;
 		return true;
 	}
 

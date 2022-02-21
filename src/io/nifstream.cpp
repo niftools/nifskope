@@ -356,8 +356,22 @@ bool NifIStream::read( NifValue & val )
 			if ( c >= 80 )
 				return false;
 
+			quint32 version = 0;
+			// Support NIF versions without "Version" in header string
+			// Do for all files for now
+			//if ( c == GAMEBRYO_FF || c == NETIMMERSE_FF || c == NEOSTEAM_FF ) {
+			device->peek((char *)&version, 4);
+			// NeoSteam Hack
+			if (version == 0x08F35232)
+				version = 0x0A010000;
+			// Version didn't exist until NetImmerse 4.0
+			else if (version < 0x04000000)
+				version = 0;
+			//}
+
 			*static_cast<QString *>(val.val.data) = QString( string );
-			bool x = model->setHeaderString( QString( string ) );
+			bool x = model->setHeaderString( QString( string ), version );
+
 			init();
 			return x;
 		}
