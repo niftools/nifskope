@@ -33,7 +33,7 @@ public:
 		if ( nif->isNiBlock( iData, { "NiTriShapeData", "NiTriStripsData" } ) )
 			return iData;
 
-		if ( nif->isNiBlock( index, { "BSTriShape", "BSMeshLODTriShape", "BSSubIndexTriShape" } ) ) {
+		if ( nif->isNiBlock( index, { "BSTriShape", "BSMeshLODTriShape", "BSSubIndexTriShape", "BSDynamicTriShape" } ) ) {
 			auto vf = nif->get<BSVertexDesc>( index, "Vertex Desc" );
 			if ( (vf & VertexFlags::VF_SKINNED) && nif->getUserVersion2() == 100 ) {
 				// Skinned SSE
@@ -123,10 +123,18 @@ public:
 			verts.reserve( numVerts );
 			QVector<Vector3> norms( numVerts );
 
-			for ( int i = 0; i < numVerts; i++ ) {
-				auto idx = nif->index( i, 0, iData );
+			if ( nif->isNiBlock(index, "BSDynamicTriShape") ) {
+				auto dynVerts = nif->getArray<Vector4>(index, "Vertices");
+				verts.clear();
+				verts.reserve(numVerts);
+				for ( const auto & v : dynVerts )
+					verts << Vector3(v);
+			} else {
+				for ( int i = 0; i < numVerts; i++ ) {
+					auto idx = nif->index(i, 0, iData);
 
-				verts += nif->get<Vector3>( idx, "Vertex" );
+					verts += nif->get<Vector3>(idx, "Vertex");
+				}
 			}
 
 			faceNormals( verts, triangles, norms );
@@ -219,6 +227,14 @@ public:
 				verts += nif->get<Vector3>( idx, "Vertex" );
 				norms += nif->get<ByteVector3>( idx, "Normal" );
 			}
+		}
+
+		if ( nif->isNiBlock(index, "BSDynamicTriShape") ) {
+			auto dynVerts = nif->getArray<Vector4>(index, "Vertices");
+			verts.clear();
+			verts.reserve( numVerts );
+			for ( const auto & v : dynVerts )
+				verts << Vector3(v);
 		}
 
 		if ( verts.isEmpty() || verts.count() != norms.count() )
