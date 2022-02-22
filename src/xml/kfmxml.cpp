@@ -268,6 +268,9 @@ bool KfmModel::loadXML()
 #ifdef Q_OS_LINUX
 	                     << "/usr/share/nifskope/kfm.xml"
 #endif
+#ifdef Q_OS_MACX
+						 << "../../../kfm.xml"
+#endif
 	);
 	for ( const QString& str : xmlList ) {
 		if ( dir.exists( str ) ) {
