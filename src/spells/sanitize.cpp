@@ -17,16 +17,16 @@
  */
 
 //! Reorders blocks to put shapes before nodes (for Oblivion / FO3)
-class spReorderLinks final : public Spell
+class spReorderLinks : public Spell
 {
 public:
-	QString name() const override final { return Spell::tr( "Reorder Link Arrays" ); }
-	QString page() const override final { return Spell::tr( "Sanitize" ); }
-	bool sanity() const override final { return true; }
+	QString name() const override { return Spell::tr( "Reorder Link Arrays" ); }
+	QString page() const override { return Spell::tr( "Sanitize" ); }
+	bool sanity() const override { return true; }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override
 	{
-		return ( !index.isValid() && ( nif->getVersionNumber() >= 0x14000004 ) );
+		return ( !index.isValid() && ( nif->getVersionNumber() >= 0x14000004 && nif->getUserVersion2() > 0 ) );
 	}
 
 	//! Comparator for link sort.
@@ -37,10 +37,20 @@ public:
 	 */
 	static bool compareChildLinks( const QPair<qint32, bool> & a, const QPair<qint32, bool> & b )
 	{
+		return a.first < b.first;
+	}
+
+	static bool compareChildLinksShapeTop(const QPair<qint32, bool>& a, const QPair<qint32, bool>& b)
+	{
 		return a.second != b.second ? a.second : a.first < b.first;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
+	static bool compareChildLinksShapeBtm(const QPair<qint32, bool>& a, const QPair<qint32, bool>& b)
+	{
+		return a.second != b.second ? !a.second : a.first < b.first;
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override
 	{
 		for ( int n = 0; n < nif->getBlockCount(); n++ ) {
 			QModelIndex iBlock = nif->getBlock( n );
@@ -49,17 +59,21 @@ public:
 			QModelIndex iChildren = nif->getIndex( iBlock, "Children" );
 
 			if ( iNumChildren.isValid() && iChildren.isValid() ) {
-				QList<QPair<qint32, bool> > links;
+				QList<QPair<qint32, bool>> links;
 
 				for ( int r = 0; r < nif->rowCount( iChildren ); r++ ) {
 					qint32 l = nif->getLink( iChildren.child( r, 0 ) );
 
 					if ( l >= 0 ) {
-						links.append( QPair<qint32, bool>( l, nif->inherits( nif->getBlock( l ), "NiTriBasedGeom" ) ) );
+						links.append( QPair<qint32, bool>( l, nif->inherits(nif->getBlock(l), {"NiTriBasedGeom", "BSTriShape"}) ) );
 					}
 				}
 
-				std::stable_sort( links.begin(), links.end(), compareChildLinks );
+				auto compareFn = compareChildLinksShapeBtm;
+				if ( nif->getUserVersion2() < 83 )
+					compareFn = compareChildLinksShapeTop;
+
+				std::stable_sort( links.begin(), links.end(), compareFn );
 
 				for ( int r = 0; r < links.count(); r++ ) {
 					if ( links[r].first != nif->getLink( iChildren.child( r, 0 ) ) ) {

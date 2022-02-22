@@ -1047,6 +1047,15 @@ bool NifModel::inherits( const QModelIndex & idx, const QString & aunty ) const
 	return inherits( itemName( index( x + 1, 0 ) ), aunty );
 }
 
+bool NifModel::inherits( const QModelIndex& index, const QStringList& ancestors ) const
+{
+	for ( const auto & a : ancestors ) {
+		if ( inherits( index, a ) )
+			return true;
+	}
+
+	return false;
+}
 
 /*
  *  basic and compound type functions

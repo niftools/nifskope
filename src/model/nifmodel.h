@@ -272,6 +272,7 @@ public:
 	bool inherits( const QString & name, const QStringList & ancestors ) const;
 	// returns true if the block containing index inherits ancestor
 	bool inherits( const QModelIndex & index, const QString & ancestor ) const;
+	bool inherits( const QModelIndex & index, const QStringList & ancestors ) const;
 
 	//! Is this version supported?
 	static bool isVersionSupported( quint32 );
