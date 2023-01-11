@@ -346,7 +346,7 @@ gli {
 }
 
 zlib {
-    !*msvc*:QMAKE_CFLAGS += -isystem ../nifskope/lib/zlib
+    !*msvc*:QMAKE_CFLAGS += -isystem ../nifskope/lib/zlib -DHAVE_UNISTD_H
     !*msvc*:QMAKE_CXXFLAGS += -isystem ../nifskope/lib/zlib
     else:INCLUDEPATH += lib/zlib
     HEADERS += $$files($$PWD/lib/zlib/*.h, false)
