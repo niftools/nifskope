@@ -10,7 +10,7 @@
     <height>800</height>
    </rect>
   </property>
-  <widget class="QWidget" name="centralwidget" />
+  <widget class="QWidget" name="centralwidget"/>
   <widget class="QToolBar" name="tFile">
    <property name="sizePolicy">
     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -69,6 +69,7 @@
    </attribute>
    <addaction name="aSelectObject"/>
    <addaction name="aSelectVertex"/>
+   <addaction name="aPaintVertex"/>
    <addaction name="separator"/>
    <addaction name="aViewTop"/>
    <addaction name="aViewFront"/>
@@ -278,6 +279,7 @@
      <addaction name="aToggleArchiveBrowser"/>
      <addaction name="aToggleKfm"/>
      <addaction name="aToggleInspect"/>
+     <addaction name="aTogglePaintSettings"/>
     </widget>
     <addaction name="menuShow"/>
     <addaction name="mToolbars"/>
@@ -1017,6 +1019,33 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
         <bool>true</bool>
        </property>
       </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="PaintDock">
+   <property name="windowTitle">
+    <string>Paint Vertex</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_11">
+    <layout class="QHBoxLayout" name="horizontalLayout_4">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="PaintSettingsWidget" name="vertexPaintSettings" native="true"/>
      </item>
     </layout>
    </widget>
@@ -2093,6 +2122,32 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <string>Error Color</string>
    </property>
   </action>
+  <action name="aPaintVertex">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/paintVerts</normaloff>:/btn/paintVerts</iconset>
+   </property>
+   <property name="text">
+    <string>Paint Vertex</string>
+   </property>
+   <property name="toolTip">
+    <string>Paint Vertex</string>
+   </property>
+  </action>
+  <action name="aTogglePaintSettings">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Paint</string>
+   </property>
+   <property name="toolTip">
+    <string>Paint</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -2104,6 +2159,12 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    <class>ReferenceBrowser</class>
    <extends>QTextBrowser</extends>
    <header>ui/widgets/refrbrowser.h</header>
+  </customwidget>
+  <customwidget>
+   <class>PaintSettingsWidget</class>
+   <extends>QWidget</extends>
+   <header>ui/widgets/vertexpaintwidget.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources>
@@ -2651,6 +2712,70 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <hint type="destinationlabel">
      <x>639</x>
      <y>399</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>aTogglePaintSettings</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>PaintDock</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1112</x>
+     <y>466</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>PaintDock</sender>
+   <signal>visibilityChanged(bool)</signal>
+   <receiver>aTogglePaintSettings</receiver>
+   <slot>setChecked(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1112</x>
+     <y>466</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>aTogglePaintSettings</sender>
+   <signal>triggered()</signal>
+   <receiver>PaintDock</receiver>
+   <slot>raise()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1112</x>
+     <y>466</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>aPaintVertex</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>aTogglePaintSettings</receiver>
+   <slot>setChecked(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
     </hint>
    </hints>
   </connection>

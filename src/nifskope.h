@@ -203,12 +203,12 @@ public slots:
 	void on_aViewTop_triggered( bool );
 	void on_aViewFront_triggered( bool );
 	void on_aViewLeft_triggered( bool );
-	
+
 	void on_aViewCenter_triggered();
 	void on_aViewFlip_triggered( bool );
 	void on_aViewPerspective_toggled( bool );
 	void on_aViewWalk_triggered( bool );
-	
+
 	void on_aViewUser_toggled( bool );
 	void on_aViewUserSave_triggered( bool );
 
@@ -370,7 +370,7 @@ private:
 
 	bool selecting = false;
 	bool initialShowEvent = true;
-	
+
 	QProgressBar * progress = nullptr;
 
 	QDockWidget * dList;
@@ -379,6 +379,7 @@ private:
 	QDockWidget * dKfm;
 	QDockWidget * dRefr;
 	QDockWidget * dInsp;
+	QDockWidget * dPaint;
 	QDockWidget * dBrowser;
 
 	QToolBar * tool;

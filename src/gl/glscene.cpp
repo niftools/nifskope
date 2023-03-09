@@ -68,7 +68,7 @@ Scene::Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * 
 
 	visMode = VisNone;
 
-	selMode = SelObject;
+	actionMode = ( Select | Object );
 
 	// Startup Defaults
 
@@ -197,7 +197,7 @@ void Scene::updateSelectMode( QAction * action )
 	if ( !action )
 		return;
 
-	selMode = SelMode( action->data().toInt() );
+	actionMode = ActionMode( action->data().toInt() );
 	emit sceneUpdated();
 }
 

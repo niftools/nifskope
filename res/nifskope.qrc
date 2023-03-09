@@ -62,5 +62,6 @@
         <file alias="skinned">icon/skinned.png</file>
         <file alias="collapse">icon/collapse.png</file>
         <file alias="expand">icon/expand.png</file>
+        <file alias="paintVerts">icon/paint-verts.png</file>
     </qresource>
 </RCC>

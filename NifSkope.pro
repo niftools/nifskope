@@ -189,6 +189,7 @@ HEADERS += \
 	src/ui/widgets/refrbrowser.h \
 	src/ui/widgets/uvedit.h \
 	src/ui/widgets/valueedit.h \
+	src/ui/widgets/vertexpaintwidget.h \
 	src/ui/widgets/xmlcheck.h \
 	src/ui/about_dialog.h \
 	src/ui/checkablemessagebox.h \
@@ -270,6 +271,7 @@ SOURCES += \
 	src/ui/widgets/refrbrowser.cpp \
 	src/ui/widgets/uvedit.cpp \
 	src/ui/widgets/valueedit.cpp \
+	src/ui/widgets/vertexpaintwidget.cpp \
 	src/ui/widgets/xmlcheck.cpp \
 	src/ui/about_dialog.cpp \
 	src/ui/checkablemessagebox.cpp \
@@ -298,7 +300,8 @@ FORMS += \
 	src/ui/settingsgeneral.ui \
 	src/ui/settingsrender.ui \
 	src/ui/settingsresources.ui \
-	src/ui/widgets/lightingwidget.ui
+	src/ui/widgets/lightingwidget.ui \
+	src/ui/widgets/vertexpaintwidget.ui
 
 
 ###############################
@@ -346,6 +349,9 @@ gli {
 }
 
 zlib {
+    macx {
+        DEFINES += Z_HAVE_UNISTD_H
+    }
     !*msvc*:QMAKE_CFLAGS += -isystem ../nifskope/lib/zlib
     !*msvc*:QMAKE_CXXFLAGS += -isystem ../nifskope/lib/zlib
     else:INCLUDEPATH += lib/zlib

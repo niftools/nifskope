@@ -129,16 +129,18 @@ public:
 
 	VisMode visMode;
 
-	enum SelModes
+	enum ActionModes
 	{
-		SelNone = 0,
-		SelObject = 1,
-		SelVertex = 2
+		Deselect = 0x0,
+		Select = 0x1,
+		Paint = 0x2,
+		Object = 0x10000,
+		Vertex = 0x20000
 	};
 
-	Q_DECLARE_FLAGS( SelMode, SelModes );
+	Q_DECLARE_FLAGS( ActionMode, ActionModes );
 
-	SelMode selMode;
+	ActionMode actionMode;
 
 	enum LodLevel
 	{
@@ -149,7 +151,7 @@ public:
 
 	LodLevel lodLevel;
 
-	
+
 	Renderer * renderer;
 
 	NodeList nodes;
@@ -202,5 +204,7 @@ protected:
 Q_DECLARE_OPERATORS_FOR_FLAGS( Scene::SceneOptions )
 
 Q_DECLARE_OPERATORS_FOR_FLAGS( Scene::VisMode )
+
+Q_DECLARE_OPERATORS_FOR_FLAGS( Scene::ActionMode )
 
 #endif
