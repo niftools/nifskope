@@ -483,7 +483,7 @@ win32:contains(QT_ARCH, i386) {
 }
 
 	XML += \
-		build/docsys/nifxml/nif.xml \
+		build/nif.xml \
 		build/docsys/kfmxml/kfm.xml
 
 	QSS += \
@@ -502,8 +502,7 @@ win32:contains(QT_ARCH, i386) {
 
 	copyDirs( $$SHADERS, shaders )
 	#copyDirs( $$LANG, lang )
-	copyFiles( $$QSS )
-	#copyFiles( $$XML )
+	copyFiles( $$XML $$QSS )
 
 	# Copy Readmes and rename to TXT
 	copyFiles( $$READMES,,,, md:txt )
