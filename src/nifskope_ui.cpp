@@ -186,6 +186,8 @@ void NifSkope::initActions()
 	connect( ui->aSave, &QAction::triggered, this, &NifSkope::save );  
 	connect( ui->aSaveAs, &QAction::triggered, this, &NifSkope::saveAsDlg );
 
+	ui->aReload->setDisabled(true);
+
 	// TODO: Assure Actions and Scene state are synced
 	// Set Data for Actions to pass onto Scene when clicking
 	/*	
@@ -611,6 +613,7 @@ void NifSkope::initToolBars()
 	connect ( ogl->scene, &Scene::disableSave, [this]() {
 		ui->aSave->setDisabled(true);
 		ui->aSaveAs->setDisabled(true);
+		ui->aReload->setDisabled(true);
 	} );
 
 	// LOD Toolbar
@@ -798,6 +801,7 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 
 	ui->aSave->setDisabled(false);
 	ui->aSaveAs->setDisabled(false);
+	ui->aReload->setDisabled(false);
 
 	int timeout = 2500;
 	if ( success ) {
@@ -907,6 +911,7 @@ void NifSkope::enableUi()
 	ui->aSaveMenu->setEnabled( true );
 	ui->aSave->setEnabled( true );
 	ui->aSaveAs->setEnabled( true );
+	ui->aReload->setEnabled( true );
 	ui->aHeader->setEnabled( true );
 
 	ui->mRender->setEnabled( true );
