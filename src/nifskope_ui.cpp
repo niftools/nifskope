@@ -840,6 +840,9 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 	// Center the model on load
 	ogl->center();
 
+	// Expand the top level of Block List tree
+	ui->list->expandToDepth(0);
+
 	// Hide Progress Bar
 	QTimer::singleShot( timeout, progress, SLOT( hide() ) );
 }
