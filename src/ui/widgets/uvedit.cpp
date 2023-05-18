@@ -65,7 +65,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	#include <GL/glu.h>
 #endif
 
-#define BASESIZE 512.0
+#define BASESIZE 1024.0
 #define GRIDSIZE 16.0
 #define GRIDSEGS 4
 #define ZOOMUNIT -64.0
@@ -86,7 +86,7 @@ UVWidget * UVWidget::createEditor( NifModel * nif, const QModelIndex & idx )
 		return nullptr;
 	}
 
-	uvw->show();
+	uvw->showMaximized();
 	return uvw;
 }
 
@@ -112,7 +112,7 @@ QStringList UVWidget::texnames = {
 
 
 UVWidget::UVWidget( QWidget * parent )
-	: QGLWidget( QGLFormat( QGL::SampleBuffers ), parent, 0, Qt::Tool ), undoStack( new QUndoStack( this ) )
+	: QGLWidget( QGLFormat( QGL::SampleBuffers ), parent, 0, Qt::Window ), undoStack( new QUndoStack( this ) )
 {
 	setWindowTitle( tr( "UV Editor" ) );
 	setFocusPolicy( Qt::StrongFocus );
@@ -802,6 +802,11 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 	nif = nifModel;
 	iShape = nifIndex;
 	isDataOnSkin = false;
+
+	auto newTitle = tr("UV Editor");
+	if (nif)
+		newTitle += tr(" - ") + nif->getFileInfo().fileName();
+	setWindowTitle(newTitle);
 
 	game = Game::GameManager::get_game(nif->getVersionNumber(), nif->getUserVersion(), nif->getUserVersion2());
 
