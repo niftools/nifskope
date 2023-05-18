@@ -388,6 +388,9 @@ protected:
 	static QHash<QString, NifBlockPtr> blocks;
 	static QMap<quint32, NifBlockPtr> blockHashes;
 
+	static QHash<QString, QString> arrayPseudonyms;
+	static void setupArrayPseudonyms();
+
 private:
 	struct Settings
 	{

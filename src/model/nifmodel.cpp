@@ -44,12 +44,42 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QFile>
 #include <QSettings>
 
+QHash<QString, QString> NifModel::arrayPseudonyms;
 
+void NifModel::setupArrayPseudonyms()
+{
+	if (!arrayPseudonyms.isEmpty())
+		return;
+
+	auto registerPseudonym = [](const QString & plural, const QString & singular)
+	{
+		arrayPseudonyms.insert(plural, singular + " ");
+	};
+
+	registerPseudonym("Vertex Data", "Vertex");
+	registerPseudonym("Vertices", "Vertex");
+	registerPseudonym("Triangles", "Triangle");
+	registerPseudonym("Normals", "Normal");
+	registerPseudonym("Tangents", "Tangent");
+	registerPseudonym("Bitangents", "Bitangent");
+	registerPseudonym("Vertex Colors", "Vertex Color");
+	registerPseudonym("Textures", "Texture");
+	registerPseudonym("Strings", "String");
+	registerPseudonym("Children", "Child");
+	registerPseudonym("Extra Data List", "Extra Data");
+	registerPseudonym("Chunk Materials", "Chunk Material");
+	registerPseudonym("Chunk Transforms", "Chunk Transform");
+	registerPseudonym("Big Verts", "Big Vert");
+	registerPseudonym("Big Tris", "Big Tri");
+	registerPseudonym("Chunks", "Chunk");
+	registerPseudonym("Effects", "Effect");
+}
 
 //! @file nifmodel.cpp The NIF data model.
 
 NifModel::NifModel( QObject * parent ) : BaseModel( parent )
 {
+	setupArrayPseudonyms();
 	updateSettings();
 
 	clear();
@@ -1181,15 +1211,27 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 			switch ( column ) {
 			case NameCol:
 				{
+					auto iname = item->name();
+
 					if ( ndr )
-						return item->name();
+						return iname;
 
-					QString a = "";
+					if ( itemType(index) == "NiBlock" )
+						return QString::number(getBlockNumber(index)) + " " + iname;
+					else if (isArray(item->parent())) {
+						auto arrayName = arrayPseudonyms.value(iname);
+						if (arrayName.isEmpty())
+						{
+							if (iname == "UV Sets")
+								arrayName = QString((item->value().type() == NifValue::tVector2) ? "UV " : "UV Set ");
+							else
+								arrayName = iname + " ";
+						}
 
-					if ( itemType( index ) == "NiBlock" )
-						a = QString::number( getBlockNumber( index ) ) + " ";
+						return arrayName + QString::number(item->row());
+					}
 
-					return a + item->name();
+					return " " + iname;
 				}
 				break;
 			case TypeCol:
@@ -1368,7 +1410,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 			case NameCol:
 				{
 					if ( item->parent() && isArray( item->parent() ) ) {
-						return QString( "array index: %1" ).arg( item->row() );
+						return QString();
 					} else {
 						QString tip = QString( "<p><b>%1</b></p><p>%2</p>" )
 						              .arg( item->name() )
