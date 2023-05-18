@@ -130,7 +130,6 @@ public:
 	void center();
 	void move( float, float, float );
 	void rotate( float, float, float );
-	void zoom( float );
 
 	void setCenter();
 	void setDistance( float );

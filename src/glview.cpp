@@ -87,6 +87,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define ZOOM_MIN 1.0
 #define ZOOM_MAX 1000.0
+#define ZOOM_PAGE_KEY_MULT 1.025
+
+#define ZOOM_QE_KEY_MULT 1.025 
+#define ZOOM_MOUSE_WHEEL_MULT 0.95
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932385
@@ -946,19 +950,6 @@ void GLView::rotate( float x, float y, float z )
 	update();
 }
 
-void GLView::zoom( float z )
-{
-	Zoom *= z;
-
-	if ( Zoom < ZOOM_MIN )
-		Zoom = ZOOM_MIN;
-
-	if ( Zoom > ZOOM_MAX )
-		Zoom = ZOOM_MAX;
-
-	update();
-}
-
 void GLView::setCenter()
 {
 	Node * node = scene->getNode( model, scene->currentBlock );
@@ -1021,6 +1012,13 @@ void GLView::setRotation( float x, float y, float z )
 void GLView::setZoom( float z )
 {
 	Zoom = z;
+
+	if (Zoom < ZOOM_MIN)
+		Zoom = ZOOM_MIN;
+
+	if (Zoom > ZOOM_MAX)
+		Zoom = ZOOM_MAX;
+
 	update();
 }
 
@@ -1337,12 +1335,12 @@ void GLView::advanceGears()
 	//if ( kbd[ Qt::Key_R ] ) move( 0, -MOV_SPD * dT, 0 );
 
 	// Zoom
-	if ( kbd[ Qt::Key_Q ] ) setDistance( Dist * 1.0 / 1.1 );
-	if ( kbd[ Qt::Key_E ] ) setDistance( Dist * 1.1 );
+	if ( kbd[ Qt::Key_Q ] ) setDistance( Dist / ZOOM_QE_KEY_MULT );
+	if ( kbd[ Qt::Key_E ] ) setDistance( Dist * ZOOM_QE_KEY_MULT );
 
 	// Focal Length
-	if ( kbd[ Qt::Key_PageUp ] )   zoom( 1.1f );
-	if ( kbd[ Qt::Key_PageDown ] ) zoom( 1 / 1.1f );
+	if ( kbd[ Qt::Key_PageUp ] )   setZoom( Zoom * ZOOM_PAGE_KEY_MULT );
+	if ( kbd[ Qt::Key_PageDown ] ) setZoom( Zoom / ZOOM_PAGE_KEY_MULT );
 
 	if ( mouseMov[0] != 0 || mouseMov[1] != 0 || mouseMov[2] != 0 ) {
 		move( mouseMov[0], mouseMov[1], mouseMov[2] );
@@ -1812,9 +1810,14 @@ void GLView::mouseReleaseEvent( QMouseEvent * event )
 void GLView::wheelEvent( QWheelEvent * event )
 {
 	if ( view == ViewWalk )
-		mouseMov += Vector3( 0, 0, event->delta() );
+		mouseMov += Vector3( 0, 0, ((double) event->delta()) / 4.0 );
 	else
-		setDistance( Dist * (event->delta() < 0 ? 1.0 / 0.8 : 0.8) );
+	{
+		if (event->delta() < 0)
+			setDistance( Dist / ZOOM_MOUSE_WHEEL_MULT );
+		else
+			setDistance( Dist * ZOOM_MOUSE_WHEEL_MULT );
+	}
 }
 
 
