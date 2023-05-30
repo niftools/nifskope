@@ -51,10 +51,7 @@ void NifModel::setupArrayPseudonyms()
 	if (!arrayPseudonyms.isEmpty())
 		return;
 
-	auto registerPseudonym = [](const QString & plural, const QString & singular)
-	{
-		arrayPseudonyms.insert(plural, singular + " ");
-	};
+	#define registerPseudonym(plural, singular)		arrayPseudonyms.insert(plural, singular)
 
 	registerPseudonym("Vertex Data", "Vertex");
 	registerPseudonym("Vertices", "Vertex");
@@ -73,6 +70,12 @@ void NifModel::setupArrayPseudonyms()
 	registerPseudonym("Big Tris", "Big Tri");
 	registerPseudonym("Chunks", "Chunk");
 	registerPseudonym("Effects", "Effect");
+	registerPseudonym("Partitions", "Partition");
+	registerPseudonym("Bones", "Bone");
+	registerPseudonym("Bone List", "Bone");
+	registerPseudonym("Bone Weights", "Bone Weight");
+	registerPseudonym("Vertex Weights", "Vertex Weight");
+	registerPseudonym("Bone Indices", "Bone Index");
 }
 
 //! @file nifmodel.cpp The NIF data model.
@@ -1218,17 +1221,15 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 
 					if ( itemType(index) == "NiBlock" )
 						return QString::number(getBlockNumber(index)) + " " + iname;
-					else if (isArray(item->parent())) {
+					else if ( isArray(item->parent()) ) {
 						auto arrayName = arrayPseudonyms.value(iname);
-						if (arrayName.isEmpty())
-						{
+						if ( arrayName.isEmpty() ) {
 							if (iname == "UV Sets")
-								arrayName = QString((item->value().type() == NifValue::tVector2) ? "UV " : "UV Set ");
+								arrayName = QString( (item->value().type() == NifValue::tVector2) ? "UV" : "UV Set" );
 							else
-								arrayName = iname + " ";
+								arrayName = iname;
 						}
-
-						return arrayName + QString::number(item->row());
+						return arrayName + " " + QString::number(item->row());
 					}
 
 					return " " + iname;
