@@ -300,7 +300,7 @@ void GLView::initializeGL()
 {
 	GLenum err;
 	
-	if ( scene->options & Scene::DoMultisampling ) {
+	if ( scene->hasOption(Scene::DoMultisampling) ) {
 		if ( !glContext->hasExtension( "GL_EXT_framebuffer_multisample" ) ) {
 			scene->options &= ~Scene::DoMultisampling;
 			//qDebug() << "System does not support multisampling";
@@ -345,7 +345,7 @@ void GLView::glProjection( int x, int y )
 
 	BoundSphere bs = scene->view * scene->bounds();
 
-	if ( scene->options & Scene::ShowAxes ) {
+	if ( scene->hasOption(Scene::ShowAxes) ) {
 		bs |= BoundSphere( scene->view * Vector3(), axis );
 	}
 
@@ -413,7 +413,7 @@ void GLView::paintGL()
 	glPushMatrix();
 
 	// Clear Viewport
-	if ( scene->visMode & Scene::VisSilhouette ) {
+	if ( scene->hasVisMode(Scene::VisSilhouette) ) {
 		qglClearColor( QColor( 255, 255, 255, 255 ) );
 	}
 
@@ -475,7 +475,7 @@ void GLView::paintGL()
 	glLoadIdentity();
 
 	// Draw the grid
-	if ( scene->options & Scene::ShowGrid ) {
+	if ( scene->hasOption(Scene::ShowGrid) ) {
 		glDisable( GL_ALPHA_TEST );
 		glDisable( GL_BLEND );
 		glDisable( GL_LIGHTING );
@@ -519,7 +519,7 @@ void GLView::paintGL()
 
 	GLfloat mat_spec[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
-	if ( scene->options & Scene::DoLighting ) {
+	if ( scene->hasOption(Scene::DoLighting) ) {
 		// Setup light
 		Vector4 lightDir( 0.0, 0.0, 1.0, 0.0 );
 
@@ -530,7 +530,7 @@ void GLView::paintGL()
 			v = m * v;
 			lightDir = Vector4( viewTrans.rotation * v, 0.0 );
 
-			if ( scene->visMode & Scene::VisLightPos ) {
+			if ( scene->hasVisMode(Scene::VisLightPos) ) {
 				glEnable( GL_BLEND );
 				glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 				glEnable( GL_DEPTH_TEST );
@@ -557,10 +557,7 @@ void GLView::paintGL()
 		}
 
 		float amb = ambient;
-		if ( (scene->visMode & Scene::VisNormalsOnly)
-			&& (scene->options & Scene::DoTexturing)
-			&& !(scene->options & Scene::DisableShaders) )
-		{
+		if ( scene->hasVisMode(Scene::VisNormalsOnly) && scene->hasOption(Scene::DoTexturing) && !scene->hasOption(Scene::DisableShaders) ) {
 			amb = 0.1f;
 		}
 		
@@ -576,10 +573,7 @@ void GLView::paintGL()
 		glLightfv( GL_LIGHT0, GL_SPECULAR, mat_diff );
 		glLightfv( GL_LIGHT0, GL_POSITION, lightDir.data() );
 	} else {
-		float amb = 0.5f;
-		if ( scene->options & Scene::DisableShaders ) {
-			amb = 0.0f;
-		}
+		float amb = scene->hasOption(Scene::DisableShaders) ? 0.0f : 0.5f;
 
 		GLfloat mat_amb[] = { amb, amb, amb, 1.0f };
 		GLfloat mat_diff[] = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -593,7 +587,7 @@ void GLView::paintGL()
 		glLightfv( GL_LIGHT0, GL_SPECULAR, mat_spec );
 	}
 
-	if ( scene->visMode & Scene::VisSilhouette ) {
+	if ( scene->hasVisMode(Scene::VisSilhouette) ) {
 		GLfloat mat_diff[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 		GLfloat mat_amb[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
@@ -607,7 +601,7 @@ void GLView::paintGL()
 		glLightfv( GL_LIGHT0, GL_SPECULAR, mat_spec );
 	}
 
-	if ( scene->options & Scene::DoMultisampling )
+	if ( scene->hasOption(Scene::DoMultisampling) )
 		glEnable( GL_MULTISAMPLE_ARB );
 
 #ifndef QT_NO_DEBUG
@@ -634,7 +628,7 @@ void GLView::paintGL()
 	// Draw the model
 	scene->draw();
 
-	if ( scene->options & Scene::ShowAxes ) {
+	if ( scene->hasOption(Scene::ShowAxes) ) {
 		// Resize viewport to small corner of screen
 		int axesSize = std::min( width() / 10, 125 );
 		glViewport( 0, 0, axesSize, axesSize );
@@ -887,13 +881,13 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 
 	QList<DrawFunc> df;
 
-	if ( scene->options & Scene::ShowCollision )
+	if ( scene->hasOption(Scene::ShowCollision) )
 		df << &Scene::drawHavok;
 
-	if ( scene->options & Scene::ShowNodes )
+	if ( scene->hasOption(Scene::ShowNodes) )
 		df << &Scene::drawNodes;
 
-	if ( scene->options & Scene::ShowMarkers )
+	if ( scene->hasOption(Scene::ShowMarkers) )
 		df << &Scene::drawFurn;
 
 	df << &Scene::drawShapes;
@@ -909,7 +903,7 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 
 	QModelIndex chooseIndex;
 
-	if ( scene->selMode & Scene::SelVertex ) {
+	if ( scene->isSelModeVertex() ) {
 		// Vertex
 		int block = choose >> 16;
 		int vert = choose - (block << 16);

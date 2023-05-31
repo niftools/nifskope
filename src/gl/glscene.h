@@ -120,6 +120,7 @@ public:
 	Q_DECLARE_FLAGS( SceneOptions, SceneOption );
 
 	SceneOptions options;
+	inline bool hasOption(SceneOptions optValue) const { return ( options & optValue ); }
 
 	enum VisModes
 	{
@@ -132,6 +133,7 @@ public:
 	Q_DECLARE_FLAGS( VisMode, VisModes );
 
 	VisMode visMode;
+	inline bool hasVisMode(VisModes modeValue) const { return ( visMode & modeValue ); }
 
 	enum SelModes
 	{
@@ -143,6 +145,8 @@ public:
 	Q_DECLARE_FLAGS( SelMode, SelModes );
 
 	SelMode selMode;
+	inline bool isSelModeObject() const { return ( selMode & SelObject ); }
+	inline bool isSelModeVertex() const { return ( selMode & SelVertex ); }
 
 	enum LodLevel
 	{

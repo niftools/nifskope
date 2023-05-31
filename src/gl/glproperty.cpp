@@ -252,7 +252,7 @@ void AlphaProperty::setThreshold( float threshold )
 
 void glProperty( AlphaProperty * p )
 {
-	if ( p && p->alphaBlend && (p->scene->options & Scene::DoBlending) ) {
+	if ( p && p->alphaBlend && p->scene->hasOption(Scene::DoBlending) ) {
 		glDisable( GL_POLYGON_OFFSET_FILL );
 		glEnable( GL_BLEND );
 		glBlendFunc( p->alphaSrc, p->alphaDst );
@@ -260,7 +260,7 @@ void glProperty( AlphaProperty * p )
 		glDisable( GL_BLEND );
 	}
 
-	if ( p && p->alphaTest && (p->scene->options & Scene::DoBlending) ) {
+	if ( p && p->alphaTest && p->scene->hasOption(Scene::DoBlending) ) {
 		glDisable( GL_POLYGON_OFFSET_FILL );
 		glEnable( GL_ALPHA_TEST );
 		glAlphaFunc( p->alphaFunc, p->alphaThreshold );
@@ -539,7 +539,7 @@ int TexturingProperty::getId( const QString & texname )
 
 void glProperty( TexturingProperty * p )
 {
-	if ( p && (p->scene->options & Scene::DoTexturing) && p->bind( 0 ) ) {
+	if ( p && p->scene->hasOption(Scene::DoTexturing) && p->bind(0) ) {
 		glEnable( GL_TEXTURE_2D );
 	}
 }
@@ -609,7 +609,7 @@ void TextureProperty::setController( const NifModel * nif, const QModelIndex & i
 
 void glProperty( TextureProperty * p )
 {
-	if ( p && (p->scene->options & Scene::DoTexturing) && p->bind() ) {
+	if ( p && p->scene->hasOption(Scene::DoTexturing) && p->bind() ) {
 		glEnable( GL_TEXTURE_2D );
 	}
 }
@@ -867,7 +867,7 @@ void BSShaderLightingProperty::update( const NifModel * nif, const QModelIndex &
 
 void glProperty( BSShaderLightingProperty * p )
 {
-	if ( p && (p->scene->options & Scene::DoTexturing) && p->bind( 0 ) ) {
+	if ( p && p->scene->hasOption(Scene::DoTexturing) && p->bind(0) ) {
 		glEnable( GL_TEXTURE_2D );
 	}
 }

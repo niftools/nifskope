@@ -477,8 +477,8 @@ QString Renderer::setupProgram( Shape * mesh, const QString & hint )
 	mesh->activeProperties( props );
 
 	if ( !shader_ready || hint.isNull()
-		 || (mesh->scene->options & Scene::DisableShaders)
-		 || (mesh->scene->visMode & Scene::VisSilhouette)
+		 || mesh->scene->hasOption(Scene::DisableShaders)
+		 || mesh->scene->hasVisMode(Scene::VisSilhouette)
 		 || (mesh->nifVersion == 0) ) {
 		setupFixedFunction( mesh, props );
 		return {};
@@ -607,9 +607,12 @@ static QString cube = "shaders/cubemap.dds";
 bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & props,
 							 const QVector<QModelIndex> & iBlocks, bool eval )
 {
-	const NifModel * nif = qobject_cast<const NifModel *>( mesh->index().model() );
+	auto meshidx = mesh->index();
+	if ( !meshidx.isValid() )
+		return false;
 
-	if ( !mesh->index().isValid() || !nif )
+	const NifModel * nif = qobject_cast<const NifModel *>(meshidx.model());
+	if ( !nif )
 		return false;
 
 	if ( eval && !prog->conditions.eval( nif, iBlocks ) )
@@ -617,18 +620,17 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 
 	fn->glUseProgram( prog->id );
 
-	auto opts = mesh->scene->options;
-	auto vis = mesh->scene->visMode;
+	auto scene = mesh->scene;
+	auto lsp = mesh->bslsp;
+	auto esp = mesh->bsesp;
 
 	Material * mat = nullptr;
-	if ( mesh->bslsp && mesh->bslsp->mat() )
-		mat = mesh->bslsp->mat();
-	else if ( mesh->bsesp && mesh->bsesp->mat() )
-		mat = mesh->bsesp->mat();
+	if ( lsp )
+		mat = lsp->mat();
+	if ( esp && !mat )
+		mat = esp->mat();
 
-	QString default_n = ::default_n;
-	if ( mesh->nifVersion == 155 )
-		default_n = ::default_ns;
+	QString default_n = (mesh->nifVersion == 155) ? ::default_ns : ::default_n;
 
 	// texturing
 
@@ -638,23 +640,23 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 	//	to be accessible from here
 
 	TexClampMode clamp = TexClampMode::WRAP_S_WRAP_T;
-	if ( mesh->bslsp )
-		clamp = mesh->bslsp->getClampMode();
+	if ( lsp )
+		clamp = lsp->getClampMode();
 
 	int texunit = 0;
 	if ( bsprop ) {
 		QString forced;
-		if ( (opts & Scene::DoLighting) && (vis & Scene::VisNormalsOnly) )
+		if ( scene->hasOption(Scene::DoLighting) &&  scene->hasVisMode(Scene::VisNormalsOnly) )
 			forced = white;
 
 		QString alt = white;
-		if ( opts & Scene::DoErrorColor )
+		if ( scene->hasOption(Scene::DoErrorColor) )
 			alt = magenta;
 
 		bool result = prog->uniSampler( bsprop, SAMP_BASE, 0, texunit, alt, clamp, forced );
 	} else {
 		GLint uniBaseMap = prog->uniformLocations[SAMP_BASE];
-		if ( uniBaseMap >= 0 && (texprop || (bsprop && mesh->bslsp)) ) {
+		if ( uniBaseMap >= 0 && (texprop || (bsprop && lsp)) ) {
 			if ( !activateTextureUnit( texunit ) || (texprop && !texprop->bind( 0 )) )
 				prog->uniSamplerBlank( SAMP_BASE, texunit );
 			else
@@ -662,9 +664,9 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 		}
 	}
 
-	if ( bsprop && !mesh->bsesp ) {
+	if ( bsprop && !esp ) {
 		QString forced;
-		if ( !(opts & Scene::DoLighting) )
+		if ( !scene->hasOption(Scene::DoLighting) )
 			forced = default_n;
 		prog->uniSampler( bsprop, SAMP_NORMAL, 1, texunit, default_n, clamp, forced );
 	} else if ( !bsprop ) {
@@ -692,7 +694,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 		}
 	}
 
-	if ( bsprop && !mesh->bsesp ) {
+	if ( bsprop && !esp ) {
 		prog->uniSampler( bsprop, SAMP_GLOW, 2, texunit, black, clamp );
 	} else if ( !bsprop ) {
 		GLint uniGlowMap = prog->uniformLocations[SAMP_GLOW];
@@ -721,112 +723,111 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 
 
 	// BSLightingShaderProperty
-	if ( mesh->bslsp ) {
-		prog->uni1f( LIGHT_EFF1, mesh->bslsp->getLightingEffect1() );
-		prog->uni1f( LIGHT_EFF2, mesh->bslsp->getLightingEffect2() );
+	if ( lsp ) {
+		prog->uni1f( LIGHT_EFF1, lsp->getLightingEffect1() );
+		prog->uni1f( LIGHT_EFF2, lsp->getLightingEffect2() );
 
-		prog->uni1f( ALPHA, mesh->bslsp->getAlpha() );
+		prog->uni1f( ALPHA, lsp->getAlpha() );
 
-		auto uvS = mesh->bslsp->getUvScale();
+		auto uvS = lsp->getUvScale();
 		prog->uni2f( UV_SCALE, uvS.x, uvS.y );
 
-		auto uvO = mesh->bslsp->getUvOffset();
+		auto uvO = lsp->getUvOffset();
 		prog->uni2f( UV_OFFSET, uvO.x, uvO.y );
 
 		prog->uni4m( MAT_VIEW, mesh->viewTrans().toMatrix4() );
 		prog->uni4m( MAT_WORLD, mesh->worldTrans().toMatrix4() );
 
-		prog->uni1i( G2P_COLOR, mesh->bslsp->greyscaleColor );
+		prog->uni1i( G2P_COLOR, lsp->greyscaleColor );
 		prog->uniSampler( bsprop, SAMP_GRAYSCALE, 3, texunit, "", TexClampMode::MIRRORED_S_MIRRORED_T );
 
-		prog->uni1i( HAS_TINT_COLOR, mesh->bslsp->hasTintColor );
-		if ( mesh->bslsp->hasTintColor ) {
-			auto tC = mesh->bslsp->getTintColor();
+		prog->uni1i( HAS_TINT_COLOR, lsp->hasTintColor );
+		if ( lsp->hasTintColor ) {
+			auto tC = lsp->getTintColor();
 			prog->uni3f( TINT_COLOR, tC.red(), tC.green(), tC.blue() );
 		}
 
-		prog->uni1i( HAS_MAP_DETAIL, mesh->bslsp->hasDetailMask );
+		prog->uni1i( HAS_MAP_DETAIL, lsp->hasDetailMask );
 		prog->uniSampler( bsprop, SAMP_DETAIL, 3, texunit, "shaders/blankdetailmap.dds", clamp );
 
-		prog->uni1i( HAS_MAP_TINT, mesh->bslsp->hasTintMask );
+		prog->uni1i( HAS_MAP_TINT, lsp->hasTintMask );
 		prog->uniSampler( bsprop, SAMP_TINT, 6, texunit, gray, clamp );
 
 		// Rim & Soft params
 
-		prog->uni1i( HAS_SOFT, mesh->bslsp->hasSoftlight );
-		prog->uni1i( HAS_RIM, mesh->bslsp->hasRimlight );
+		prog->uni1i( HAS_SOFT, lsp->hasSoftlight );
+		prog->uni1i( HAS_RIM, lsp->hasRimlight );
 
 		prog->uniSampler( bsprop, SAMP_LIGHT, 2, texunit, default_n, clamp );
 
 		// Backlight params
 
-		prog->uni1i( HAS_MAP_BACK, mesh->bslsp->hasBacklight );
+		prog->uni1i( HAS_MAP_BACK, lsp->hasBacklight );
 
 		prog->uniSampler( bsprop, SAMP_BACKLIGHT, 7, texunit, default_n, clamp );
 
 		// Glow params
 
-		if ( (opts & Scene::DoGlow) && (opts & Scene::DoLighting) && (mesh->bslsp->hasEmittance || mesh->nifVersion == 155) )
-			prog->uni1f( GLOW_MULT, mesh->bslsp->getEmissiveMult() );
+		if ( scene->hasOption(Scene::DoGlow) && scene->hasOption(Scene::DoLighting) && (lsp->hasEmittance || mesh->nifVersion == 155) )
+			prog->uni1f( GLOW_MULT, lsp->getEmissiveMult() );
 		else
 			prog->uni1f( GLOW_MULT, 0 );
 		
-		prog->uni1i( HAS_EMIT, mesh->bslsp->hasEmittance );
-		prog->uni1i( HAS_MAP_GLOW, mesh->bslsp->hasGlowMap );
-		auto emC = mesh->bslsp->getEmissiveColor();
+		prog->uni1i( HAS_EMIT, lsp->hasEmittance );
+		prog->uni1i( HAS_MAP_GLOW, lsp->hasGlowMap );
+		auto emC = lsp->getEmissiveColor();
 		prog->uni3f( GLOW_COLOR, emC.red(), emC.green(), emC.blue() );
 
 		// Specular params
-		float s = ((opts & Scene::DoSpecular) && (opts & Scene::DoLighting)) ? mesh->bslsp->getSpecularStrength() : 0.0;
+		float s = (scene->hasOption(Scene::DoSpecular) && scene->hasOption(Scene::DoLighting)) ? lsp->getSpecularStrength() : 0.0;
 		prog->uni1f( SPEC_SCALE, s );
 
 		// Assure specular power does not break the shaders
-		auto gloss = mesh->bslsp->getSpecularGloss();
+		auto gloss = lsp->getSpecularGloss();
 		prog->uni1f( SPEC_GLOSS, gloss );
 		
-		auto spec = mesh->bslsp->getSpecularColor();
+		auto spec = lsp->getSpecularColor();
 		prog->uni3f( SPEC_COLOR, spec.red(), spec.green(), spec.blue() );
 
-		prog->uni1i( HAS_MAP_SPEC, mesh->bslsp->hasSpecularMap );
+		prog->uni1i( HAS_MAP_SPEC, lsp->hasSpecularMap );
 
 		if ( mesh->nifVersion <= 130 ) {
-			if ( mesh->nifVersion == 130 || (mesh->bslsp->hasSpecularMap && !mesh->bslsp->hasBacklight) )
+			if ( mesh->nifVersion == 130 || (lsp->hasSpecularMap && !lsp->hasBacklight) )
 				prog->uniSampler( bsprop, SAMP_SPECULAR, 7, texunit, white, clamp );
 			else
 				prog->uniSampler( bsprop, SAMP_SPECULAR, 7, texunit, black, clamp );
 		}
 
 		if ( mesh->nifVersion >= 130 ) {
-			prog->uni1i( DOUBLE_SIDE, mesh->bslsp->getIsDoubleSided() );
-			prog->uni1f( G2P_SCALE, mesh->bslsp->paletteScale );
-			prog->uni1f( SS_ROLLOFF, mesh->bslsp->getLightingEffect1() );
-			prog->uni1f( POW_FRESNEL, mesh->bslsp->fresnelPower );
-			prog->uni1f( POW_RIM, mesh->bslsp->rimPower );
-			prog->uni1f( POW_BACK, mesh->bslsp->backlightPower );
+			prog->uni1i( DOUBLE_SIDE, lsp->getIsDoubleSided() );
+			prog->uni1f( G2P_SCALE, lsp->paletteScale );
+			prog->uni1f( SS_ROLLOFF, lsp->getLightingEffect1() );
+			prog->uni1f( POW_FRESNEL, lsp->fresnelPower );
+			prog->uni1f( POW_RIM, lsp->rimPower );
+			prog->uni1f( POW_BACK, lsp->backlightPower );
 		}
 
 		// Multi-Layer
 
 		prog->uniSampler( bsprop, SAMP_INNER, 6, texunit, default_n, clamp );
-		if ( mesh->bslsp->hasMultiLayerParallax ) {
+		if ( lsp->hasMultiLayerParallax ) {
 
-			auto inS = mesh->bslsp->getInnerTextureScale();
+			auto inS = lsp->getInnerTextureScale();
 			prog->uni2f( INNER_SCALE, inS.x, inS.y );
 
-			prog->uni1f( INNER_THICK, mesh->bslsp->getInnerThickness() );
+			prog->uni1f( INNER_THICK, lsp->getInnerThickness() );
 
-			prog->uni1f( OUTER_REFR, mesh->bslsp->getOuterRefractionStrength() );
-			prog->uni1f( OUTER_REFL, mesh->bslsp->getOuterReflectionStrength() );
+			prog->uni1f( OUTER_REFR, lsp->getOuterRefractionStrength() );
+			prog->uni1f( OUTER_REFL, lsp->getOuterReflectionStrength() );
 		}
 
 		// Environment Mapping
 
-		prog->uni1i( HAS_MAP_CUBE, mesh->bslsp->hasEnvironmentMap );
-		prog->uni1i( HAS_MASK_ENV, mesh->bslsp->useEnvironmentMask );
+		prog->uni1i( HAS_MAP_CUBE, lsp->hasEnvironmentMap );
+		prog->uni1i( HAS_MASK_ENV, lsp->useEnvironmentMask );
 		float refl = 0.0;
-		if ( mesh->bslsp->hasEnvironmentMap
-			 && (opts & Scene::DoCubeMapping) && (opts & Scene::DoLighting) )
-			refl = mesh->bslsp->getEnvironmentReflection();
+		if ( lsp->hasEnvironmentMap && scene->hasOption(Scene::DoCubeMapping) && scene->hasOption(Scene::DoLighting) )
+			refl = lsp->getEnvironmentReflection();
 
 		prog->uni1f( ENV_REFLECTION, refl );
 
@@ -852,70 +853,70 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 		}
 
 		// Parallax
-		prog->uni1i( HAS_MAP_HEIGHT, mesh->bslsp->hasHeightMap );
+		prog->uni1i( HAS_MAP_HEIGHT, lsp->hasHeightMap );
 		prog->uniSampler( bsprop, SAMP_HEIGHT, 3, texunit, gray, clamp );
 	}
 
 
 	// BSEffectShaderProperty
-	if ( mesh->bsesp ) {
+	if ( esp ) {
 
 		prog->uni4m( MAT_WORLD, mesh->worldTrans().toMatrix4() );
 
-		clamp = mesh->bsesp->getClampMode();
+		clamp = esp->getClampMode();
 
 		prog->uniSampler( bsprop, SAMP_BASE, 0, texunit, white, clamp );
 
-		prog->uni1i( DOUBLE_SIDE, mesh->bsesp->getIsDoubleSided() );
+		prog->uni1i( DOUBLE_SIDE, esp->getIsDoubleSided() );
 
-		auto uvS = mesh->bsesp->getUvScale();
+		auto uvS = esp->getUvScale();
 		prog->uni2f( UV_SCALE, uvS.x, uvS.y );
 
-		auto uvO = mesh->bsesp->getUvOffset();
+		auto uvO = esp->getUvOffset();
 		prog->uni2f( UV_OFFSET, uvO.x, uvO.y );
 
-		prog->uni1i( HAS_MAP_BASE, mesh->bsesp->hasSourceTexture );
-		prog->uni1i( HAS_MAP_G2P, mesh->bsesp->hasGreyscaleMap );
+		prog->uni1i( HAS_MAP_BASE, esp->hasSourceTexture );
+		prog->uni1i( HAS_MAP_G2P, esp->hasGreyscaleMap );
 
-		prog->uni1i( G2P_ALPHA, mesh->bsesp->greyscaleAlpha );
-		prog->uni1i( G2P_COLOR, mesh->bsesp->greyscaleColor );
+		prog->uni1i( G2P_ALPHA, esp->greyscaleAlpha );
+		prog->uni1i( G2P_COLOR, esp->greyscaleColor );
 
 
-		prog->uni1i( USE_FALLOFF, mesh->bsesp->useFalloff );
-		prog->uni1i( HAS_RGBFALL, mesh->bsesp->hasRGBFalloff );
-		prog->uni1i( HAS_WEAP_BLOOD, mesh->bsesp->hasWeaponBlood );
+		prog->uni1i( USE_FALLOFF, esp->useFalloff );
+		prog->uni1i( HAS_RGBFALL, esp->hasRGBFalloff );
+		prog->uni1i( HAS_WEAP_BLOOD, esp->hasWeaponBlood );
 
 		// Glow params
 
-		auto emC = mesh->bsesp->getEmissiveColor();
+		auto emC = esp->getEmissiveColor();
 		prog->uni4f( GLOW_COLOR, emC.red(), emC.green(), emC.blue(), emC.alpha() );
-		prog->uni1f( GLOW_MULT, mesh->bsesp->getEmissiveMult() );
+		prog->uni1f( GLOW_MULT, esp->getEmissiveMult() );
 
 		// Falloff params
 
 		prog->uni4f( FALL_PARAMS,
-			mesh->bsesp->falloff.startAngle, mesh->bsesp->falloff.stopAngle,
-			mesh->bsesp->falloff.startOpacity, mesh->bsesp->falloff.stopOpacity
+			esp->falloff.startAngle, esp->falloff.stopAngle,
+			esp->falloff.startOpacity, esp->falloff.stopOpacity
 		);
 
-		prog->uni1f( FALL_DEPTH, mesh->bsesp->falloff.softDepth );
+		prog->uni1f( FALL_DEPTH, esp->falloff.softDepth );
 
 		// BSEffectShader textures
 		prog->uniSampler( bsprop, SAMP_GRAYSCALE, 1, texunit, "", TexClampMode::MIRRORED_S_MIRRORED_T );
 
 		if ( mesh->nifVersion >= 130 ) {
 
-			prog->uni1f( LIGHT_INF, mesh->bsesp->getLightingInfluence() );
+			prog->uni1f( LIGHT_INF, esp->getLightingInfluence() );
 
-			prog->uni1i( HAS_MAP_NORMAL, mesh->bsesp->hasNormalMap && (opts & Scene::DoLighting) );
+			prog->uni1i( HAS_MAP_NORMAL, esp->hasNormalMap && scene->hasOption(Scene::DoLighting) );
 
 			prog->uniSampler( bsprop, SAMP_NORMAL, 3, texunit, default_n, clamp );
 
-			prog->uni1i( HAS_MAP_CUBE, mesh->bsesp->hasEnvMap );
-			prog->uni1i( HAS_MASK_ENV, mesh->bsesp->hasEnvMask );
+			prog->uni1i( HAS_MAP_CUBE, esp->hasEnvMap );
+			prog->uni1i( HAS_MASK_ENV, esp->hasEnvMask );
 			float refl = 0.0;
-			if ( mesh->bsesp->hasEnvMap && (opts & Scene::DoCubeMapping) && (opts & Scene::DoLighting) )
-				refl = mesh->bsesp->getEnvironmentReflection();
+			if ( esp->hasEnvMap && scene->hasOption(Scene::DoCubeMapping) && scene->hasOption(Scene::DoLighting) )
+				refl = esp->getEnvironmentReflection();
 
 			prog->uni1f( ENV_REFLECTION, refl );
 
@@ -938,12 +939,12 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 				prog->uniSampler( bsprop, SAMP_LIGHTING, 7, texunit, lighting, clamp );
 			}
 
-			prog->uni1f( LUM_EMIT, mesh->bsesp->lumEmittance );
+			prog->uni1f( LUM_EMIT, esp->lumEmittance );
 		}
 	}
 
 	// Defaults for uniforms in older meshes
-	if ( !mesh->bsesp && !mesh->bslsp ) {
+	if ( !esp && !lsp ) {
 		prog->uni2f( UV_SCALE, 1.0, 1.0 );
 		prog->uni2f( UV_OFFSET, 0.0, 0.0 );
 	}
@@ -1012,8 +1013,8 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 	// setup blending
 
 	glProperty( props.get<AlphaProperty>() );
-
-	if ( mat && (mesh->scene->options & Scene::DoBlending) ) {
+	
+	if ( mat && scene->hasOption(Scene::DoBlending) ) {
 		static const GLenum blendMap[11] = {
 			GL_ONE, GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR,
 			GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
@@ -1149,7 +1150,7 @@ void Renderer::setupFixedFunction( Shape * mesh, const PropertyList & props )
 
 	// setup texturing
 
-	if ( !(mesh->scene->options & Scene::DoTexturing) )
+	if ( !mesh->scene->hasOption(Scene::DoTexturing) )
 		return;
 
 	if ( TexturingProperty * texprop = props.get<TexturingProperty>() ) {

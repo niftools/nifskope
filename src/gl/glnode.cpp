@@ -474,7 +474,7 @@ Node * Node::findChild( const QString & str ) const
 
 bool Node::isHidden() const
 {
-	if ( scene->options & Scene::ShowHidden )
+	if ( scene->hasOption(Scene::ShowHidden) )
 		return false;
 
 	if ( flags.node.hidden || ( parent && parent->isHidden() ) )
@@ -528,7 +528,7 @@ void Node::draw()
 	if ( isHidden() || iBlock == scene->currentBlock )
 		return;
 
-	if ( !(scene->selMode & Scene::SelObject) )
+	if ( !scene->isSelModeObject() )
 		return;
 
 	if ( Node::SELECTING ) {
@@ -585,7 +585,7 @@ void Node::drawSelection() const
 	if ( !nif )
 		return;
 
-	if ( !(scene->selMode & Scene::SelObject) )
+	if ( !scene->isSelModeObject() )
 		return;
 
 	bool extraData = false;
@@ -675,7 +675,7 @@ void Node::drawSelection() const
 
 	}
 
-	if ( currentBlock.endsWith( "Node" ) && scene->options & Scene::ShowNodes && scene->options & Scene::ShowAxes ) {
+	if ( currentBlock.endsWith( "Node" ) && scene->hasOption(Scene::ShowNodes) && scene->hasOption(Scene::ShowAxes) ) {
 		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
 		Transform t;
@@ -774,7 +774,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	if ( (!nif || !iShape.isValid() || stack.contains( iShape )) && !extraData )
 		return;
 
-	if ( !(scene->selMode & Scene::SelObject) )
+	if ( !scene->isSelModeObject() )
 		return;
 
 	stack.push( iShape );
@@ -966,7 +966,6 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 					int totalVerts = 0;
 					if ( num_vertices > 0 ) {
 						QModelIndex iParent = scene->currentIndex.parent();
-						int rowCount = nif->rowCount( iParent );
 						for ( int j = 0; j < i; j++ ) {
 							totalVerts += nif->get<int>( iParent.child( j, 0 ), "Num Vertices" );
 						}
@@ -1063,10 +1062,10 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 
 void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, const Scene * scene )
 {
-	if ( !( nif && iConstraint.isValid() && scene && (scene->options & Scene::ShowConstraints) ) )
+	if ( !( nif && iConstraint.isValid() && scene && scene->hasOption(Scene::ShowConstraints) ) )
 		return;
 
-	if ( !(scene->selMode & Scene::SelObject) )
+	if ( !scene->isSelModeObject() )
 		return;
 
 	Transform tBodyA;
@@ -1369,7 +1368,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 
 void Node::drawHavok()
 {
-	if ( !(scene->selMode & Scene::SelObject) )
+	if ( !scene->isSelModeObject() )
 		return;
 
 	// TODO: Why are all these here - "drawNodes", "drawFurn", "drawHavok"?
@@ -1565,13 +1564,13 @@ void Node::drawHavok()
 
 	drawHvkShape( nif, nif->getBlock( nif->getLink( iBody, "Shape" ) ), shapeStack, scene, colors[ color_index ] );
 
-	if ( Node::SELECTING && scene->options & Scene::ShowAxes ) {
+	if ( Node::SELECTING && scene->hasOption(Scene::ShowAxes) ) {
 		int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iBody ) );
 		glColor4ubv( (GLubyte *)&s_nodeId );
 		glDepthFunc( GL_ALWAYS );
 		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ), 1.0f / bhkScaleMult( nif ), false );
 		glDepthFunc( GL_LEQUAL );
-	} else if ( scene->options & Scene::ShowAxes ) {
+	} else if ( scene->hasOption(Scene::ShowAxes) ) {
 		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ), 1.0f / bhkScaleMult( nif ) );
 	}
 
@@ -1779,7 +1778,7 @@ void Node::drawFurn()
 	if ( !( iBlock.isValid() && nif ) )
 		return;
 
-	if ( !(scene->selMode & Scene::SelObject) )
+	if ( !scene->isSelModeObject() )
 		return;
 
 	QModelIndex iExtraDataList = nif->getIndex( iBlock, "Extra Data List" );
@@ -1878,10 +1877,8 @@ BoundSphere Node::bounds() const
 {
 	BoundSphere boundsphere;
 
-	auto opts = scene->options;
-
 	// the node itself
-	if ( (opts & Scene::ShowNodes) || (opts & Scene::ShowCollision) ) {
+	if ( scene->hasOption(Scene::ShowNodes) || scene->hasOption(Scene::ShowCollision) ) {
 		boundsphere |= BoundSphere( worldTrans().translation, 0 );
 	}
 

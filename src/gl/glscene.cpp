@@ -336,11 +336,11 @@ void Scene::draw()
 {
 	drawShapes();
 
-	if ( options & ShowNodes )
+	if ( hasOption(ShowNodes) )
 		drawNodes();
-	if ( options & ShowCollision )
+	if ( hasOption(ShowCollision) )
 		drawHavok();
-	if ( options & ShowMarkers )
+	if ( hasOption(ShowMarkers) )
 		drawFurn();
 
 	drawSelection();
@@ -348,7 +348,7 @@ void Scene::draw()
 
 void Scene::drawShapes()
 {
-	if ( options & DoBlending ) {
+	if ( hasOption(DoBlending) ) {
 		NodeList secondPass;
 
 		for ( Node * node : roots.list() ) {
@@ -470,7 +470,7 @@ QString Scene::textStats()
 
 int Scene::bindTexture( const QString & fname )
 {
-	if ( !(options & DoTexturing) || fname.isEmpty() )
+	if ( !hasOption(DoTexturing) || fname.isEmpty() )
 		return 0;
 
 	return textures->bind( fname, game );
@@ -478,7 +478,7 @@ int Scene::bindTexture( const QString & fname )
 
 int Scene::bindTexture( const QModelIndex & iSource )
 {
-	if ( !(options & DoTexturing) || !iSource.isValid() )
+	if ( !hasOption(DoTexturing) || !iSource.isValid() )
 		return 0;
 
 	return textures->bind( iSource, game );

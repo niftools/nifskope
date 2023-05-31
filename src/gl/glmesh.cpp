@@ -94,11 +94,12 @@ void Mesh::clear()
 
 void Shape::setController( const NifModel * nif, const QModelIndex & iController )
 {
-	if ( nif->itemName( iController ) == "NiGeomMorpherController" ) {
+	QString contrName = nif->itemName(iController);
+	if ( contrName == "NiGeomMorpherController" ) {
 		Controller * ctrl = new MorphController( this, iController );
 		ctrl->update( nif, iController );
 		controllers.append( ctrl );
-	} else if ( nif->itemName( iController ) == "NiUVController" ) {
+	} else if ( contrName == "NiUVController" ) {
 		Controller * ctrl = new UVController( this, iController );
 		ctrl->update( nif, iController );
 		controllers.append( ctrl );
@@ -113,9 +114,7 @@ void Shape::update( const NifModel * nif, const QModelIndex & index )
 	Node::update( nif, index );
 
 	// If shaders are reenabled, reset
-	if ( !(scene->options & Scene::DisableShaders) && shader.isNull() 
-		 && nif->checkVersion( 0x14020007, 0x14020007 ) )
-	{
+	if ( !scene->hasOption(Scene::DisableShaders) && shader.isNull() && nif->checkVersion( 0x14020007, 0x14020007 ) ) {
 		updateShaderProperties( nif );
 	}
 
@@ -188,12 +187,12 @@ void Shape::boneSphere( const NifModel * nif, const QModelIndex & index ) const
 		return;
 
 	Transform boneT = Transform( nif, index );
-	Transform t = (scene->options & Scene::DoSkinning) ? viewTrans() : Transform();
+	Transform t = scene->hasOption(Scene::DoSkinning) ? viewTrans() : Transform();
 	t = t * skeletonTrans * bone->localTrans( 0 ) * boneT;
 
 	auto bSphere = BoundSphere( nif, index );
 	if ( bSphere.radius > 0.0 ) {
-		glColor4f( 1, 1, 1, 0.33 );
+		glColor4f( 1, 1, 1, 0.33f );
 		auto pos = boneT.rotation.inverted() * (bSphere.center - boneT.translation);
 		drawSphereSimple( t * pos, bSphere.radius, 36 );
 	}
@@ -205,7 +204,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 
 	// Was Skinning toggled?
 	// If so, switch between partition triangles and data triangles
-	bool doSkinningCurr = (scene->options & Scene::DoSkinning);
+	bool doSkinningCurr = scene->hasOption(Scene::DoSkinning);
 	updateSkin |= (doSkinning != doSkinningCurr) && nif->checkVersion( 0, 0x14040000 );
 	updateData |= updateSkin;
 	doSkinning = doSkinningCurr;
@@ -295,7 +294,7 @@ QModelIndex Mesh::vertexAt( int idx ) const
 bool Mesh::isHidden() const
 {
 	return ( Node::isHidden()
-	         || ( !(scene->options & Scene::ShowHidden) /*&& Options::onlyTextured()*/
+	         || ( !scene->hasOption(Scene::ShowHidden)
 	              && !properties.get<TexturingProperty>()
 	              && !properties.get<BSShaderLightingProperty>()
 	         )
@@ -481,7 +480,6 @@ void Mesh::transform()
 					for ( uint k = 0; k < numStreamComponents; k++ ) {
 						auto typeK = datastreamFormats[k];
 						int typeLength = ( (typeK & 0x000F0000) >> 0x10 );
-						int typeSize = ( (typeK & 0x00000F00) >> 0x08 );
 
 						switch ( (typeK & 0x00000FF0) >> 0x04 ) {
 						case 0x10:
@@ -831,7 +829,6 @@ void Mesh::transform()
 		}
 
 		isSkinned = weights.count() || partitions.count();
-
 	}
 
 	Node::transform();
@@ -990,13 +987,13 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
 		return;
 
 	// TODO: Only run this if BSXFlags has "EditorMarkers present" flag
-	if ( !(scene->options & Scene::ShowMarkers) && name.startsWith( "EditorMarker" ) )
+	if ( !scene->hasOption(Scene::ShowMarkers) && name.startsWith( "EditorMarker" ) )
 		return;
 
 	auto nif = static_cast<const NifModel *>(iBlock.model());
 	
 	if ( Node::SELECTING ) {
-		if ( scene->selMode & Scene::SelObject ) {
+		if ( scene->isSelModeObject() ) {
 			int s_nodeId = ID2COLORKEY( nodeId );
 			glColor4ubv( (GLubyte *)&s_nodeId );
 		} else {
@@ -1053,10 +1050,7 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
 		// Do VCs if legacy or if either bslsp or bsesp is set
 		bool doVCs = (!bssp) || (bssp && (bssp->getFlags2() & ShaderFlags::SLSF2_Vertex_Colors));
 
-		if ( transColors.count()
-			&& ( scene->options & Scene::DoVertexColors )
-			&& doVCs )
-		{
+		if ( transColors.count() && scene->hasOption(Scene::DoVertexColors) && doVCs ) {
 			glEnableClientState( GL_COLOR_ARRAY );
 			glColorPointer( 4, GL_FLOAT, 0, transColors.constData() );
 		} else {
@@ -1127,7 +1121,7 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
 	glDisable( GL_POLYGON_OFFSET_FILL );
 
 	glPointSize( 8.5 );
-	if ( scene->selMode & Scene::SelVertex ) {
+	if ( scene->isSelModeVertex() ) {
 		drawVerts();
 	}
 
@@ -1164,10 +1158,10 @@ void Mesh::drawVerts() const
 
 void Mesh::drawSelection() const
 {
-	if ( scene->options & Scene::ShowNodes )
+	if ( scene->hasOption(Scene::ShowNodes) )
 		Node::drawSelection();
 
-	if ( isHidden() || !(scene->selMode & Scene::SelObject) )
+	if ( isHidden() || !scene->isSelModeObject() )
 		return;
 
 	auto idx = scene->currentIndex;

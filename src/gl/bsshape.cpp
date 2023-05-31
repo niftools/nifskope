@@ -287,7 +287,7 @@ void BSShape::transformShapes()
 
 	transformRigid = true;
 
-	if ( isSkinned && scene->options & Scene::DoSkinning ) {
+	if ( isSkinned && scene->hasOption(Scene::DoSkinning) ) {
 		transformRigid = false;
 
 		int vcnt = verts.count();
@@ -352,13 +352,13 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 	glPointSize( 8.5 );
 
 	// TODO: Only run this if BSXFlags has "EditorMarkers present" flag
-	if ( !(scene->options & Scene::ShowMarkers) && name.contains( "EditorMarker" ) )
+	if ( !scene->hasOption(Scene::ShowMarkers) && name.contains( "EditorMarker" ) )
 		return;
 
 	auto nif = static_cast<const NifModel *>(iBlock.model());
 
 	if ( Node::SELECTING ) {
-		if ( scene->selMode & Scene::SelObject ) {
+		if ( scene->isSelModeObject() ) {
 			int s_nodeId = ID2COLORKEY( nodeId );
 			glColor4ubv( (GLubyte *)&s_nodeId );
 		} else {
@@ -401,7 +401,7 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 		if ( nifVersion >= 130 && hasVertexColors && colors.count() )
 			doVCs = true;
 
-		if ( transColors.count() && (scene->options & Scene::DoVertexColors) && doVCs ) {
+		if ( transColors.count() && scene->hasOption(Scene::DoVertexColors) && doVCs ) {
 			glEnableClientState( GL_COLOR_ARRAY );
 			glColorPointer( 4, GL_FLOAT, 0, transColors.constData() );
 		} else if ( nifVersion < 130 && !hasVertexColors && (bslsp && bslsp->hasVertexColors) ) {
@@ -469,7 +469,7 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 	glDisable( GL_POLYGON_OFFSET_FILL );
 
 
-	if ( scene->selMode & Scene::SelVertex ) {
+	if ( scene->isSelModeVertex() ) {
 		drawVerts();
 	}
 
@@ -520,10 +520,10 @@ void BSShape::drawVerts() const
 void BSShape::drawSelection() const
 {
 	glDisable(GL_FRAMEBUFFER_SRGB);
-	if ( scene->options & Scene::ShowNodes )
+	if ( scene->hasOption(Scene::ShowNodes) )
 		Node::drawSelection();
 
-	if ( isHidden() || !(scene->selMode & Scene::SelObject) )
+	if ( isHidden() || !scene->isSelModeObject() )
 		return;
 
 	auto idx = scene->currentIndex;
@@ -615,7 +615,7 @@ void BSShape::drawSelection() const
 	if ( n == "Bounding Sphere" && !extraData ) {
 		auto sph = BoundSphere( nif, idx );
 		if ( sph.radius > 0.0 ) {
-			glColor4f( 1, 1, 1, 0.33 );
+			glColor4f( 1, 1, 1, 0.33f );
 			drawSphereSimple( sph.center, sph.radius, 72 );
 		}
 	}
@@ -631,7 +631,6 @@ void BSShape::drawSelection() const
 			for ( int i = 0; i < dataCt; i++ ) {
 				auto d = data.child( i, 0 );
 
-				int numC = nif->get<int>( d, "Num Combined" );
 				auto c = nif->getIndex( d, "Combined" );
 				int cCt = nif->rowCount( c );
 
@@ -652,7 +651,7 @@ void BSShape::drawSelection() const
 		float pbvR = nif->get<float>( iBSphere.child( 1, 2 ) );
 
 		if ( pbvR > 0.0 ) {
-			glColor4f( 0, 1, 0, 0.33 );
+			glColor4f( 0, 1, 0, 0.33f );
 			drawSphereSimple( pbvC, pbvR, 72 );
 		}
 
@@ -677,7 +676,7 @@ void BSShape::drawSelection() const
 			glMultMatrix( scene->view * t );
 
 			if ( bvR > 0.0 ) {
-				glColor4f( 1, 1, 1, 0.33 );
+				glColor4f( 1, 1, 1, 0.33f );
 				drawSphereSimple( Vector3( 0, 0, 0 ), bvR, 72 );
 			}
 
