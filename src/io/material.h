@@ -54,6 +54,8 @@ public:
 	Material( QString name, Game::GameMode game );
 
 	bool isValid() const;
+	bool hasAlphaBlend() const { return (bAlphaBlend != 0); }
+	bool hasAlphaTest() const { return (bAlphaTest != 0); }
 	bool hasDecal() const { return (bDecal != 0); }
 	QStringList textures() const;
 	QString getPath() const;

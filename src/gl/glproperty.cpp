@@ -248,7 +248,6 @@ void AlphaProperty::setController( const NifModel * nif, const QModelIndex & con
 void glProperty( AlphaProperty * p )
 {
 	if ( p && p->alphaBlend && p->scene->hasOption(Scene::DoBlending) ) {
-		glDisable( GL_POLYGON_OFFSET_FILL );
 		glEnable( GL_BLEND );
 		glBlendFunc( p->alphaSrc, p->alphaDst );
 	} else {
@@ -256,7 +255,6 @@ void glProperty( AlphaProperty * p )
 	}
 
 	if ( p && p->alphaTest && p->scene->hasOption(Scene::DoBlending) ) {
-		glDisable( GL_POLYGON_OFFSET_FILL );
 		glEnable( GL_ALPHA_TEST );
 		glAlphaFunc( p->alphaFunc, p->alphaThreshold );
 	} else {

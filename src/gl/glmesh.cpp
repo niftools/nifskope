@@ -213,8 +213,16 @@ void Shape::updateShader()
 	else
 		translucent = false;
 
-	Material * mat = (bssp) ? bssp->getMaterial() : nullptr;
-	drawInSecondPass = translucent || ( alphaProperty && alphaProperty->blend() ) || ( mat && mat->hasDecal() );
+	drawInSecondPass = false;
+	if ( translucent )
+		drawInSecondPass = true;
+	else if ( alphaProperty && (alphaProperty->hasAlphaBlend() || alphaProperty->hasAlphaTest()) )
+		drawInSecondPass = true;
+	else if ( bssp ) {
+		Material * mat = bssp->getMaterial();
+		if ( mat && (mat->hasAlphaBlend() || mat->hasAlphaTest() || mat->hasDecal()) )
+			drawInSecondPass = true;
+	}
 
 	if ( bssp ) {
 		depthTest = bssp->depthTest;
@@ -937,6 +945,15 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
 	if ( !scene->hasOption(Scene::ShowMarkers) && name.startsWith( "EditorMarker" ) )
 		return;
 
+	// BSOrderedNode
+	presorted |= presort;
+
+	// Draw translucent meshes in second pass
+	if ( secondPass && drawInSecondPass ) {
+		secondPass->add( this );
+		return;
+	}
+
 	auto nif = NifModel::fromIndex( iBlock );
 	
 	if ( Node::SELECTING ) {
@@ -946,15 +963,6 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
 		} else {
 			glColor4f( 0, 0, 0, 1 );
 		}
-	}
-
-	// BSOrderedNode
-	presorted |= presort;
-
-	// Draw translucent meshes in second pass
-	if ( secondPass && drawInSecondPass ) {
-		secondPass->add( this );
-		return;
 	}
 
 	// TODO: Option to hide Refraction and other post effects
@@ -978,7 +986,10 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
 
 	// Render polygon fill slightly behind alpha transparency and wireframe
 	glEnable( GL_POLYGON_OFFSET_FILL );
-	glPolygonOffset( 1.0f, 2.0f );
+	if ( drawInSecondPass )
+		glPolygonOffset( 0.5f, 1.0f );
+	else
+		glPolygonOffset( 1.0f, 2.0f );
 
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glVertexPointer( 3, GL_FLOAT, 0, transVerts.constData() );
@@ -1135,6 +1146,9 @@ void Mesh::drawSelection() const
 	glDisable( GL_ALPHA_TEST );
 
 	glDisable( GL_CULL_FACE );
+
+	glEnable( GL_POLYGON_OFFSET_FILL );
+	glPolygonOffset( -1.0f, -2.0f );
 
 	glLineWidth( 1.0 );
 	glPointSize( 3.5 );
@@ -1444,6 +1458,8 @@ void Mesh::drawSelection() const
 			boneSphere( nif, idx );
 		}
 	}
+
+	glDisable( GL_POLYGON_OFFSET_FILL );
 
 	if ( transformRigid )
 		glPopMatrix();

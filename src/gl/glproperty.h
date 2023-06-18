@@ -148,8 +148,8 @@ public:
 	Type type() const override final { return Alpha; }
 	QString typeId() const override final { return "NiAlphaProperty"; }
 
-	bool blend() const { return alphaBlend; }
-	bool test() const { return alphaTest; }
+	bool hasAlphaBlend() const { return alphaBlend; }
+	bool hasAlphaTest() const { return alphaTest; }
 
 	GLfloat alphaThreshold = 0;
 

@@ -611,7 +611,7 @@ static QString cube = "shaders/cubemap.dds";
 bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & props,
 							 const QVector<QModelIndex> & iBlocks, bool eval )
 {
-	auto nif = NifModel::fromValidIndex(mesh->index());
+	auto nif = NifModel::fromValidIndex( mesh->index() );
 	if ( !nif )
 		return false;
 
@@ -722,7 +722,6 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 				fn->glUniform1i( uniGlowMap, texunit++ );
 		}
 	}
-
 
 	// BSLightingShaderProperty
 	if ( lsp ) {
@@ -1007,25 +1006,18 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 			GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_SRC_ALPHA_SATURATE
 		};
 
-		if ( mat && mat->bAlphaBlend ) {
-			glDisable( GL_POLYGON_OFFSET_FILL );
+		if ( mat->hasAlphaBlend() ) {
 			glEnable( GL_BLEND );
 			glBlendFunc( blendMap[mat->iAlphaSrc], blendMap[mat->iAlphaDst] );
 		} else {
 			glDisable( GL_BLEND );
 		}
 
-		if ( mat && mat->bAlphaTest ) {
-			glDisable( GL_POLYGON_OFFSET_FILL );
+		if ( mat->hasAlphaTest() ) {
 			glEnable( GL_ALPHA_TEST );
 			glAlphaFunc( GL_GREATER, float( mat->iAlphaTestRef ) / 255.0 );
 		} else {
 			glDisable( GL_ALPHA_TEST );
-		}
-
-		if ( mat && mat->bDecal ) {
-			glEnable( GL_POLYGON_OFFSET_FILL );
-			glPolygonOffset( -1.0f, -1.0f );
 		}
 	}
 

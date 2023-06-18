@@ -262,6 +262,12 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 	if ( !scene->hasOption(Scene::ShowMarkers) && name.contains( "EditorMarker" ) )
 		return;
 
+	// Draw translucent meshes in second pass
+	if ( secondPass && drawInSecondPass ) {
+		secondPass->add( this );
+		return;
+	}
+
 	auto nif = NifModel::fromIndex( iBlock );
 
 	if ( Node::SELECTING ) {
@@ -273,22 +279,17 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 		}
 	}
 
-	// Draw translucent meshes in second pass
-	if ( secondPass && drawInSecondPass ) {
-		secondPass->add( this );
-		return;
-	}
-
 	if ( transformRigid ) {
 		glPushMatrix();
 		glMultMatrix( viewTrans() );
 	}
 
 	// Render polygon fill slightly behind alpha transparency and wireframe
-	if ( !drawInSecondPass ) {
-		glEnable( GL_POLYGON_OFFSET_FILL );
+	glEnable( GL_POLYGON_OFFSET_FILL );
+	if ( drawInSecondPass )
+		glPolygonOffset( 0.5f, 1.0f );
+	else
 		glPolygonOffset( 1.0f, 2.0f );
-	}
 
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glVertexPointer( 3, GL_FLOAT, 0, transVerts.constData() );
@@ -313,7 +314,6 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 			glColor( Color3( 1.0f, 1.0f, 1.0f ) );
 		}
 	}
-
 
 	if ( !Node::SELECTING ) {
 		if ( nif->getBSVersion() == 155 )
@@ -369,7 +369,6 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 	glDisableClientState( GL_COLOR_ARRAY );
 
 	glDisable( GL_POLYGON_OFFSET_FILL );
-
 
 	if ( scene->isSelModeVertex() ) {
 		drawVerts();

@@ -135,7 +135,7 @@ void Particles::drawShapes( NodeList * secondPass, bool presort )
 
 	AlphaProperty * aprop = findProperty<AlphaProperty>();
 
-	if ( aprop && aprop->blend() && secondPass ) {
+	if ( aprop && aprop->hasAlphaBlend() && secondPass ) {
 		secondPass->add( this );
 		return;
 	}
