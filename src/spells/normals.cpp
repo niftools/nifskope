@@ -35,7 +35,7 @@ public:
 
 		if ( nif->isNiBlock( index, { "BSTriShape", "BSMeshLODTriShape", "BSSubIndexTriShape", "BSDynamicTriShape" } ) ) {
 			auto vf = nif->get<BSVertexDesc>( index, "Vertex Desc" );
-			if ( (vf & VertexFlags::VF_SKINNED) && nif->getUserVersion2() == 100 ) {
+			if ( (vf & VertexFlags::VF_SKINNED) && nif->getBSVersion() == 100 ) {
 				// Skinned SSE
 				auto skinID = nif->getLink( nif->getIndex( index, "Skin" ) );
 				auto partID = nif->getLink( nif->getBlock( skinID, "NiSkinInstance" ), "Skin Partition" );
@@ -76,7 +76,7 @@ public:
 			}
 		};
 
-		if ( nif->getUserVersion2() < 100 ) {
+		if ( nif->getBSVersion() < 100 ) {
 			QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
 			QVector<Triangle> triangles;
 			QModelIndex iPoints = nif->getIndex( iData, "Points" );
@@ -104,7 +104,7 @@ public:
 			QVector<Triangle> triangles;
 			int numVerts;
 			auto vf = nif->get<BSVertexDesc>( index, "Vertex Desc" );
-			if ( !((vf & VertexFlags::VF_SKINNED) && nif->getUserVersion2() == 100) ) {
+			if ( !((vf & VertexFlags::VF_SKINNED) && nif->getBSVersion() == 100) ) {
 				numVerts = nif->get<int>( index, "Num Vertices" );
 				triangles = nif->getArray<Triangle>( index, "Triangles" );
 			} else {
@@ -204,12 +204,12 @@ public:
 
 		int numVerts = 0;
 
-		if ( nif->getUserVersion2() < 100 ) {
+		if ( nif->getBSVersion() < 100 ) {
 			verts = nif->getArray<Vector3>( iData, "Vertices" );
 			norms = nif->getArray<Vector3>( iData, "Normals" );
 		} else {
 			auto vf = nif->get<BSVertexDesc>( index, "Vertex Desc" );
-			if ( !((vf & VertexFlags::VF_SKINNED) && nif->getUserVersion2() == 100) ) {
+			if ( !((vf & VertexFlags::VF_SKINNED) && nif->getBSVersion() == 100) ) {
 				numVerts = nif->get<int>( index, "Num Vertices" );
 			} else {
 				// Skinned SSE
@@ -304,7 +304,7 @@ public:
 		for ( int i = 0; i < verts.count(); i++ )
 			snorms[i].normalize();
 
-		if ( nif->getUserVersion2() < 100 ) {
+		if ( nif->getBSVersion() < 100 ) {
 			nif->setArray<Vector3>( iData, "Normals", snorms );
 		} else {
 			// Pause updates between model/view

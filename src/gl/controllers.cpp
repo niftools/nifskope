@@ -85,9 +85,8 @@ bool ControllerManager::update( const NifModel * nif, const QModelIndex & index 
 
 void ControllerManager::setSequence( const QString & seqname )
 {
-	const NifModel * nif = static_cast<const NifModel *>(iBlock.model());
-
-	if ( target && iBlock.isValid() && nif ) {
+	auto nif = NifModel::fromValidIndex(iBlock);
+	if ( nif && target ) {
 		MultiTargetTransformController * multiTargetTransformer = 0;
 		for ( Controller * c : target->controllers ) {
 			if ( c->typeId() == "NiMultiTargetTransformController" ) {
@@ -260,9 +259,8 @@ void TransformController::updateTime( float time )
 
 void TransformController::setInterpolator( const QModelIndex & idx )
 {
-	const NifModel * nif = static_cast<const NifModel *>(idx.model());
-
-	if ( nif && idx.isValid() ) {
+	auto nif = NifModel::fromValidIndex(idx);
+	if ( nif ) {
 		if ( interpolator ) {
 			delete interpolator;
 			interpolator = 0;
@@ -333,9 +331,8 @@ bool MultiTargetTransformController::update( const NifModel * nif, const QModelI
 
 bool MultiTargetTransformController::setInterpolatorNode( Node * node, const QModelIndex & idx )
 {
-	const NifModel * nif = static_cast<const NifModel *>(idx.model());
-
-	if ( !nif || !idx.isValid() )
+	auto nif = NifModel::fromValidIndex(idx);
+	if ( !nif )
 		return false;
 
 	QMutableListIterator<TransformTarget> it( extraTargets );
@@ -441,7 +438,7 @@ void MorphController::updateTime( float time )
 		}
 	}
 
-	target->updateBounds = true;
+	target->needUpdateBounds = true;
 }
 
 bool MorphController::update( const NifModel * nif, const QModelIndex & index )
@@ -500,7 +497,7 @@ UVController::~UVController()
 
 void UVController::updateTime( float time )
 {
-	const NifModel * nif = static_cast<const NifModel *>(iData.model());
+	auto nif = NifModel::fromIndex( iData );
 	QModelIndex uvGroups = nif->getIndex( iData, "UV Groups" );
 
 	// U trans, V trans, U scale, V scale
@@ -526,7 +523,7 @@ void UVController::updateTime( float time )
 		}
 	}
 
-	target->updateData = true;
+	target->needUpdateData = true; // TODO (Gavrant): it's probably wrong (because the target shape would reset its UV map then)
 }
 
 bool UVController::update( const NifModel * nif, const QModelIndex & index )
@@ -812,7 +809,7 @@ void AlphaController::updateTime( float time )
 		float threshold;
 
 		if ( interpolate( threshold, iData, "Data", ctrlTime( time ), lAlpha ) )
-			alphaProp->setThreshold( threshold / 255.0 );
+			alphaProp->alphaThreshold = threshold / 255.0f;
 	}
 }
 
@@ -880,9 +877,8 @@ TexFlipController::TexFlipController( TextureProperty * prop, const QModelIndex 
 
 void TexFlipController::updateTime( float time )
 {
-	const NifModel * nif = static_cast<const NifModel *>(iSources.model());
-
-	if ( !((target || oldTarget) && active && iSources.isValid() && nif) )
+	auto nif = NifModel::fromValidIndex(iSources);
+	if ( !((target || oldTarget) && active && nif) )
 		return;
 
 	float r = 0;
@@ -990,7 +986,7 @@ void EffectFloatController::updateTime( float time )
 	if ( interpolate( val, iData, "Data", ctrlTime( time ), lIdx ) ) {
 		switch ( variable ) {
 		case EffectFloat::Emissive_Multiple:
-			target->setEmissive( target->getEmissiveColor(), val );
+			target->emissiveMult = val;
 			break;
 		case EffectFloat::Falloff_Start_Angle:
 			target->falloff.startAngle = val;
@@ -1005,24 +1001,19 @@ void EffectFloatController::updateTime( float time )
 			target->falloff.stopOpacity = val;
 			break;
 		case EffectFloat::Alpha:
-		{
-			auto c = target->getEmissiveColor();
-			auto m = target->getEmissiveMult();
-
-			target->setEmissive( Color4( c.red(), c.green(), c.blue(), val ), m );
-		}
+			target->emissiveColor.setAlpha( val );
 			break;
 		case EffectFloat::U_Offset:
-			target->setUvOffset( val, target->getUvOffset().y );
+			target->uvOffset.x = val;
 			break;
 		case EffectFloat::U_Scale:
-			target->setUvScale( val, target->getUvScale().y );
+			target->uvScale.x = val;
 			break;
 		case EffectFloat::V_Offset:
-			target->setUvOffset( target->getUvOffset().x, val );
+			target->uvOffset.y = val;
 			break;
 		case EffectFloat::V_Scale:
-			target->setUvScale( target->getUvScale().x, val );
+			target->uvScale.y = val;
 			break;
 		default:
 			break;
@@ -1058,13 +1049,8 @@ void EffectColorController::updateTime( float time )
 	if ( interpolate( val, iData, "Data", ctrlTime( time ), lIdx ) ) {
 		switch ( variable ) {
 		case 0:
-		{
-			auto c = target->getEmissiveColor();
-			auto m = target->getEmissiveMult();
-
-			target->setEmissive( Color4( val[0], val[1], val[2], c.alpha() ), m );
+			target->emissiveColor = Color4( val[0], val[1], val[2], target->emissiveColor.alpha() );
 			break;
-		}
 		default:
 			break;
 		}
@@ -1101,31 +1087,31 @@ void LightingFloatController::updateTime( float time )
 		case LightingFloat::Refraction_Strength:
 			break;
 		case LightingFloat::Reflection_Strength:
-			target->setEnvironmentReflection( val );
+			target->environmentReflection = val;
 			break;
 		case LightingFloat::Glossiness:
-			target->setSpecular( target->getSpecularColor(), val, target->getSpecularStrength() );
+			target->specularGloss = val;
 			break;
 		case LightingFloat::Specular_Strength:
-			target->setSpecular( target->getSpecularColor(), target->getSpecularGloss(), val );
+			target->specularStrength = val;
 			break;
 		case LightingFloat::Emissive_Multiple:
-			target->setEmissive( target->getEmissiveColor(), val );
+			target->emissiveMult = val;
 			break;
 		case LightingFloat::Alpha:
-			target->setAlpha( val );
+			target->alpha = val;
 			break;
 		case LightingFloat::U_Offset:
-			target->setUvOffset( val, target->getUvOffset().y );
+			target->uvOffset.x = val;
 			break;
 		case LightingFloat::U_Scale:
-			target->setUvScale( val, target->getUvScale().y );
+			target->uvScale.x = val;
 			break;
 		case LightingFloat::V_Offset:
-			target->setUvOffset( target->getUvOffset().x, val );
+			target->uvOffset.y = val;
 			break;
 		case LightingFloat::V_Scale:
-			target->setUvScale( target->getUvScale().x, val );
+			target->uvScale.y = val;
 			break;
 		default:
 			break;
@@ -1161,10 +1147,10 @@ void LightingColorController::updateTime( float time )
 	if ( interpolate( val, iData, "Data", ctrlTime( time ), lIdx ) ) {
 		switch ( variable ) {
 		case 0:
-			target->setSpecular( { val[0], val[1], val[2] }, target->getSpecularGloss(), target->getSpecularStrength() );
+			target->specularColor = { val[0], val[1], val[2] };
 			break;
 		case 1:
-			target->setEmissive( { val[0], val[1], val[2] }, target->getEmissiveMult() );
+			target->emissiveColor = { val[0], val[1], val[2] };
 			break;
 		default:
 			break;

@@ -69,7 +69,6 @@ public:
 
 	void clear( bool flushTextures = true );
 	void make( NifModel * nif, bool flushTextures = false );
-	void make( NifModel * nif, int blockNumber, QStack<int> & nodestack );
 
 	void update( const NifModel * nif, const QModelIndex & index );
 
@@ -91,6 +90,7 @@ public:
 
 	Node * getNode( const NifModel * nif, const QModelIndex & iNode );
 	Property * getProperty( const NifModel * nif, const QModelIndex & iProperty );
+	Property * getProperty( const NifModel * nif, const QModelIndex & iParentBlock, const QString & itemName, const QString & mustInherit );
 
 	Game::GameMode game = Game::OTHER;
 

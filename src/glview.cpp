@@ -404,7 +404,6 @@ void GLView::paintGL()
 {
 #endif
 	
-
 	// Save GL state
 	glPushAttrib( GL_ALL_ATTRIB_BITS );
 	glMatrixMode( GL_PROJECTION );

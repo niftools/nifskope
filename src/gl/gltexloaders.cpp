@@ -659,9 +659,9 @@ GLuint texLoadDDS( const QString & filepath, QString & format, GLenum & target, 
 bool texLoad( const QModelIndex & iData, QString & texformat, GLenum & target, GLuint & width, GLuint & height, GLuint & mipmaps, GLuint & id )
 {
 	bool ok = false;
-	const NifModel * nif = qobject_cast<const NifModel *>( iData.model() );
-
-	if ( nif && iData.isValid() ) {
+	
+	auto nif = NifModel::fromValidIndex(iData);
+	if ( nif ) {
 		mipmaps = nif->get<uint>( iData, "Num Mipmaps" );
 		QModelIndex iMipmaps = nif->getIndex( iData, "Mipmaps" );
 
@@ -1203,7 +1203,7 @@ bool texCanLoad( const QString & filepath )
 
 bool texSaveDDS( const QModelIndex & index, const QString & filepath, const GLuint & width, const GLuint & height, const GLuint & mipmaps )
 {
-	const NifModel * nif = qobject_cast<const NifModel *>( index.model() );
+	auto nif = NifModel::fromIndex( index );
 	quint32 format = nif->get<quint32>( index, "Pixel Format" );
 
 	// can't dump palettised textures yet
@@ -1469,7 +1469,7 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, const GLui
 bool texSaveTGA( const QModelIndex & index, const QString & filepath, const GLuint & width, const GLuint & height )
 {
 	Q_UNUSED( index );
-	//const NifModel * nif = qobject_cast<const NifModel *>( index.model() );
+	// auto nif = NifModel::fromIndex(index);
 	QString filename = filepath;
 
 	if ( !filename.toLower().endsWith( ".tga" ) )

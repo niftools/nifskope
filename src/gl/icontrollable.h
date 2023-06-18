@@ -61,7 +61,7 @@ public:
 
 	virtual void clear();
 
-	virtual void update( const NifModel * nif, const QModelIndex & index ) = 0;
+	void update( const NifModel * nif, const QModelIndex & index );
 
 	virtual void transform();
 
@@ -78,11 +78,16 @@ protected:
 	//! Sets the Controller
 	virtual void setController( const NifModel * nif, const QModelIndex & iController );
 
+	//! Actual implementation of update, with the validation check taken care of by update(...)
+	virtual void updateImpl( const NifModel * nif, const QModelIndex & index );
+
 	Scene * scene;
 
 	QPersistentModelIndex iBlock;
 
 	QList<Controller *> controllers;
+
+	void registerController( const NifModel* nif, Controller *ctrl );
 
 	QString name;
 };

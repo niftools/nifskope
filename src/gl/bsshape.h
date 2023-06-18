@@ -12,16 +12,7 @@ class BSShape : public Shape
 {
 
 public:
-	BSShape( Scene * s, const QModelIndex & b );
-	~BSShape() { clear(); }
-
-	// IControllable
-
-	void clear() override;
-	void update( const NifModel * nif, const QModelIndex & ) override;
-	void transform() override;
-
-	// end IControllable
+	BSShape( Scene * s, const QModelIndex & b ) : Shape( s, b ) { }
 
 	// Node
 
@@ -32,9 +23,6 @@ public:
 
 	BoundSphere bounds() const override;
 
-	bool isHidden() const override;
-	//QString textStats() const override;
-
 	// end Node
 
 	// Shape
@@ -43,17 +31,12 @@ public:
 	QModelIndex vertexAt( int ) const override;
 
 protected:
-
-	QPersistentModelIndex iVertData;
-	QPersistentModelIndex iTriData;
-
-	QString skinDataName;
-	QString skinInstName;
-
-	int numVerts = 0;
-	int numTris = 0;
-
 	BoundSphere dataBound;
+
+	bool isDynamic = false;
+
+	void updateImpl( const NifModel * nif, const QModelIndex & index ) override;
+	void updateData( const NifModel * nif ) override;
 };
 
 #endif // BSSHAPE_H

@@ -26,7 +26,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override
 	{
-		return ( !index.isValid() && ( nif->getVersionNumber() >= 0x14000004 && nif->getUserVersion2() > 0 ) );
+		return ( !index.isValid() && ( nif->getVersionNumber() >= 0x14000004 && nif->getBSVersion() > 0 ) );
 	}
 
 	//! Comparator for link sort.
@@ -70,7 +70,7 @@ public:
 				}
 
 				auto compareFn = compareChildLinksShapeBtm;
-				if ( nif->getUserVersion2() < 83 )
+				if ( nif->getBSVersion() < 83 )
 					compareFn = compareChildLinksShapeTop;
 
 				std::stable_sort( links.begin(), links.end(), compareFn );
@@ -715,13 +715,13 @@ REGISTER_SPELL( spErrorInvalidPaths )
 
 bool spWarningEnvironmentMapping::isApplicable(const NifModel * nif, const QModelIndex & index)
 {
-	return nif->getUserVersion2() > 0 && !index.isValid();
+	return nif->getBSVersion() > 0 && !index.isValid();
 }
 
 QModelIndex spWarningEnvironmentMapping::cast(NifModel * nif, const QModelIndex & idx)
 {
 	for ( int i = 0; i < nif->getBlockCount(); i++ ) {
-		if ( nif->getUserVersion2() < 83 ) {
+		if ( nif->getBSVersion() < 83 ) {
 			auto iBSSP = nif->getBlock(i, "BSShaderPPLightingProperty");
 			if ( iBSSP.isValid() ) {
 				auto sf1 = nif->get<quint32>(iBSSP, "Shader Flags");

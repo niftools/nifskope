@@ -552,7 +552,7 @@ void blockFilter( NifModel * nif, std::list<QString>& blocks, const QString & ty
 				 && nif->getVersionNumber() > 0x0a010000 )
 			// Bethesda
 			|| ( (s.startsWith( "bhk" ) || s.startsWith( "hk" ) || s.startsWith( "BS" )
-				 || s.endsWith( "ShaderProperty" )) && nif->getUserVersion2() == 0 )
+				 || s.endsWith( "ShaderProperty" )) && nif->getBSVersion() == 0 )
 			// Introduced in 20.2.0.8
 			|| (( s.startsWith( "NiPhysX" ) && nif->getVersionNumber() < 0x14020008 ))
 			// Introduced in 20.5
@@ -580,8 +580,8 @@ QMap<QString, QMenu *> blockMenu( NifModel * nif, const std::list<QString> & blo
 	bool firstCat = false;
 	for ( const QString& id : ids ) {
 		QString alph( "Other" );
-		QString beth = (nif->getUserVersion2() == 0) ? alph : "Bethesda";
-		QString hk = (nif->getUserVersion2() == 0) ? alph : "Havok";
+		QString beth = (nif->getBSVersion() == 0) ? alph : "Bethesda";
+		QString hk = (nif->getBSVersion() == 0) ? alph : "Havok";
 
 		bool alphabetized = false;
 		// Group Old Particles
@@ -727,8 +727,7 @@ public:
 		QStringList ids = nif->allNiBlocks();
 		ids.sort();
 		for ( const QString& id : ids ) {
-			if ( (nif->inherits( index, "NiGeometry" ) || nif->inherits( index, "BSTriShape" ))
-				 && nif->getUserVersion2() > 34 ) {
+			if ( (nif->inherits(index, "NiGeometry") || nif->inherits(index, "BSTriShape")) && nif->getBSVersion() > 34 ) {
 				if ( !(id == "BSLightingShaderProperty" || id == "BSEffectShaderProperty" || id == "NiAlphaProperty") )
 					continue;
 			}
@@ -868,7 +867,7 @@ public:
 			// Block-to-Controller Mapping
 			ctlrFilter( ctlrMapping );
 			// Bethesda Controllers
-			if ( nif->getUserVersion2() > 0 )
+			if ( nif->getBSVersion() > 0 )
 				ctlrFilter( ctlrMappingBS );
 
 		} else if ( nif->inherits( iBlock, "NiTimeController" ) 

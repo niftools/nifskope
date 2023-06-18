@@ -62,7 +62,7 @@ static void writeData( const NifModel * nif, const QModelIndex & iData, QTextStr
 {
 	// copy vertices
 
-	if ( nif->getUserVersion2() < 100 ) {
+	if ( nif->getBSVersion() < 100 ) {
 		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
 		foreach( Vector3 v, verts )
 		{
@@ -284,7 +284,7 @@ static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextS
 
 	obj << "\r\n# " << name << "\r\n\r\ng " << name << "\r\n" << "usemtl " << matn << "\r\n\r\n";
 
-	if ( nif->getUserVersion2() < 100 )
+	if ( nif->getBSVersion() < 100 )
 		writeData( nif, nif->getBlock( nif->getLink( iShape, "Data" ) ), obj, ofs, t );
 	else
 		writeData( nif, iShape, obj, ofs, t );
@@ -790,7 +790,7 @@ void importObj( NifModel * nif, const QModelIndex & index, bool collision )
 
 			QModelIndex shaderProp;
 			// add material property, for non-Skyrim versions
-			if ( nif->getUserVersion2() <= 34 ) {
+			if ( nif->getBSVersion() <= 34 ) {
 				bool newiMaterial = false;
 
 				if ( iMaterial.isValid() == false || first_tri_shape == false ) {
@@ -821,11 +821,11 @@ void importObj( NifModel * nif, const QModelIndex & index, bool collision )
 			}
 
 			if ( !mtl.map_Kd.isEmpty() ) {
-				if ( nif->getUserVersion2() > 34 && shaderProp.isValid() ) {
+				if ( nif->getBSVersion() > 34 && shaderProp.isValid() ) {
 					auto textureSet = nif->insertNiBlock( "BSShaderTextureSet" );
 					nif->setLink( shaderProp, "Texture Set", nif->getBlockNumber( textureSet ) );
 
-					if ( nif->getUserVersion2() == 130 )
+					if ( nif->getBSVersion() == 130 )
 						nif->set<uint>( textureSet, "Num Textures", 10 );
 					else
 						nif->set<uint>( textureSet, "Num Textures", 9 );
@@ -941,7 +941,7 @@ void importObj( NifModel * nif, const QModelIndex & index, bool collision )
 			nif->set<int>( iData, "Data Flags", 4097 );
 			nif->set<int>( iData, "BS Data Flags", 4097 );
 
-			if ( nif->getUserVersion2() > 34 ) {
+			if ( nif->getBSVersion() > 34 ) {
 				nif->set<int>( iData, "Has Vertex Colors", 1 );
 				nif->updateArray( iData, "Vertex Colors" );
 			}
@@ -997,7 +997,7 @@ void importObj( NifModel * nif, const QModelIndex & index, bool collision )
 			nif->set<float>( iData, "Radius", radius );
 
 			nif->set<int>( iData, "Unknown Short 2", 0x4000 );
-		} else if ( nif->getUserVersion2() > 0 ) {
+		} else if ( nif->getBSVersion() > 0 ) {
 			// create experimental havok collision mesh
 			QVector<Vector3> verts;
 			QVector<Vector3> norms;

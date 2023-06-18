@@ -52,36 +52,34 @@ void Particles::clear()
 	transVerts.clear();
 }
 
-void Particles::update( const NifModel * nif, const QModelIndex & index )
+void Particles::updateImpl( const NifModel * nif, const QModelIndex & index )
 {
-	Node::update( nif, index );
+	Node::updateImpl( nif, index );
 
-	if ( !iBlock.isValid() )
-		return;
+	if ( index == iBlock ) {
+		for (const auto link : nif->getChildLinks(id())) {
+			QModelIndex iChild = nif->getBlock(link);
 
-	upData |= ( iData == index );
-
-	if ( iBlock == index ) {
-		for ( const auto link : nif->getChildLinks( id() ) ) {
-			QModelIndex iChild = nif->getBlock( link );
-
-			if ( !iChild.isValid() )
+			if (!iChild.isValid())
 				continue;
 
-			if ( nif->inherits( iChild, "NiParticlesData" ) ) {
-				iData  = iChild;
-				upData = true;
+			if (nif->inherits(iChild, "NiParticlesData")) {
+				iData = iChild;
+				updateData = true;
 			}
 		}
 	}
+
+	if ( index == iData )
+		updateData = true;
 }
 
 void Particles::setController( const NifModel * nif, const QModelIndex & index )
 {
-	if ( nif->itemName( index ) == "NiParticleSystemController" || nif->itemName( index ) == "NiBSPArrayController" ) {
+	auto contrName = nif->itemName(index);
+	if ( contrName == "NiParticleSystemController" || contrName == "NiBSPArrayController" ) {
 		Controller * ctrl = new ParticleController( this, index );
-		ctrl->update( nif, index );
-		controllers.append( ctrl );
+		registerController(nif, ctrl);
 	} else {
 		Node::setController( nif, index );
 	}
@@ -89,15 +87,14 @@ void Particles::setController( const NifModel * nif, const QModelIndex & index )
 
 void Particles::transform()
 {
-	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
-
-	if ( !nif || !iBlock.isValid() ) {
+	auto nif = NifModel::fromValidIndex(iBlock);
+	if ( !nif ) {
 		clear();
 		return;
 	}
 
-	if ( upData ) {
-		upData = false;
+	if ( updateData ) {
+		updateData = false;
 
 		verts  = nif->getArray<Vector3>( nif->getIndex( iData, "Vertices" ) );
 		colors = nif->getArray<Color4>( nif->getIndex( iData, "Vertex Colors" ) );

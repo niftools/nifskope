@@ -71,6 +71,9 @@ class NifModel final : public BaseModel
 public:
 	NifModel( QObject * parent = 0 );
 
+	static const NifModel * fromIndex( const QModelIndex & index );
+	static const NifModel * fromValidIndex( const QModelIndex & index );
+
 	//! Find and parse the XML file
 	static bool loadXML();
 
@@ -284,7 +287,7 @@ public:
 	bool checkVersion( quint32 since, quint32 until ) const;
 
 	quint32 getUserVersion() const { return get<int>( getHeader(), "User Version" ); }
-	quint32 getUserVersion2() const { return get<int>( getItem( getHeaderItem(), "BS Header" ), "BS Version" ); }
+	quint32 getBSVersion() const { return bsVersion; }
 
 	QString string( const QModelIndex & index, bool extraInfo = false ) const;
 	QString string( const QModelIndex & index, const QString & name, bool extraInfo = false ) const;
@@ -378,6 +381,9 @@ protected:
 
 	void updateModel( UpdateType value = utAll );
 
+	quint32 bsVersion;
+	void cacheBSVersion(NifItem* headerItem);
+
 	//! Parse the XML file using a NifXmlHandler
 	static QString parseXmlDescription( const QString & filename );
 
@@ -416,6 +422,15 @@ private:
 
 // Inlines
 
+inline const NifModel * NifModel::fromIndex( const QModelIndex& index )
+{
+	return static_cast<const NifModel*>(index.model()); // qobject_cast
+}
+
+inline const NifModel * NifModel::fromValidIndex( const QModelIndex& index )
+{
+	return index.isValid() ? NifModel::fromIndex( index ) : nullptr;
+}
 
 inline QStringList NifModel::allNiBlocks()
 {

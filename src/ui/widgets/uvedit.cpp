@@ -808,7 +808,7 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 		newTitle += tr(" - ") + nif->getFileInfo().fileName();
 	setWindowTitle(newTitle);
 
-	game = Game::GameManager::get_game(nif->getVersionNumber(), nif->getUserVersion(), nif->getUserVersion2());
+	game = Game::GameManager::get_game(nif->getVersionNumber(), nif->getUserVersion(), nif->getBSVersion());
 
 	// Version dependent actions
 	if ( nif && nif->getVersionNumber() != 0x14020007 ) {
@@ -840,11 +840,11 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 	textures->setNifFolder( nif->getFolder() );
 
 	iShapeData = nif->getBlock( nif->getLink( iShape, "Data" ) );
-	if ( nif->getVersionNumber() == 0x14020007 && nif->getUserVersion2() >= 100 ) {
+	if ( nif->getVersionNumber() == 0x14020007 && nif->getBSVersion() >= 100 ) {
 		iShapeData = nif->getIndex( iShape, "Vertex Data" );
 
 		auto vf = nif->get<BSVertexDesc>( iShape, "Vertex Desc" );
-		if ( (vf & VertexFlags::VF_SKINNED) && nif->getUserVersion2() == 100 ) {
+		if ( (vf & VertexFlags::VF_SKINNED) && nif->getBSVersion() == 100 ) {
 			// Skinned SSE
 			auto skinID = nif->getLink( nif->getIndex( iShape, "Skin" ) );
 			auto partID = nif->getLink( nif->getBlock( skinID, "NiSkinInstance" ), "Skin Partition" );

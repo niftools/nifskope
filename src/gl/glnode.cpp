@@ -202,7 +202,6 @@ Node::Node( Scene * s, const QModelIndex & index ) : IControllable( s, index ), 
 	connect( NifSkope::getOptions(), &SettingsDialog::saveSettings, this, &Node::updateSettings );
 }
 
-
 void Node::updateSettings()
 {
 	QSettings settings;
@@ -282,51 +281,39 @@ Controller * Node::findController( const QString & proptype, const QModelIndex &
 	return c;
 }
 
-void Node::update( const NifModel * nif, const QModelIndex & index )
+void Node::updateImpl( const NifModel * nif, const QModelIndex & index )
 {
-	IControllable::update( nif, index );
-
-	if ( !iBlock.isValid() ) {
-		clear();
-		return;
-	}
+	IControllable::updateImpl( nif, index );
 
 	nodeId = nif->getBlockNumber( iBlock );
 
 	if ( iBlock == index ) {
 		flags.bits = nif->get<int>( iBlock, "Flags" );
 		local = Transform( nif, iBlock );
-	}
 
-	if ( iBlock == index || !index.isValid() ) {
-		PropertyList newProps;
-		for ( const auto l : nif->getLinkArray( iBlock, "Properties" ) ) {
-			if ( Property * p = scene->getProperty( nif, nif->getBlock( l ) ) )
-				newProps.add( p );
-		}
+		// Properties
+		properties.clear();
+		for ( auto l : nif->getLinkArray(iBlock, "Properties") )
+			properties.add( scene->getProperty(nif, nif->getBlock(l)) );
 
-		if ( Property * p = scene->getProperty( nif, nif->getBlock( nif->getLink( iBlock, "Shader Property" ) ) ) )
-			newProps.add( p );
+		properties.add( scene->getProperty(nif, iBlock, "Shader Property", "BSShaderProperty") );
+		properties.add( scene->getProperty(nif, iBlock, "Alpha Property", "NiAlphaProperty") );
 
-		if ( Property * p = scene->getProperty( nif, nif->getBlock( nif->getLink( iBlock, "Alpha Property" ) ) ) )
-			newProps.add( p );
-
-		properties = newProps;
-
+		// Children
 		children.clear();
 		QModelIndex iChildren = nif->getIndex( iBlock, "Children" );
-		QList<qint32> lChildren = nif->getChildLinks( nif->getBlockNumber( iBlock ) );
-
 		if ( iChildren.isValid() ) {
-			for ( int c = 0; c < nif->rowCount( iChildren ); c++ ) {
-				qint32 link = nif->getLink( iChildren.child( c, 0 ) );
+			int nChildren = nif->rowCount(iChildren);
+			if ( nChildren > 0 ) {
+				QList<qint32> lChildren = nif->getChildLinks( nodeId );
+				for ( int c = 0; c < nChildren; c++ ) {
+					qint32 link = nif->getLink( iChildren.child( c, 0 ) );
 
-				if ( lChildren.contains( link ) ) {
-					QModelIndex iChild = nif->getBlock( link );
-					Node * node = scene->getNode( nif, iChild );
-
-					if ( node ) {
-						node->makeParent( this );
+					if ( lChildren.contains( link ) ) {
+						QModelIndex iChild = nif->getBlock( link );
+						Node * node = scene->getNode( nif, iChild );
+						if ( node )
+							node->makeParent( this );
 					}
 				}
 			}
@@ -351,24 +338,19 @@ void Node::setController( const NifModel * nif, const QModelIndex & iController 
 
 	if ( cname == "NiTransformController" ) {
 		Controller * ctrl = new TransformController( this, iController );
-		ctrl->update( nif, iController );
-		controllers.append( ctrl );
+		registerController(nif, ctrl);
 	} else if ( cname == "NiMultiTargetTransformController" ) {
 		Controller * ctrl = new MultiTargetTransformController( this, iController );
-		ctrl->update( nif, iController );
-		controllers.append( ctrl );
+		registerController(nif, ctrl);
 	} else if ( cname == "NiControllerManager" ) {
 		Controller * ctrl = new ControllerManager( this, iController );
-		ctrl->update( nif, iController );
-		controllers.append( ctrl );
+		registerController(nif, ctrl);
 	} else if ( cname == "NiKeyframeController" ) {
 		Controller * ctrl = new KeyframeController( this, iController );
-		ctrl->update( nif, iController );
-		controllers.append( ctrl );
+		registerController(nif, ctrl);
 	} else if ( cname == "NiVisController" ) {
 		Controller * ctrl = new VisibilityController( this, iController );
-		ctrl->update( nif, iController );
-		controllers.append( ctrl );
+		registerController(nif, ctrl);
 	}
 }
 
@@ -476,10 +458,10 @@ bool Node::isHidden() const
 {
 	if ( scene->hasOption(Scene::ShowHidden) )
 		return false;
-
-	if ( flags.node.hidden || ( parent && parent->isHidden() ) )
+	if ( flags.node.hidden )
 		return true;
-
+	if ( parent && parent->isHidden() )
+		return true;
 	return false; /*!Options::cullExpression().pattern().isEmpty() && name.contains( Options::cullExpression() );*/
 }
 
@@ -489,11 +471,10 @@ void Node::transform()
 
 	// if there's a rigid body attached, then calculate and cache the body's transform
 	// (need this later in the drawing stage for the constraints)
-	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
-
-	if ( iBlock.isValid() && nif ) {
+	auto nif = NifModel::fromValidIndex( iBlock );
+	if ( nif && nif->getBSVersion() > 0 ) {
 		QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );
-		if ( nif->getUserVersion2() > 0 && iObject.isValid() ) {
+		if ( iObject.isValid() ) {
 			QModelIndex iBody = nif->getBlock( nif->getLink( iObject, "Body" ) );
 
 			if ( iBody.isValid() ) {
@@ -581,7 +562,7 @@ void Node::draw()
 
 void Node::drawSelection() const
 {
-	auto nif = static_cast<const NifModel *>(scene->currentIndex.model());
+	auto nif = NifModel::fromIndex( scene->currentIndex );
 	if ( !nif )
 		return;
 
@@ -1377,9 +1358,8 @@ void Node::drawHavok()
 		node->drawHavok();
 	}
 
-	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
-
-	if ( !( iBlock.isValid() && nif ) )
+	auto nif = NifModel::fromValidIndex(iBlock);
+	if ( !nif )
 		return;
 
 	//Check if there's any old style collision bounding box set
@@ -1415,7 +1395,7 @@ void Node::drawHavok()
 	}
 
 	// Only Bethesda support after this
-	if ( nif->getUserVersion2() == 0 )
+	if ( nif->getBSVersion() == 0 )
 		return;
 
 	// Draw BSMultiBound
@@ -1773,9 +1753,8 @@ void Node::drawFurn()
 		node->drawFurn();
 	}
 
-	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
-
-	if ( !( iBlock.isValid() && nif ) )
+	auto nif = NifModel::fromValidIndex(iBlock);
+	if ( !nif )
 		return;
 
 	if ( !scene->isSelModeObject() )
@@ -1839,7 +1818,7 @@ void Node::drawShapes( NodeList * secondPass, bool presort )
 	if ( isHidden() )
 		return;
 
-	const NifModel * nif = static_cast<const NifModel *>(iBlock.model());
+	auto nif = NifModel::fromIndex( iBlock );
 	
 	// BSOrderedNode support
 	//	Only set if true (|=) so that it propagates to all children
@@ -1882,9 +1861,8 @@ BoundSphere Node::bounds() const
 		boundsphere |= BoundSphere( worldTrans().translation, 0 );
 	}
 
-	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
-
-	if ( !( iBlock.isValid() && nif ) )
+	auto nif = NifModel::fromValidIndex(iBlock);
+	if ( !nif )
 		return boundsphere;
 
 	// old style collision bounding box
@@ -1929,11 +1907,11 @@ void LODNode::clear()
 	ranges.clear();
 }
 
-void LODNode::update( const NifModel * nif, const QModelIndex & index )
+void LODNode::updateImpl( const NifModel * nif, const QModelIndex & index )
 {
-	Node::update( nif, index );
+	Node::updateImpl( nif, index );
 
-	if ( ( iBlock.isValid() && index == iBlock ) || ( iData.isValid() && index == iData ) ) {
+	if ( ( index == iBlock ) || ( iData.isValid() && index == iData ) ) {
 		ranges.clear();
 		iData = nif->getBlock( nif->getLink( iBlock, "LOD Level Data" ), "NiRangeLODData" );
 		QModelIndex iLevels;
@@ -1953,8 +1931,6 @@ void LODNode::update( const NifModel * nif, const QModelIndex & index )
 				);
 			}
 		}
-
-
 	}
 }
 

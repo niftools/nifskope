@@ -219,6 +219,7 @@ void NifModel::clear()
 	fileinfo = QFileInfo();
 	filename = QString();
 	folder = QString();
+	bsVersion = 0;
 	root->killChildren();
 
 	NifData headerData = NifData( "NiHeader", "Header" );
@@ -238,8 +239,9 @@ void NifModel::clear()
 	}
 	endResetModel();
 
-	NifItem * item = getItem( getHeaderItem(), "Version" );
+	NifItem * headerItem = getHeaderItem();
 
+	NifItem * item = getItem( headerItem, "Version" );
 	if ( item )
 		item->value().setFileVersion( version );
 
@@ -253,14 +255,14 @@ void NifModel::clear()
 
 	header_string += version2string( version );
 
-	set<QString>( getHeaderItem(), "Header String", header_string );
+	set<QString>( headerItem, "Header String", header_string );
 
 	if ( version >= 0x14000005 ) {
-		set<int>( getHeaderItem(), "User Version", cfg.userVersion );
-		set<int>( getHeaderItem(), "User Version 2", cfg.userVersion2 );
+		set<int>( headerItem, "User Version", cfg.userVersion );
+		set<int>( headerItem, "User Version 2", cfg.userVersion2 );
 	}
 
-	//set<int>( getHeaderItem(), "Unknown Int 3", 11 );
+	//set<int>( headerItem, "Unknown Int 3", 11 );
 
 	if ( version < 0x0303000D ) {
 		QVector<QString> copyright( 3 );
@@ -270,6 +272,8 @@ void NifModel::clear()
 
 		setArray<QString>( getHeader(), "Copyright", copyright );
 	}
+
+	cacheBSVersion( headerItem );
 
 	lockUpdates = false;
 	needUpdates = utNone;
@@ -695,7 +699,7 @@ QModelIndex NifModel::insertNiBlock( const QString & identifier, int at )
 
 		branch->prepareInsert( block->types.count() );
 
-		if ( getUserVersion2() == 155 && identifier.startsWith( "BSLighting" ) ) {
+		if ( getBSVersion() == 155 && identifier.startsWith( "BSLighting" ) ) {
 			for ( const NifData& data : block->types ) {
 				insertType( branch, data );
 			}
@@ -793,7 +797,7 @@ QMap<qint32, qint32> NifModel::moveAllNiBlocks( NifModel * targetnif, bool updat
 {
 	int bcnt = getBlockCount();
 
-	bool doStringUpdate = (  this->getVersionNumber() >= 0x14010003 || targetnif->getVersionNumber() >= 0x14010003 );
+	bool doStringUpdate = ( this->getVersionNumber() >= 0x14010003 || targetnif->getVersionNumber() >= 0x14010003 );
 
 	QMap<qint32, qint32> map;
 
@@ -918,7 +922,7 @@ QString NifModel::getBlockType( const QModelIndex & idx ) const
 
 int NifModel::getBlockNumber( const QModelIndex & idx ) const
 {
-	if ( !( idx.isValid() && idx.model() == this ) )
+	if ( !idx.isValid() || idx.model() != this )
 		return -1;
 
 	const NifItem * block = static_cast<NifItem *>( idx.internalPointer() );
@@ -1632,7 +1636,7 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 				parent = parent->parent();
 
 				if ( parent && parent->type() == "NiBlock" && parent->name() == "NiSourceTexture" )
-					emit dataChanged( createIndex( parent->row(), ValueCol, parent ), createIndex( parent->row(), ValueCol, parent ) );
+					emit dataChanged( createIndex( parent->row(), ValueCol, parent ), createIndex( parent->row(), ValueCol, parent ) );					
 			}
 		} else if ( item->name() == "Name" ) {
 			NifItem * parent = item->parent();
@@ -2275,7 +2279,9 @@ bool NifModel::loadItem( NifItem * parent, NifIStream & stream )
 		return false;
 
 	bool stopRead = false;
-	if ( getUserVersion2() == 155 && parent->parent() == root ) {
+	// Be advised, getBSVersion returns 0 if it's the file's header that is being loaded.
+	// Though for shader properties loadItem happens after the header is fully processed, so the check below should work w/o issues.
+	if ( getBSVersion() == 155 && parent->parent() == root ) {
 		if ( parent->name() == "BSLightingShaderProperty" || parent->name() == "BSEffectShaderProperty" )
 			stopRead = true;
 	}
@@ -2333,10 +2339,13 @@ bool NifModel::loadHeader( NifItem * header, NifIStream & stream )
 	// Reset Stream Device
 	stream.reset();
 
+	bsVersion = 0;
 	set<int>( header, "User Version", 0 );
 	set<int>( getItem(header, "BS Header"), "BS Version", 0 );
 	invalidateConditions(header, true);
-	return loadItem(header, stream);
+	bool result = loadItem(header, stream);
+	cacheBSVersion( header );
+	return result;
 }
 
 bool NifModel::saveItem( NifItem * parent, NifOStream & stream ) const
@@ -3066,6 +3075,10 @@ void NifModel::updateModel( UpdateType value )
 		emit linksChanged();
 }
 
+void NifModel::cacheBSVersion( NifItem * headerItem )
+{
+	bsVersion = get<int>( getItem( headerItem, "BS Header" ), "BS Version" );
+}
 
 /*
  *  NifModelEval

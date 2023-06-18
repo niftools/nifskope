@@ -724,10 +724,7 @@ public:
 		if ( !nif || idx.isValid() )
 			return false;
 
-		if ( nif->getUserVersion2() >= 130 )
-			return true;
-
-		return false;
+		return ( nif->getBSVersion() >= 130 );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final

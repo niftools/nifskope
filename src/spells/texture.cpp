@@ -532,7 +532,7 @@ class spTextureTemplate final : public Spell
 	{
 		QModelIndex iUVs = getUV( nif, index );
 		auto iTriData = nif->getIndex( index, "Num Triangles" );
-		bool bstri = nif->getUserVersion2() >= 100 && nif->inherits( index, "BSTriShape" ) && iTriData.isValid();
+		bool bstri = nif->getBSVersion() >= 100 && nif->inherits( index, "BSTriShape" ) && iTriData.isValid();
 		return (iUVs.isValid() && nif->rowCount( iUVs ) >= 1) || bstri;
 	}
 
@@ -540,7 +540,7 @@ class spTextureTemplate final : public Spell
 	{
 		QModelIndex iUVs = getUV( nif, index );
 
-		if ( nif->rowCount( iUVs ) <= 0 && nif->getUserVersion2() < 100 )
+		if ( nif->rowCount( iUVs ) <= 0 && nif->getBSVersion() < 100 )
 			return index;
 
 		// fire up a dialog to set the user parameters
@@ -628,10 +628,10 @@ class spTextureTemplate final : public Spell
 		QVector<Vector2> uv;
 		QVector<Triangle> tri;
 
-		if ( nif->getUserVersion2() >= 100 ) {
+		if ( nif->getBSVersion() >= 100 ) {
 			QModelIndex iVertData;
 			auto vf = nif->get<BSVertexDesc>( index, "Vertex Desc" );
-			if ( (vf & VertexFlags::VF_SKINNED) && nif->getUserVersion2() == 100 ) {
+			if ( (vf & VertexFlags::VF_SKINNED) && nif->getBSVersion() == 100 ) {
 				// Skinned SSE
 				auto skinID = nif->getLink( nif->getIndex( index, "Skin" ) );
 				auto partID = nif->getLink( nif->getBlock( skinID, "NiSkinInstance" ), "Skin Partition" );
@@ -670,7 +670,7 @@ class spTextureTemplate final : public Spell
 				strips.append( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
 
 			tri = triangulate( strips );
-		} else if ( nif->getUserVersion2() < 100 ) {
+		} else if ( nif->getBSVersion() < 100 ) {
 			tri = nif->getArray<Triangle>( nif->getIndex( getData( nif, index ), "Triangles" ) );
 		}
 

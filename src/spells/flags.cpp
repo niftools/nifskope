@@ -977,7 +977,6 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		auto desc = nif->get<BSVertexDesc>( index );
-		uint stream = nif->getUserVersion2();
 		bool dynamic = nif->inherits( index.parent(), "BSDynamicTriShape" );
 
 		QStringList flagNames {
@@ -1022,7 +1021,7 @@ public:
 			}
 
 			// Make sure sizes and offsets in rest of vertexDesc are updated from flags
-			desc.ResetAttributeOffsets( stream );
+			desc.ResetAttributeOffsets( nif->getBSVersion() );
 			if ( dynamic )
 				desc.MakeDynamic();
 

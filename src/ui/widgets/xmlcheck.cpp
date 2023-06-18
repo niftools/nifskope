@@ -440,7 +440,7 @@ void TestThread::run()
 				bool loaded = (headerOnly) ? nif.loadHeaderOnly(filepath) : model->loadFromFile(filepath);
 
 				result = QString( "<a href=\"nif:%1\">%1</a> (%2, %3, %4)" )
-					.arg( filepath, model->getVersion() ).arg( nif.getUserVersion() ).arg( nif.getUserVersion2() );
+					.arg( filepath, model->getVersion() ).arg( nif.getUserVersion() ).arg( nif.getBSVersion() );
 				QList<TestMessage> messages = model->getMessages();
 
 				bool blk_match = false;

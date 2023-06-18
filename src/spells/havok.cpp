@@ -37,7 +37,7 @@ public:
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( !(nif->inherits( index, "NiTriBasedGeom" ) || nif->inherits( index, "BSTriShape" ))
-			 || !nif->getUserVersion2() )
+			 || !nif->getBSVersion() )
 			return false;
 
 		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
@@ -67,7 +67,7 @@ public:
 		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
 		QVector<Vector3> vertsTrans;
 
-		if ( nif->getUserVersion2() < 100 ) {
+		if ( nif->getBSVersion() < 100 ) {
 			verts = nif->getArray<Vector3>( iData, "Vertices" );
 		} else {
 			int numVerts = nif->get<int>( index, "Num Vertices" );

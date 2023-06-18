@@ -36,6 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gl/controllers.h"
 #include "gl/glscene.h"
 #include "gl/renderer.h"
+#include "io/material.h"
 #include "io/nifstream.h"
 #include "model/nifmodel.h"
 
@@ -56,40 +57,51 @@ Shape::Shape( Scene * s, const QModelIndex & b ) : Node( s, b )
 	shapeNumber = s->shapes.count();
 }
 
-Mesh::Mesh( Scene * s, const QModelIndex & b ) : Shape( s, b )
-{
-}
-
-
-void Mesh::clear()
+void Shape::clear()
 {
 	Node::clear();
 
-	iData = iSkin = iSkinData = iSkinPart = iTangentData = QModelIndex();
-	bssp = nullptr;
-	bslsp = nullptr;
-	bsesp = nullptr;
+	resetSkinning();
+	resetVertexData();
+	resetSkeletonData();
 
-	verts.clear();
-	norms.clear();
-	colors.clear();
-	coords.clear();
-	tangents.clear();
-	bitangents.clear();
-	triangles.clear();
-	tristrips.clear();
-	weights.clear();
-	partitions.clear();
-	sortedTriangles.clear();
-	indices.clear();
 	transVerts.clear();
 	transNorms.clear();
 	transColors.clear();
 	transTangents.clear();
 	transBitangents.clear();
 
+	bssp = nullptr;
+	bslsp = nullptr;
+	bsesp = nullptr;
+	alphaProperty = nullptr;
+
 	isLOD = false;
 	isDoubleSided = false;
+}
+
+void Shape::transform()
+{
+	if ( needUpdateData ) {
+		needUpdateData = false;
+
+		auto nif = NifModel::fromValidIndex( iBlock );
+		if ( nif ) {
+			needUpdateBounds = true; // Force update bounds
+			updateData(nif);
+
+			if ( isVertexAlphaAnimation ) {
+				int nColors = colors.count();
+				for ( int i = 0; i < nColors; i++ )
+					colors[i].setRGBA( colors[i].red(), colors[i].green(), colors[i].blue(), 1 );
+			}
+		} else {
+			clear();
+			return;
+		}
+	}
+
+	Node::transform();
 }
 
 void Shape::setController( const NifModel * nif, const QModelIndex & iController )
@@ -97,86 +109,45 @@ void Shape::setController( const NifModel * nif, const QModelIndex & iController
 	QString contrName = nif->itemName(iController);
 	if ( contrName == "NiGeomMorpherController" ) {
 		Controller * ctrl = new MorphController( this, iController );
-		ctrl->update( nif, iController );
-		controllers.append( ctrl );
+		registerController(nif, ctrl);
 	} else if ( contrName == "NiUVController" ) {
 		Controller * ctrl = new UVController( this, iController );
-		ctrl->update( nif, iController );
-		controllers.append( ctrl );
+		registerController(nif, ctrl);
 	} else {
 		Node::setController( nif, iController );
 	}
 }
 
-
-void Shape::update( const NifModel * nif, const QModelIndex & index )
+void Shape::updateImpl( const NifModel * nif, const QModelIndex & index )
 {
-	Node::update( nif, index );
+	Node::updateImpl( nif, index );
 
-	// If shaders are reenabled, reset
-	if ( !scene->hasOption(Scene::DisableShaders) && shader.isNull() && nif->checkVersion( 0x14020007, 0x14020007 ) ) {
-		updateShaderProperties( nif );
+	if ( index == iBlock ) {
+		shader = ""; // Reset stored shader so it can reassess conditions
+
+		bslsp = nullptr;
+		bsesp = nullptr;
+		bssp = properties.get<BSShaderLightingProperty>();
+		if ( bssp ) {
+			auto shaderType = bssp->typeId();
+			if ( shaderType == "BSLightingShaderProperty" )
+				bslsp = bssp->cast<BSLightingShaderProperty>();
+			else if ( shaderType == "BSEffectShaderProperty" )
+				bsesp = bssp->cast<BSEffectShaderProperty>();
+		}
+
+		alphaProperty = properties.get<AlphaProperty>();
+
+		needUpdateData = true;
+		updateShader();
+
+	} else if ( isSkinned && (index == iSkin || index == iSkinData || index == iSkinPart) ) {
+		needUpdateData = true;
+
+	} else if ( (bssp && bssp->isParamBlock(index)) || (alphaProperty && index == alphaProperty->index()) ) {
+		updateShader();
+	
 	}
-
-	if ( bssp && nifVersion == 155 ) {
-		depthTest = bssp->getDepthTest();
-		depthWrite = bssp->getDepthWrite();
-		isDoubleSided = bssp->getIsDoubleSided();
-	}
-}
-
-void Shape::updateShaderProperties( const NifModel * nif )
-{
-	auto prop = nif->getLink( iBlock, "Shader Property" );
-	if ( prop == -1 )
-		return;
-
-	QModelIndex iLSP = nif->getBlock( prop, "BSLightingShaderProperty" );
-	QModelIndex iESP = nif->getBlock( prop, "BSEffectShaderProperty" );
-
-	// Reset stored shader so it can reassess conditions
-	shader = "";
-
-	if ( iLSP.isValid() ) {
-		if ( !bslsp )
-			bslsp = properties.get<BSLightingShaderProperty>();
-
-		if ( !bslsp )
-			return;
-
-		bssp = bslsp;
-
-		bslsp->updateParams( nif, iLSP );
-
-		// Mesh alpha override
-		translucent = (bslsp->getAlpha() < 1.0);
-		translucent |= bslsp->hasRefraction;
-
-	} else if ( iESP.isValid() ) {
-		if ( !bsesp )
-			bsesp = properties.get<BSEffectShaderProperty>();
-
-		if ( !bsesp )
-			return;
-
-		bssp = bsesp;
-
-		bsesp->updateParams( nif, iESP );
-
-		// Mesh alpha override
-		translucent = (bsesp->getAlpha() < 1.0) && !findProperty<AlphaProperty>();
-	}
-
-	// Draw mesh second
-	drawSecond |= translucent;
-
-	if ( !bssp )
-		return;
-
-	depthTest = bssp->getDepthTest();
-	depthWrite = bssp->getDepthWrite();
-	isDoubleSided = bssp->getIsDoubleSided();
-	isVertexAlphaAnimation = bssp->getFlags2() & ShaderFlags::SLSF2_Tree_Anim;
 }
 
 void Shape::boneSphere( const NifModel * nif, const QModelIndex & index ) const
@@ -198,614 +169,119 @@ void Shape::boneSphere( const NifModel * nif, const QModelIndex & index ) const
 	}
 }
 
-void Mesh::update( const NifModel * nif, const QModelIndex & index )
+void Shape::resetSkinning()
 {
-	Shape::update( nif, index );
+	isSkinned = false;
+	iSkin = iSkinData = iSkinPart = QModelIndex();
+}
 
-	// Was Skinning toggled?
-	// If so, switch between partition triangles and data triangles
-	bool doSkinningCurr = scene->hasOption(Scene::DoSkinning);
-	updateSkin |= (doSkinning != doSkinningCurr) && nif->checkVersion( 0, 0x14040000 );
-	updateData |= updateSkin;
-	doSkinning = doSkinningCurr;
+void Shape::resetVertexData()
+{
+	numVerts = 0;
 
-	if ( (!iBlock.isValid() || !index.isValid()) && !updateSkin )
-		return;
+	iData = iTangentData = QModelIndex();
 
-	isLOD = nif->isNiBlock( iBlock, "BSLODTriShape" );
-	if ( isLOD )
-		emit nif->lodSliderChanged( true );
+	verts.clear();
+	norms.clear();
+	colors.clear();
+	coords.clear();
+	tangents.clear();
+	bitangents.clear();
+	triangles.clear();
+	tristrips.clear();
+	weights.clear();
+	partitions.clear();
+	sortedTriangles.clear();
+}
 
-	updateData |= ( iData == index ) || ( iTangentData == index );
-	updateSkin |= ( iSkin == index );
-	updateSkin |= ( iSkinData == index );
-	updateSkin |= ( iSkinPart == index );
-	updateSkin |= ( updateData && isSkinned && doSkinning );
+void Shape::resetSkeletonData()
+{
+	skeletonRoot = 0;
+	skeletonTrans = Transform();
 
+	bones.clear();
+	weights.clear();
+	partitions.clear();
+}
+
+void Shape::updateShader()
+{
+	if ( bslsp )
+		translucent = (bslsp->alpha < 1.0) || bslsp->hasRefraction;
+	else if ( bsesp )
+		translucent = (bsesp->getAlpha() < 1.0) && !alphaProperty;
+	else
+		translucent = false;
+
+	Material * mat = (bssp) ? bssp->getMaterial() : nullptr;
+	drawInSecondPass = translucent || ( alphaProperty && alphaProperty->blend() ) || ( mat && mat->hasDecal() );
+
+	if ( bssp ) {
+		depthTest = bssp->depthTest;
+		depthWrite = bssp->depthWrite;
+		isDoubleSided = bssp->isDoubleSided;
+		isVertexAlphaAnimation = bssp->isVertexAlphaAnimation;
+	} else {
+		depthTest = true;
+		depthWrite = true;
+		isDoubleSided = false;
+		isVertexAlphaAnimation = false;
+	}
+}
+
+void Mesh::updateImpl( const NifModel * nif, const QModelIndex & index )
+{
+	Shape::updateImpl(nif, index);
+
+	if ( index == iBlock ) {
+		isLOD = nif->isNiBlock( iBlock, "BSLODTriShape" );
+		if ( isLOD )
+			emit nif->lodSliderChanged( true );
+
+	} else if ( index == iData || index == iTangentData ) {
+		needUpdateData = true;
+
+	}
+}
+
+void Mesh::updateData( const NifModel * nif )
+{
+	resetSkinning();
+	resetVertexData();
 	if ( nif->checkVersion( 0x14050000, 0 ) && nif->inherits( iBlock, "NiMesh" ) )
-		updateSkin = false;
-
-	isVertexAlphaAnimation = false;
-	isDoubleSided = false;
-
-	// Update shader from this mesh's shader property
-	if ( nif->checkVersion( 0x14020007, 0 ) && nif->inherits( iBlock, "NiTriBasedGeom" ) )
-		updateShaderProperties( nif );
-
-	if ( iBlock == index ) {
-
-		if ( nif->checkVersion( 0x14050000, 0 ) && nif->inherits( iBlock, "NiMesh" ) ) {
-			qDebug() << nif->get<ushort>( iBlock, "Num Submeshes" ) << " submeshes";
-			iData = nif->getIndex( iBlock, "Datastreams" );
-			if ( iData.isValid() ) {
-				qDebug() << "Got " << nif->rowCount( iData ) << " rows of data";
-				updateData = true;
-				updateBounds = true;
-			} else {
-				qDebug() << "Did not find data in NiMesh ???";
-			}
-
-			return;
-		}
-
-		for ( const auto link : nif->getChildLinks( id() ) ) {
-			QModelIndex iChild = nif->getBlock( link );
-			if ( !iChild.isValid() )
-				continue;
-
-			if ( nif->inherits( iChild, "NiTriShapeData" ) || nif->inherits( iChild, "NiTriStripsData" ) ) {
-				if ( !iData.isValid() ) {
-					iData  = iChild;
-					updateData = true;
-				} else if ( iData != iChild ) {
-					Message::append( tr( "Warnings were generated while updating meshes." ),
-						tr( "Block %1 has multiple data blocks" ).arg( id() )
-					);
-				}
-			} else if ( nif->inherits( iChild, "NiSkinInstance" ) ) {
-				if ( !iSkin.isValid() ) {
-					iSkin  = iChild;
-					updateSkin = true;
-				} else if ( iSkin != iChild ) {
-					Message::append( tr( "Warnings were generated while updating meshes." ),
-						tr( "Block %1 has multiple skin instances" ).arg( id() )
-					);
-				}
-			}
-		}
-	}
-
-	updateBounds |= updateData;
-}
-
-QModelIndex Mesh::vertexAt( int idx ) const
-{
-	auto nif = static_cast<const NifModel *>(iBlock.model());
-	if ( !nif )
-		return QModelIndex();
-
-	auto iVertexData = nif->getIndex( iData, "Vertices" );
-	auto iVertex = iVertexData.child( idx, 0 );
-
-	return iVertex;
-}
-
-
-bool Mesh::isHidden() const
-{
-	return ( Node::isHidden()
-	         || ( !scene->hasOption(Scene::ShowHidden)
-	              && !properties.get<TexturingProperty>()
-	              && !properties.get<BSShaderLightingProperty>()
-	         )
-	);
-}
-
-bool compareTriangles( const QPair<int, float> & tri1, const QPair<int, float> & tri2 )
-{
-	return ( tri1.second < tri2.second );
-}
-
-void Mesh::transform()
-{
-	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
-
-	if ( !nif || !iBlock.isValid() ) {
-		clear();
-		return;
-	}
-
-	if ( updateData ) {
-		nifVersion = nif->getUserVersion2();
-		updateData = false;
-
-
-		// NiMesh Rendering
-		if ( nif->checkVersion( 0x14050000, 0 ) && nif->inherits( iBlock, "NiMesh" ) ) {
-			verts.clear();
-			norms.clear();
-			tangents.clear();
-			bitangents.clear();
-			coords.clear();
-			colors.clear();
-			indices.clear();
-			weights.clear();
-			triangles.clear();
-
-			
-
-			// All the semantics used by this mesh
-			NiMesh::SemanticFlags semFlags = NiMesh::HAS_NONE;
-			// Loop over the data once for initial setup and validation
-			// and build the semantic-index maps for each datastream's components
-			using CompSemIdxMap = QVector<QPair<NiMesh::Semantic, uint>>;
-			QVector<CompSemIdxMap> compSemanticIndexMaps;
-			for ( int i = 0; i < nif->rowCount( iData ); i++ ) {
-				auto stream = nif->getLink( iData.child( i, 0 ), "Stream" );
-				auto iDataStream = nif->getBlock( stream );
-
-				auto usage = NiMesh::DataStreamUsage( nif->get<uint>( iDataStream, "Usage" ) );
-				auto access = nif->get<uint>( iDataStream, "Access" );
-
-				// Invalid Usage and Access, abort
-				if ( usage == access && access == 0 )
-					return;
-
-				// For each datastream, store the semantic and the index (used for E_TEXCOORD)
-				auto iComponentSemantics = nif->getIndex( iData.child( i, 0 ), "Component Semantics" );
-				uint numComponents = nif->get<uint>( iData.child( i, 0 ), "Num Components" );
-				CompSemIdxMap compSemanticIndexMap;
-				for ( uint j = 0; j < numComponents; j++ ) {
-					auto name = nif->get<QString>( iComponentSemantics.child( j, 0 ), "Name" );
-					auto sem = NiMesh::semanticStrings.value( name );
-					uint idx = nif->get<uint>( iComponentSemantics.child( j, 0 ), "Index" );
-					compSemanticIndexMap.insert( j, {sem, idx} );
-
-					// Create UV stubs for multi-coord systems
-					if ( sem == NiMesh::E_TEXCOORD )
-						coords.append( TexCoords() );
-
-					// Assure Index datastream is first and Usage is correct
-					bool invalidIndex = false;
-					if ( (sem == NiMesh::E_INDEX && (i != 0 || usage != NiMesh::USAGE_VERTEX_INDEX))
-						 || (usage == NiMesh::USAGE_VERTEX_INDEX && (i != 0 || sem != NiMesh::E_INDEX)) )
-						invalidIndex = true;
-
-					if ( invalidIndex ) {
-						Message::append( tr( NIMESH_ABORT ),
-										 tr( "[%1] NifSkope requires 'INDEX' datastream be first, with Usage type 'USAGE_VERTEX_INDEX'." )
-										 .arg( stream ),
-										 QMessageBox::Warning );
-						return;
-					}
-
-					semFlags = NiMesh::SemanticFlags(semFlags | (1 << sem));
-				}
-
-				compSemanticIndexMaps << compSemanticIndexMap;
-			}
-
-			// This NiMesh does not have vertices, abort
-			if ( !(semFlags & NiMesh::HAS_POSITION || semFlags & NiMesh::HAS_POSITION_BP) )
-				return;
-
-			// The number of triangle indices across the submeshes for this NiMesh
-			quint32 totalIndices = 0;
-			// The highest triangle index value in this NiMesh
-			quint32 maxIndex = 0;
-			// The Nth component after ignoring DataStreamUsage > 1
-			int compIdx = 0;
-			for ( int i = 0; i < nif->rowCount( iData ); i++ ) {
-				// TODO: For now, submeshes are not actually used and the regions are 
-				// filled in order for each data stream.
-				// Submeshes may be required if total index values exceed USHRT_MAX
-				QMap<ushort, ushort> submeshMap;
-				ushort numSubmeshes = nif->get<ushort>( iData.child( i, 0 ), "Num Submeshes" );
-				auto iSubmeshMap = nif->getIndex( iData.child( i, 0 ), "Submesh To Region Map" );
-				for ( ushort j = 0; j < numSubmeshes; j++ )
-					submeshMap.insert( j, nif->get<ushort>( iSubmeshMap.child( j, 0 ) ) );
-
-				// Get the datastream
-				quint32 stream = nif->getLink( iData.child( i, 0 ), "Stream" );
-				auto iDataStream = nif->getBlock( stream );
-
-				auto usage = NiMesh::DataStreamUsage(nif->get<uint>( iDataStream, "Usage" ));
-				// Only process USAGE_VERTEX and USAGE_VERTEX_INDEX
-				if ( usage > NiMesh::USAGE_VERTEX )
-					continue;
-
-				// Datastream can be split into multiple regions
-				// Each region has a Start Index which is added as an offset to the index read from the stream
-				QVector<QPair<quint32, quint32>> regions;
-				quint32 numRegions = nif->get<quint32>( iDataStream, "Num Regions" );
-				quint32 numIndices = 0;
-				auto iRegions = nif->getIndex( iDataStream, "Regions" );
-				if ( iRegions.isValid() ) {
-					for ( quint32 j = 0; j < numRegions; j++ ) {
-						regions.append( { nif->get<quint32>( iRegions.child( j, 0 ), "Start Index" ),
-										nif->get<quint32>( iRegions.child( j, 0 ), "Num Indices" ) }
-						);
-
-						numIndices += regions[j].second;
-					}
-				}
-
-				if ( usage == NiMesh::USAGE_VERTEX_INDEX ) {
-					totalIndices = numIndices;
-					// RESERVE not RESIZE
-					indices.reserve( totalIndices );
-				} else if ( compIdx == 1 ) {
-					// Indices should be built already
-					if ( indices.size() != totalIndices )
-						return;
-
-					quint32 maxSize = maxIndex + 1;
-					// RESIZE
-					verts.resize( maxSize );
-					norms.resize( maxSize );
-					tangents.resize( maxSize );
-					bitangents.resize( maxSize );
-					colors.resize( maxSize );
-					weights.resize( maxSize );
-					if ( coords.size() == 0 )
-						coords.resize( 1 );
-
-					for ( auto & c : coords )
-						c.resize( maxSize );
-				}
-
-				// Get the format of each component
-				QVector<NiMesh::DataStreamFormat> datastreamFormats;
-				uint numStreamComponents = nif->get<uint>( iDataStream, "Num Components" );
-				for ( uint j = 0; j < numStreamComponents; j++ ) {
-					auto format = nif->get<uint>( nif->getIndex( iDataStream, "Component Formats" ).child( j, 0 ) );
-					datastreamFormats.append( NiMesh::DataStreamFormat(format) );
-				}
-
-				Q_ASSERT( compSemanticIndexMaps[i].size() == numStreamComponents );
-
-				auto tempMdl = std::make_unique<NifModel>( this );
-
-				QByteArray streamData = nif->get<QByteArray>( nif->getIndex( iDataStream, "Data" ).child( 0, 0 ) );
-				QBuffer streamBuffer( &streamData );
-				streamBuffer.open( QIODevice::ReadOnly );
-
-				NifIStream tempInput( tempMdl.get(), &streamBuffer );
-				NifValue tempValue;
-
-				bool abort = false;
-				for ( const auto & r : regions ) for ( uint j = 0; j < r.second; j++ ) {
-					auto off = r.first;
-					Q_ASSERT( totalIndices >= off + j );
-					for ( uint k = 0; k < numStreamComponents; k++ ) {
-						auto typeK = datastreamFormats[k];
-						int typeLength = ( (typeK & 0x000F0000) >> 0x10 );
-
-						switch ( (typeK & 0x00000FF0) >> 0x04 ) {
-						case 0x10:
-							tempValue.changeType( NifValue::tByte );
-							break;
-						case 0x11:
-							if ( typeK == NiMesh::F_NORMUINT8_4 )
-								tempValue.changeType( NifValue::tByteColor4 );
-							typeLength = 1;
-							break;
-						case 0x13:
-							if ( typeK == NiMesh::F_NORMUINT8_4_BGRA )
-								tempValue.changeType( NifValue::tByteColor4 );
-							typeLength = 1;
-							break;
-						case 0x21:
-							tempValue.changeType( NifValue::tShort );
-							break;
-						case 0x23:
-							if ( typeLength == 3 )
-								tempValue.changeType( NifValue::tHalfVector3 );
-							else if ( typeLength == 2 )
-								tempValue.changeType( NifValue::tHalfVector2 );
-							else if ( typeLength == 1 )
-								tempValue.changeType( NifValue::tHfloat );
-
-							typeLength = 1;
-
-							break;
-						case 0x42:
-							tempValue.changeType( NifValue::tInt );
-							break;
-						case 0x43:
-							if ( typeLength == 3 )
-								tempValue.changeType( NifValue::tVector3 );
-							else if ( typeLength == 2 )
-								tempValue.changeType( NifValue::tVector2 );
-							else if ( typeLength == 4 )
-								tempValue.changeType( NifValue::tVector4 );
-							else if ( typeLength == 1 )
-								tempValue.changeType( NifValue::tFloat );
-
-							typeLength = 1;
-
-							break;
-						}
-
-						for ( int l = 0; l < typeLength; l++ ) {
-							tempInput.read( tempValue );
-						}
-
-						auto compType = compSemanticIndexMaps[i].value( k ).first;
-						switch ( typeK )
-						{
-						case NiMesh::F_FLOAT32_3:
-						case NiMesh::F_FLOAT16_3:
-							Q_ASSERT( usage == NiMesh::USAGE_VERTEX );
-							switch ( compType ) {
-							case NiMesh::E_POSITION:
-							case NiMesh::E_POSITION_BP:
-								verts[j + off] = tempValue.get<Vector3>();
-								break;
-							case NiMesh::E_NORMAL:
-							case NiMesh::E_NORMAL_BP:
-								norms[j + off] = tempValue.get<Vector3>();
-								break;
-							case NiMesh::E_TANGENT:
-							case NiMesh::E_TANGENT_BP:
-								tangents[j + off] = tempValue.get<Vector3>();
-								break;
-							case NiMesh::E_BINORMAL:
-							case NiMesh::E_BINORMAL_BP:
-								bitangents[j + off] = tempValue.get<Vector3>();
-								break;
-							default:
-								break;
-							}
-							break;
-						case NiMesh::F_UINT16_1:
-							if ( compType == NiMesh::E_INDEX ) {
-								Q_ASSERT( usage == NiMesh::USAGE_VERTEX_INDEX );
-								// TODO: The total index value across all submeshes
-								// is likely allowed to exceed USHRT_MAX.
-								// For now limit the index.
-								quint32 ind = tempValue.get<quint16>() + off;
-								if ( ind > 0xFFFF )
-									qDebug() << QString( "[%1] %2" ).arg( stream ).arg( ind );
-
-								ind = std::min( ind, (quint32)0xFFFF );
-
-								// Store the highest index
-								if ( ind > maxIndex )
-									maxIndex = ind;
-
-								indices.append( (quint16)ind );
-							}
-							break;
-						case NiMesh::F_FLOAT32_2:
-						case NiMesh::F_FLOAT16_2:
-							Q_ASSERT( usage == NiMesh::USAGE_VERTEX );
-							if ( compType == NiMesh::E_TEXCOORD ) {
-								quint32 coordSet = compSemanticIndexMaps[i].value( k ).second;
-								Q_ASSERT( coords.size() > coordSet );
-								coords[coordSet][j + off] = tempValue.get<Vector2>();
-							}
-							break;
-						case NiMesh::F_UINT8_4:
-							// BLENDINDICES, do nothing for now
-							break;
-						case NiMesh::F_NORMUINT8_4:
-							Q_ASSERT( usage == NiMesh::USAGE_VERTEX );
-							if ( compType == NiMesh::E_COLOR )
-								colors[j + off] = tempValue.get<ByteColor4>();
-							break;
-						case NiMesh::F_NORMUINT8_4_BGRA:
-							Q_ASSERT( usage == NiMesh::USAGE_VERTEX );
-							if ( compType == NiMesh::E_COLOR ) {
-								// Swizzle BGRA -> RGBA
-								auto c = tempValue.get<ByteColor4>().data();
-								colors[j + off] = {c[2], c[1], c[0], c[3]};
-							}
-							break;
-						default:
-							Message::append( tr( NIMESH_ABORT ), tr( "[%1] Unsupported Component: %2" ).arg( stream )
-											 .arg( NifValue::enumOptionName( "ComponentFormat", typeK ) ),
-											 QMessageBox::Warning );
-							abort = true;
-							break;
-						}
-
-						if ( abort == true )
-							break;
-					}
-				}
-
-				// Clear is extremely expensive. Must be outside of loop
-				tempMdl->clear();
-
-				compIdx++;
-			}
-
-			// Clear unused vertex attributes
-			//	Note: Do not clear normals as this breaks fixed function for some reason
-			if ( !(semFlags & NiMesh::HAS_BINORMAL) )
-				bitangents.clear();
-			if ( !(semFlags & NiMesh::HAS_TANGENT) )
-				tangents.clear();
-			if ( !(semFlags & NiMesh::HAS_COLOR) )
-				colors.clear();
-			if ( !(semFlags & NiMesh::HAS_BLENDINDICES) || !(semFlags & NiMesh::HAS_BLENDWEIGHT) )
-				weights.clear();
-
-			Q_ASSERT( verts.size() == maxIndex + 1 );
-			Q_ASSERT( indices.size() == totalIndices );
-
-			// Make geometry
-			triangles.resize( indices.size() / 3 );
-			auto meshPrimitiveType = nif->get<uint>( iBlock, "Primitive Type" );
-			switch ( meshPrimitiveType ) {
-			case NiMesh::PRIMITIVE_TRIANGLES:
-				for ( int k = 0, t = 0; k < indices.size(); k += 3, t++ )
-					triangles[t] = { indices[k], indices[k + 1], indices[k + 2] };
-				break;
-			case NiMesh::PRIMITIVE_TRISTRIPS:
-			case NiMesh::PRIMITIVE_LINES:
-			case NiMesh::PRIMITIVE_LINESTRIPS:
-			case NiMesh::PRIMITIVE_QUADS:
-			case NiMesh::PRIMITIVE_POINTS:
-				Message::append( tr( NIMESH_ABORT ), tr( "[%1] Unsupported Primitive: %2" )
-									.arg( nif->getBlockNumber( iBlock ) )
-									.arg( NifValue::enumOptionName( "MeshPrimitiveType", meshPrimitiveType ) ),
-								 QMessageBox::Warning
-				);
-				break;
-			}
-		} else {
-
-			verts  = nif->getArray<Vector3>( iData, "Vertices" );
-			norms  = nif->getArray<Vector3>( iData, "Normals" );
-			colors = nif->getArray<Color4>( iData, "Vertex Colors" );
-
-			// Detect if "Has Vertex Colors" is set to Yes in NiTriShape
-			//	Used to compare against SLSF2_Vertex_Colors
-			hasVertexColors = true;
-			if ( colors.length() == 0 ) {
-				hasVertexColors = false;
-			}
-
-			if ( isVertexAlphaAnimation ) {
-				for ( int i = 0; i < colors.count(); i++ )
-					colors[i].setRGBA( colors[i].red(), colors[i].green(), colors[i].blue(), 1 );
-			}
-
-			tangents   = nif->getArray<Vector3>( iData, "Tangents" );
-			bitangents = nif->getArray<Vector3>( iData, "Bitangents" );
-
-			if ( norms.count() < verts.count() )
-				norms.clear();
-
-			if ( colors.count() < verts.count() )
-				colors.clear();
-
-			coords.clear();
-			QModelIndex uvcoord = nif->getIndex( iData, "UV Sets" );
-			if ( uvcoord.isValid() ) {
-				for ( int r = 0; r < nif->rowCount( uvcoord ); r++ ) {
-					TexCoords tc = nif->getArray<Vector2>( uvcoord.child( r, 0 ) );
-
-					if ( tc.count() < verts.count() )
-						tc.clear();
-
-					coords.append( tc );
-				}
-			}
-
-			if ( nif->itemName( iData ) == "NiTriShapeData" ) {
-				// check indexes
-				// TODO: check other indexes as well
-				QVector<Triangle> ftriangles = nif->getArray<Triangle>( iData, "Triangles" );
-				triangles.clear();
-				int inv_idx = 0;
-				int inv_cnt = 0;
-
-				for ( int i = 0; i < ftriangles.count(); i++ ) {
-					Triangle t = ftriangles[i];
-					inv_idx = 0;
-
-					for ( int j = 0; j < 3; j++ ) {
-						if ( t[j] >= verts.count() ) {
-							inv_idx = 1;
-							break;
-						}
-					}
-
-					if ( !inv_idx )
-						triangles.append( t );
-				}
-
-				inv_cnt = ftriangles.count() - triangles.count();
-				ftriangles.clear();
-
-				if ( inv_cnt > 0 ) {
-					int block_idx = nif->getBlockNumber( nif->getIndex( iData, "Triangles" ) );
-					Message::append( tr( "Warnings were generated while rendering mesh." ),
-						tr( "Block %1: %2 invalid indices in NiTriShapeData.Triangles" ).arg( block_idx ).arg( inv_cnt )
-					);
-				}
-
-				tristrips.clear();
-			} else if ( nif->itemName( iData ) == "NiTriStripsData" ) {
-				tristrips.clear();
-				QModelIndex points = nif->getIndex( iData, "Points" );
-
-				if ( points.isValid() ) {
-					for ( int r = 0; r < nif->rowCount( points ); r++ )
-						tristrips.append( nif->getArray<quint16>( points.child( r, 0 ) ) );
-				} else {
-					Message::append( tr( "Warnings were generated while rendering mesh." ),
-						tr( "Block %1: Invalid 'Points' array in %2" )
-						.arg( nif->getBlockNumber( iData ) )
-						.arg( nif->itemName( iData ) )
-					);
-				}
-
-				triangles.clear();
-			} else if ( iSkinPart.isValid() && doSkinning ) {
-				triangles.clear();
-				tristrips.clear();
-			}
-
-			QModelIndex iExtraData = nif->getIndex( iBlock, "Extra Data List" );
-
-			if ( iExtraData.isValid() ) {
-				for ( int e = 0; e < nif->rowCount( iExtraData ); e++ ) {
-					QModelIndex iExtra = nif->getBlock( nif->getLink( iExtraData.child( e, 0 ) ), "NiBinaryExtraData" );
-
-					if ( nif->get<QString>( iExtra, "Name" ) == "Tangent space (binormal & tangent vectors)" ) {
-						iTangentData = iExtra;
-						QByteArray data = nif->get<QByteArray>( iExtra, "Binary Data" );
-
-						if ( data.count() == verts.count() * 4 * 3 * 2 ) {
-							tangents.resize( verts.count() );
-							bitangents.resize( verts.count() );
-							Vector3 * t = (Vector3 *)data.data();
-
-							for ( int c = 0; c < verts.count(); c++ )
-								tangents[c] = *t++;
-
-							for ( int c = 0; c < verts.count(); c++ )
-								bitangents[c] = *t++;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	if ( updateSkin ) {
-		updateSkin = false;
-		isSkinned = false;
-		weights.clear();
-		partitions.clear();
+		updateData_NiMesh( nif );
+	else
+		updateData_NiTriShape( nif );
+
+	// Fill skinning and skeleton data
+	resetSkeletonData();
+	if ( iSkin.isValid() ) {
+		isSkinned = true;
 
 		iSkinData = nif->getBlock( nif->getLink( iSkin, "Data" ), "NiSkinData" );
+
 		iSkinPart = nif->getBlock( nif->getLink( iSkin, "Skin Partition" ), "NiSkinPartition" );
-		if ( !iSkinPart.isValid() )
+		if ( !iSkinPart.isValid() && iSkinData.isValid() ) {
 			// nif versions < 10.2.0.0 have skin partition linked in the skin data block
 			iSkinPart = nif->getBlock( nif->getLink( iSkinData, "Skin Partition" ), "NiSkinPartition" );
+		}
 
-		skeletonRoot  = nif->getLink( iSkin, "Skeleton Root" );
+		skeletonRoot = nif->getLink( iSkin, "Skeleton Root" );
 		skeletonTrans = Transform( nif, iSkinData );
 
 		bones = nif->getLinkArray( iSkin, "Bones" );
 
 		QModelIndex idxBones = nif->getIndex( iSkinData, "Bone List" );
 		if ( idxBones.isValid() ) {
-			bool hvw = nif->get<unsigned char>( iSkinData, "Has Vertex Weights" );
+			int nTotalBones = bones.count();
+			int nBoneList = nif->rowCount( idxBones );
 			// Ignore weights listed in NiSkinData if NiSkinPartition exists
-			hvw = hvw && !iSkinPart.isValid();
-			int vcnt = hvw ? verts.count() : 0;
-			for ( int b = 0; b < nif->rowCount( idxBones ) && b < bones.count(); b++ ) {
-				weights.append( BoneWeights( nif, idxBones.child( b, 0 ), bones[ b ], vcnt ) );
-			}
+			int vcnt = ( nif->get<unsigned char>( iSkinData, "Has Vertex Weights" ) && !iSkinPart.isValid() ) ? numVerts : 0;
+			for ( int b = 0; b < nBoneList && b < nTotalBones; b++ )
+				weights.append( BoneWeights( nif, idxBones.child( b, 0 ), bones[b], vcnt ) );
 		}
 
-		if ( iSkinPart.isValid() && doSkinning ) {
+		if ( iSkinPart.isValid() ) {
 			QModelIndex idx = nif->getIndex( iSkinPart, "Partitions" );
 
 			uint numTris = 0;
@@ -827,11 +303,483 @@ void Mesh::transform()
 				tristrips << part.getRemappedTristrips();
 			}
 		}
+	}
+}
 
-		isSkinned = weights.count() || partitions.count();
+void Mesh::updateData_NiMesh( const NifModel * nif )
+{
+	iData = nif->getIndex( iBlock, "Datastreams" );
+	if ( !iData.isValid() )
+		return;
+	int nTotalStreams = nif->rowCount( iData );
+			
+	// All the semantics used by this mesh
+	NiMesh::SemanticFlags semFlags = NiMesh::HAS_NONE;
+
+	// Loop over the data once for initial setup and validation
+	// and build the semantic-index maps for each datastream's components
+	using CompSemIdxMap = QVector<QPair<NiMesh::Semantic, uint>>;
+	QVector<CompSemIdxMap> compSemanticIndexMaps;
+	for ( int i = 0; i < nTotalStreams; i++ ) {
+		auto iStreamEntry = iData.child( i, 0 );
+
+		auto stream = nif->getLink( iStreamEntry, "Stream" );
+		auto iDataStream = nif->getBlock( stream );
+
+		auto usage = NiMesh::DataStreamUsage( nif->get<uint>( iDataStream, "Usage" ) );
+		auto access = nif->get<uint>( iDataStream, "Access" );
+
+		// Invalid Usage and Access, abort
+		if ( usage == access && access == 0 )
+			return;
+
+		// For each datastream, store the semantic and the index (used for E_TEXCOORD)
+		auto iComponentSemantics = nif->getIndex( iStreamEntry, "Component Semantics" );
+		uint numComponents = nif->get<uint>( iStreamEntry, "Num Components" );
+		CompSemIdxMap compSemanticIndexMap;
+		for ( uint j = 0; j < numComponents; j++ ) {
+			auto iComponentEntry = iComponentSemantics.child( j, 0 );
+
+			auto name = nif->get<QString>( iComponentEntry, "Name" );
+			auto sem = NiMesh::semanticStrings.value( name );
+			uint idx = nif->get<uint>( iComponentEntry, "Index" );
+			compSemanticIndexMap.insert( j, {sem, idx} );
+
+			// Create UV stubs for multi-coord systems
+			if ( sem == NiMesh::E_TEXCOORD )
+				coords.append( TexCoords() );
+
+			// Assure Index datastream is first and Usage is correct
+			bool invalidIndex = false;
+			if ( (sem == NiMesh::E_INDEX && (i != 0 || usage != NiMesh::USAGE_VERTEX_INDEX))
+					|| (usage == NiMesh::USAGE_VERTEX_INDEX && (i != 0 || sem != NiMesh::E_INDEX)) )
+				invalidIndex = true;
+
+			if ( invalidIndex ) {
+				Message::append( tr( NIMESH_ABORT ),
+									tr( "[%1] NifSkope requires 'INDEX' datastream be first, with Usage type 'USAGE_VERTEX_INDEX'." )
+									.arg( stream ),
+									QMessageBox::Warning );
+				return;
+			}
+
+			semFlags = NiMesh::SemanticFlags(semFlags | (1 << sem));
+		}
+
+		compSemanticIndexMaps << compSemanticIndexMap;
 	}
 
-	Node::transform();
+	// This NiMesh does not have vertices, abort
+	if ( !(semFlags & NiMesh::HAS_POSITION || semFlags & NiMesh::HAS_POSITION_BP) )
+		return;
+
+	// The number of triangle indices across the submeshes for this NiMesh
+	quint32 totalIndices = 0;
+	QVector<quint16> indices;
+	// The highest triangle index value in this NiMesh
+	quint32 maxIndex = 0;
+	// The Nth component after ignoring DataStreamUsage > 1
+	int compIdx = 0;
+	for ( int i = 0; i < nTotalStreams; i++ ) {
+		// TODO: For now, submeshes are not actually used and the regions are 
+		// filled in order for each data stream.
+		// Submeshes may be required if total index values exceed USHRT_MAX
+		auto iStreamEntry = iData.child( i, 0 );
+
+		QMap<ushort, ushort> submeshMap;
+		ushort numSubmeshes = nif->get<ushort>( iStreamEntry, "Num Submeshes" );
+		auto iSubmeshMap = nif->getIndex( iStreamEntry, "Submesh To Region Map" );
+		for ( ushort j = 0; j < numSubmeshes; j++ )
+			submeshMap.insert( j, nif->get<ushort>( iSubmeshMap.child( j, 0 ) ) );
+
+		// Get the datastream
+		quint32 stream = nif->getLink( iStreamEntry, "Stream" );
+		auto iDataStream = nif->getBlock( stream );
+
+		auto usage = NiMesh::DataStreamUsage(nif->get<uint>( iDataStream, "Usage" ));
+		// Only process USAGE_VERTEX and USAGE_VERTEX_INDEX
+		if ( usage > NiMesh::USAGE_VERTEX )
+			continue;
+
+		// Datastream can be split into multiple regions
+		// Each region has a Start Index which is added as an offset to the index read from the stream
+		QVector<QPair<quint32, quint32>> regions;
+		quint32 numIndices = 0;
+		auto iRegions = nif->getIndex( iDataStream, "Regions" );
+		if ( iRegions.isValid() ) {
+			quint32 numRegions = nif->get<quint32>( iDataStream, "Num Regions" );
+			for ( quint32 j = 0; j < numRegions; j++ ) {
+				auto iRegionEntry = iRegions.child( j, 0 );
+				regions.append( { nif->get<quint32>( iRegionEntry, "Start Index" ), nif->get<quint32>( iRegionEntry, "Num Indices" ) } );
+
+				numIndices += regions[j].second;
+			}
+		}
+
+		if ( usage == NiMesh::USAGE_VERTEX_INDEX ) {
+			totalIndices = numIndices;
+			// RESERVE not RESIZE
+			indices.reserve( totalIndices );
+		} else if ( compIdx == 1 ) {
+			// Indices should be built already
+			if ( indices.size() != totalIndices )
+				return;
+
+			quint32 maxSize = maxIndex + 1;
+			// RESIZE
+			verts.resize( maxSize );
+			norms.resize( maxSize );
+			tangents.resize( maxSize );
+			bitangents.resize( maxSize );
+			colors.resize( maxSize );
+			weights.resize( maxSize );
+			if ( coords.size() == 0 )
+				coords.resize( 1 );
+
+			for ( auto & c : coords )
+				c.resize( maxSize );
+		}
+
+		// Get the format of each component
+		QVector<NiMesh::DataStreamFormat> datastreamFormats;
+		uint numStreamComponents = nif->get<uint>( iDataStream, "Num Components" );
+		auto iComponentFormats = nif->getIndex( iDataStream, "Component Formats" );
+		for ( uint j = 0; j < numStreamComponents; j++ ) {
+			auto format = nif->get<uint>( iComponentFormats.child( j, 0 ) );
+			datastreamFormats.append( NiMesh::DataStreamFormat(format) );
+		}
+
+		Q_ASSERT( compSemanticIndexMaps[i].size() == numStreamComponents );
+
+		auto tempMdl = std::make_unique<NifModel>( this );
+
+		QByteArray streamData = nif->get<QByteArray>( nif->getIndex( iDataStream, "Data" ).child( 0, 0 ) );
+		QBuffer streamBuffer( &streamData );
+		streamBuffer.open( QIODevice::ReadOnly );
+
+		NifIStream tempInput( tempMdl.get(), &streamBuffer );
+		NifValue tempValue;
+
+		bool abort = false;
+		for ( const auto & r : regions ) for ( uint j = 0; j < r.second; j++ ) {
+			auto off = r.first;
+			Q_ASSERT( totalIndices >= off + j );
+			for ( uint k = 0; k < numStreamComponents; k++ ) {
+				auto typeK = datastreamFormats[k];
+				int typeLength = ( (typeK & 0x000F0000) >> 0x10 );
+
+				switch ( (typeK & 0x00000FF0) >> 0x04 ) {
+				case 0x10:
+					tempValue.changeType( NifValue::tByte );
+					break;
+				case 0x11:
+					if ( typeK == NiMesh::F_NORMUINT8_4 )
+						tempValue.changeType( NifValue::tByteColor4 );
+					typeLength = 1;
+					break;
+				case 0x13:
+					if ( typeK == NiMesh::F_NORMUINT8_4_BGRA )
+						tempValue.changeType( NifValue::tByteColor4 );
+					typeLength = 1;
+					break;
+				case 0x21:
+					tempValue.changeType( NifValue::tShort );
+					break;
+				case 0x23:
+					if ( typeLength == 3 )
+						tempValue.changeType( NifValue::tHalfVector3 );
+					else if ( typeLength == 2 )
+						tempValue.changeType( NifValue::tHalfVector2 );
+					else if ( typeLength == 1 )
+						tempValue.changeType( NifValue::tHfloat );
+
+					typeLength = 1;
+
+					break;
+				case 0x42:
+					tempValue.changeType( NifValue::tInt );
+					break;
+				case 0x43:
+					if ( typeLength == 3 )
+						tempValue.changeType( NifValue::tVector3 );
+					else if ( typeLength == 2 )
+						tempValue.changeType( NifValue::tVector2 );
+					else if ( typeLength == 4 )
+						tempValue.changeType( NifValue::tVector4 );
+					else if ( typeLength == 1 )
+						tempValue.changeType( NifValue::tFloat );
+
+					typeLength = 1;
+
+					break;
+				}
+
+				for ( int l = 0; l < typeLength; l++ ) {
+					tempInput.read( tempValue );
+				}
+
+				auto compType = compSemanticIndexMaps[i].value( k ).first;
+				switch ( typeK )
+				{
+				case NiMesh::F_FLOAT32_3:
+				case NiMesh::F_FLOAT16_3:
+					Q_ASSERT( usage == NiMesh::USAGE_VERTEX );
+					switch ( compType ) {
+					case NiMesh::E_POSITION:
+					case NiMesh::E_POSITION_BP:
+						verts[j + off] = tempValue.get<Vector3>();
+						break;
+					case NiMesh::E_NORMAL:
+					case NiMesh::E_NORMAL_BP:
+						norms[j + off] = tempValue.get<Vector3>();
+						break;
+					case NiMesh::E_TANGENT:
+					case NiMesh::E_TANGENT_BP:
+						tangents[j + off] = tempValue.get<Vector3>();
+						break;
+					case NiMesh::E_BINORMAL:
+					case NiMesh::E_BINORMAL_BP:
+						bitangents[j + off] = tempValue.get<Vector3>();
+						break;
+					default:
+						break;
+					}
+					break;
+				case NiMesh::F_UINT16_1:
+					if ( compType == NiMesh::E_INDEX ) {
+						Q_ASSERT( usage == NiMesh::USAGE_VERTEX_INDEX );
+						// TODO: The total index value across all submeshes
+						// is likely allowed to exceed USHRT_MAX.
+						// For now limit the index.
+						quint32 ind = tempValue.get<quint16>() + off;
+						if ( ind > 0xFFFF )
+							qDebug() << QString( "[%1] %2" ).arg( stream ).arg( ind );
+
+						ind = std::min( ind, (quint32)0xFFFF );
+
+						// Store the highest index
+						if ( ind > maxIndex )
+							maxIndex = ind;
+
+						indices.append( (quint16)ind );
+					}
+					break;
+				case NiMesh::F_FLOAT32_2:
+				case NiMesh::F_FLOAT16_2:
+					Q_ASSERT( usage == NiMesh::USAGE_VERTEX );
+					if ( compType == NiMesh::E_TEXCOORD ) {
+						quint32 coordSet = compSemanticIndexMaps[i].value( k ).second;
+						Q_ASSERT( coords.size() > coordSet );
+						coords[coordSet][j + off] = tempValue.get<Vector2>();
+					}
+					break;
+				case NiMesh::F_UINT8_4:
+					// BLENDINDICES, do nothing for now
+					break;
+				case NiMesh::F_NORMUINT8_4:
+					Q_ASSERT( usage == NiMesh::USAGE_VERTEX );
+					if ( compType == NiMesh::E_COLOR )
+						colors[j + off] = tempValue.get<ByteColor4>();
+					break;
+				case NiMesh::F_NORMUINT8_4_BGRA:
+					Q_ASSERT( usage == NiMesh::USAGE_VERTEX );
+					if ( compType == NiMesh::E_COLOR ) {
+						// Swizzle BGRA -> RGBA
+						auto c = tempValue.get<ByteColor4>().data();
+						colors[j + off] = {c[2], c[1], c[0], c[3]};
+					}
+					break;
+				default:
+					Message::append( tr( NIMESH_ABORT ), tr( "[%1] Unsupported Component: %2" ).arg( stream )
+										.arg( NifValue::enumOptionName( "ComponentFormat", typeK ) ),
+										QMessageBox::Warning );
+					abort = true;
+					break;
+				}
+
+				if ( abort == true )
+					break;
+			}
+		}
+
+		// Clear is extremely expensive. Must be outside of loop
+		tempMdl->clear();
+
+		compIdx++;
+	}
+
+	// Clear unused vertex attributes
+	//	Note: Do not clear normals as this breaks fixed function for some reason
+	// TODO (Gavrant): figure out why clearing normals "breaks fixed function for some reason"
+	if ( !(semFlags & NiMesh::HAS_BINORMAL) )
+		bitangents.clear();
+	if ( !(semFlags & NiMesh::HAS_TANGENT) )
+		tangents.clear();
+	if ( !(semFlags & NiMesh::HAS_COLOR) )
+		colors.clear();
+	if ( !(semFlags & NiMesh::HAS_BLENDINDICES) || !(semFlags & NiMesh::HAS_BLENDWEIGHT) )
+		weights.clear();
+
+	Q_ASSERT( verts.size() == maxIndex + 1 );
+	Q_ASSERT( indices.size() == totalIndices );
+
+	// Make geometry
+	triangles.resize( indices.size() / 3 );
+	auto meshPrimitiveType = nif->get<uint>( iBlock, "Primitive Type" );
+	switch ( meshPrimitiveType ) {
+	case NiMesh::PRIMITIVE_TRIANGLES:
+		for ( int k = 0, t = 0; k < indices.size(); k += 3, t++ )
+			triangles[t] = { indices[k], indices[k + 1], indices[k + 2] };
+		break;
+	case NiMesh::PRIMITIVE_TRISTRIPS:
+	case NiMesh::PRIMITIVE_LINES:
+	case NiMesh::PRIMITIVE_LINESTRIPS:
+	case NiMesh::PRIMITIVE_QUADS:
+	case NiMesh::PRIMITIVE_POINTS:
+		Message::append( tr( NIMESH_ABORT ), tr( "[%1] Unsupported Primitive: %2" )
+							.arg( nif->getBlockNumber( iBlock ) )
+							.arg( NifValue::enumOptionName( "MeshPrimitiveType", meshPrimitiveType ) ),
+							QMessageBox::Warning
+		);
+		break;
+	}
+}
+
+void Mesh::updateData_NiTriShape( const NifModel * nif )
+{
+	// Find iData and iSkin blocks among the children
+	for ( auto childLink : nif->getChildLinks( id() ) ) {
+		QModelIndex iChild = nif->getBlock( childLink );
+		if ( !iChild.isValid() )
+			continue;
+
+		if ( nif->inherits( iChild, "NiTriShapeData" ) || nif->inherits( iChild, "NiTriStripsData" ) ) {
+			if ( !iData.isValid() ) {
+				iData = iChild;
+			} else if ( iData != iChild ) {
+				Message::append( tr( "Warnings were generated while updating meshes." ),
+					tr( "Block %1 has multiple data blocks" ).arg( id() )
+				);
+			}
+		} else if ( nif->inherits( iChild, "NiSkinInstance" ) ) {
+			if ( !iSkin.isValid() ) {
+				iSkin = iChild;
+			} else if ( iSkin != iChild ) {
+				Message::append( tr( "Warnings were generated while updating meshes." ),
+					tr( "Block %1 has multiple skin instances" ).arg( id() )
+				);
+			}
+		}
+	}
+	if ( !iData.isValid() )
+		return;
+
+	// Fill vertex data
+	verts = nif->getArray<Vector3>( iData, "Vertices" );
+	numVerts = verts.count();
+
+	norms = nif->getArray<Vector3>( iData, "Normals" );
+	if ( norms.count() < numVerts )
+		norms.clear();
+	
+	colors = nif->getArray<Color4>( iData, "Vertex Colors" );
+	if ( colors.count() < numVerts )
+		colors.clear();
+	// Detect if "Has Vertex Colors" is set to Yes in NiTriShape
+	//	Used to compare against SLSF2_Vertex_Colors
+	hasVertexColors = (colors.count() > 0);
+
+	tangents   = nif->getArray<Vector3>( iData, "Tangents" );
+	bitangents = nif->getArray<Vector3>( iData, "Bitangents" );
+
+	QModelIndex iExtraData = nif->getIndex( iBlock, "Extra Data List" );
+	if ( iExtraData.isValid() ) {
+		int nExtra = nif->rowCount( iExtraData );
+		for ( int e = 0; e < nExtra; e++ ) {
+			QModelIndex iExtra = nif->getBlock( nif->getLink( iExtraData.child( e, 0 ) ), "NiBinaryExtraData" );
+			if ( nif->get<QString>( iExtra, "Name" ) == "Tangent space (binormal & tangent vectors)" ) {
+				iTangentData = iExtra;
+				QByteArray data = nif->get<QByteArray>( iExtra, "Binary Data" );
+				if ( data.count() == numVerts * 4 * 3 * 2 ) {
+					tangents.resize( numVerts );
+					bitangents.resize( numVerts );
+					Vector3 * t = (Vector3 *)data.data();
+
+					for ( int c = 0; c < numVerts; c++ )
+						tangents[c] = *t++;
+
+					for ( int c = 0; c < numVerts; c++ )
+						bitangents[c] = *t++;
+				}
+			}
+		}
+	}
+
+	coords.clear();
+	QModelIndex iUVSets = nif->getIndex( iData, "UV Sets" );
+	if ( iUVSets.isValid() ) {
+		int nSets = nif->rowCount( iUVSets );
+		for ( int r = 0; r < nSets; r++ ) {
+			TexCoords tc = nif->getArray<Vector2>( iUVSets.child( r, 0 ) );
+			if ( tc.count() < numVerts )
+				tc.clear();
+			coords.append( tc );
+		}
+	}
+
+	// Fill triangle/strips data
+	auto dataName = nif->itemName( iData );
+	if ( dataName == "NiTriShapeData" ) {
+		// check indexes
+		// TODO: check other indexes as well
+		// TODO (Gavrant): test this!
+		QVector<Triangle> dataTris = nif->getArray<Triangle>( iData, "Triangles" );
+		int nDataTris = dataTris.count();
+
+		for ( int i = 0; i < nDataTris; i++ ) {
+			Triangle t = dataTris[i];
+			if ( t[0] < numVerts && t[1] < numVerts && t[2] < numVerts )
+				triangles.append(t);
+		}
+
+		int diff = nDataTris - triangles.count();
+		if ( diff > 0 ) {
+			int block_idx = nif->getBlockNumber( nif->getIndex( iData, "Triangles" ) );
+			Message::append( tr( "Warnings were generated while rendering mesh." ),
+				tr( "Block %1: %2 invalid indices in NiTriShapeData.Triangles" ).arg( block_idx ).arg( diff )
+			);
+		}
+	} else if ( dataName == "NiTriStripsData" ) {
+		QModelIndex points = nif->getIndex( iData, "Points" );
+		if ( points.isValid() ) {
+			int nStrips = nif->rowCount( points );
+			for ( int r = 0; r < nStrips; r++ )
+				tristrips.append( nif->getArray<quint16>( points.child( r, 0 ) ) );
+		} else {
+			Message::append( tr( "Warnings were generated while rendering mesh." ),
+				tr( "Block %1: Invalid 'Points' array in %2" )
+				.arg( nif->getBlockNumber( iData ) )
+				.arg( dataName )
+			);
+		}
+	}
+}
+
+QModelIndex Mesh::vertexAt( int idx ) const
+{
+	auto nif = NifModel::fromIndex( iBlock );
+	if ( !nif )
+		return QModelIndex();
+
+	auto iVertexData = nif->getIndex( iData, "Vertices" );
+	auto iVertex = iVertexData.child( idx, 0 );
+
+	return iVertex;
+}
+
+bool compareTriangles( const QPair<int, float> & tri1, const QPair<int, float> & tri2 )
+{
+	return ( tri1.second < tri2.second );
 }
 
 void Mesh::transformShapes()
@@ -843,7 +791,7 @@ void Mesh::transformShapes()
 
 	transformRigid = true;
 
-	if ( isSkinned && doSkinning ) {
+	if ( isSkinned && ( weights.count() || partitions.count() ) && scene->hasOption(Scene::DoSkinning) ) {
 		transformRigid = false;
 
 		int vcnt = verts.count();
@@ -942,7 +890,7 @@ void Mesh::transformShapes()
 
 		boundSphere = BoundSphere( transVerts );
 		boundSphere.applyInv( viewTrans() );
-		updateBounds = false;
+		needUpdateBounds = false;
 	} else {
 		transVerts = verts;
 		transNorms = norms;
@@ -962,19 +910,18 @@ void Mesh::transformShapes()
 			transColors[c] = colors[c].blend( a );
 	} else {
 		transColors = colors;
-		if ( bslsp ) {
-			if ( !(bslsp->getFlags1() & ShaderFlags::SLSF1_Vertex_Alpha) ) {
-				for ( int c = 0; c < colors.count(); c++ )
-					transColors[c] = Color4( colors[c].red(), colors[c].green(), colors[c].blue(), 1.0f );
-			}
+		// TODO (Gavrant): suspicious code. Should the check be replaced with !bssp.hasVertexAlpha ?
+		if ( bslsp && !bslsp->hasSF1(ShaderFlags::SLSF1_Vertex_Alpha) ) {
+			for ( int c = 0; c < colors.count(); c++ )
+				transColors[c] = Color4( colors[c].red(), colors[c].green(), colors[c].blue(), 1.0f );
 		}
 	}
 }
 
 BoundSphere Mesh::bounds() const
 {
-	if ( updateBounds ) {
-		updateBounds = false;
+	if ( needUpdateBounds ) {
+		needUpdateBounds = false;
 		boundSphere = BoundSphere( verts );
 	}
 
@@ -990,7 +937,7 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
 	if ( !scene->hasOption(Scene::ShowMarkers) && name.startsWith( "EditorMarker" ) )
 		return;
 
-	auto nif = static_cast<const NifModel *>(iBlock.model());
+	auto nif = NifModel::fromIndex( iBlock );
 	
 	if ( Node::SELECTING ) {
 		if ( scene->isSelModeObject() ) {
@@ -1005,12 +952,7 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
 	presorted |= presort;
 
 	// Draw translucent meshes in second pass
-
-	AlphaProperty * aprop = findProperty<AlphaProperty>();
-
-	drawSecond |= (aprop && aprop->blend());
-
-	if ( secondPass && drawSecond ) {
+	if ( secondPass && drawInSecondPass ) {
 		secondPass->add( this );
 		return;
 	}
@@ -1048,7 +990,7 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
 		}
 
 		// Do VCs if legacy or if either bslsp or bsesp is set
-		bool doVCs = (!bssp) || (bssp && (bssp->getFlags2() & ShaderFlags::SLSF2_Vertex_Colors));
+		bool doVCs = ( !bssp || bssp->hasSF2(ShaderFlags::SLSF2_Vertex_Colors) );
 
 		if ( transColors.count() && scene->hasOption(Scene::DoVertexColors) && doVCs ) {
 			glEnableClientState( GL_COLOR_ARRAY );
@@ -1167,7 +1109,7 @@ void Mesh::drawSelection() const
 	auto idx = scene->currentIndex;
 	auto blk = scene->currentBlock;
 
-	auto nif = static_cast<const NifModel *>(idx.model());
+	auto nif = NifModel::fromIndex( idx );
 	if ( !nif )
 		return;
 
@@ -1242,7 +1184,7 @@ void Mesh::drawSelection() const
 
 	if ( n == "Points" ) {
 		glBegin( GL_POINTS );
-		const NifModel * nif = static_cast<const NifModel *>( iData.model() );
+		auto nif = NifModel::fromIndex( iData );
 		QModelIndex points = nif->getIndex( iData, "Points" );
 
 		if ( points.isValid() ) {

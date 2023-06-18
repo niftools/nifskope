@@ -99,24 +99,25 @@ Controller * IControllable::findController( const QModelIndex & index )
 	return nullptr;
 }
 
-
-void IControllable::update( const NifModel * nif, const QModelIndex & i )
+void IControllable::update( const NifModel * nif, const QModelIndex & index )
 {
-	if ( !iBlock.isValid() ) {
+	if ( !iBlock.isValid() )
 		clear();
-		return;
+	else {
+		updateImpl(nif, index);
 	}
+}
 
-	bool x = false;
-
+void IControllable::updateImpl(const NifModel * nif, const QModelIndex & index)
+{
+	bool doUpdate = ( iBlock == index );
 	for ( Controller * ctrl : controllers ) {
-		ctrl->update( nif, i );
-
-		if ( ctrl->index() == i )
-			x = true;
+		ctrl->update( nif, index );
+		if ( !doUpdate && ctrl->index() == index )
+			doUpdate = true;
 	}
 
-	if ( iBlock == i || x ) {
+	if ( doUpdate ) {
 		name = nif->get<QString>( iBlock, "Name" );
 		// sync the list of attached controllers
 		QList<Controller *> rem( controllers );
@@ -177,6 +178,12 @@ void IControllable::setSequence( const QString & seqname )
 	}
 }
 
+void IControllable::registerController( const NifModel* nif, Controller* ctrl )
+{
+	ctrl->update(nif, ctrl->index());
+	controllers.append(ctrl);
+}
+
 
 /*
  *  Controller
@@ -203,15 +210,14 @@ void Controller::setInterpolator( const QModelIndex & index )
 {
 	iInterpolator = index;
 
-	const NifModel * nif = static_cast<const NifModel *>( index.model() );
-
+	auto nif = NifModel::fromIndex( index );
 	if ( nif )
 		iData = nif->getBlock( nif->getLink( iInterpolator, "Data" ) );
 }
 
 bool Controller::update( const NifModel * nif, const QModelIndex & index )
 {
-	if ( iBlock.isValid() && iBlock == index ) {
+	if ( index == iBlock && iBlock.isValid() ) {
 		start = nif->get<float>( index, "Start Time" );
 		stop  = nif->get<float>( index, "Stop Time" );
 		phase = nif->get<float>( index, "Phase" );
@@ -237,10 +243,10 @@ bool Controller::update( const NifModel * nif, const QModelIndex & index )
 		}
 	}
 
-	if ( iInterpolator.isValid() && ( iInterpolator == index ) )
+	if ( index == iInterpolator && iInterpolator.isValid() )
 		iData = nif->getBlock( nif->getLink( iInterpolator, "Data" ) );
 
-	return ( index.isValid() && ( ( index == iBlock ) || ( index == iInterpolator ) || ( index == iData ) ) );
+	return ( index.isValid() && (index == iBlock || index == iInterpolator || index == iData) );
 }
 
 float Controller::ctrlTime( float time ) const
@@ -367,9 +373,8 @@ bool Controller::timeIndex( float time, const NifModel * nif, const QModelIndex 
 
 template <typename T> bool interpolate( T & value, const QModelIndex & array, float time, int & last )
 {
-	const NifModel * nif = static_cast<const NifModel *>( array.model() );
-
-	if ( nif && array.isValid() ) {
+	auto nif = NifModel::fromValidIndex(array);
+	if ( nif ) {
 		QModelIndex frames = nif->getIndex( array, "Keys" );
 		int next;
 		float x;
@@ -446,9 +451,9 @@ template <> bool Controller::interpolate( bool & value, const QModelIndex & arra
 {
 	int next;
 	float x;
-	const NifModel * nif = static_cast<const NifModel *>( array.model() );
 
-	if ( nif && array.isValid() ) {
+	auto nif = NifModel::fromValidIndex(array);
+	if ( nif ) {
 		QModelIndex frames = nif->getIndex( array, "Keys" );
 
 		if ( timeIndex( time, nif, frames, last, next, x ) ) {
@@ -465,9 +470,9 @@ template <> bool Controller::interpolate( Matrix & value, const QModelIndex & ar
 {
 	int next;
 	float x;
-	const NifModel * nif = static_cast<const NifModel *>( array.model() );
-
-	if ( nif && array.isValid() ) {
+	
+	auto nif = NifModel::fromValidIndex(array);
+	if ( nif ) {
 		switch ( nif->get<int>( array, "Rotation Type" ) ) {
 		case 4:
 			{
@@ -540,7 +545,7 @@ struct qarray
 	qarray( const QModelIndex & array, uint off = 0 )
 		: array_( array ), off_( off )
 	{
-		nif_ = static_cast<const NifModel *>( array_.model() );
+		nif_ = NifModel::fromIndex( array_ );
 	}
 	qarray( const qarray & other, uint off = 0 )
 		: nif_( other.nif_ ), array_( other.array_ ), off_( other.off_ + off )

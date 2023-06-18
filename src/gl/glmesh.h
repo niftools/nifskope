@@ -58,31 +58,32 @@ class Shape : public Node
 
 public:
 	Shape( Scene * s, const QModelIndex & b );
-	~Shape() { clear(); }
 
-	void update( const NifModel * nif, const QModelIndex & ) override;
+	// IControllable
+
+	void clear() override;
+	void transform() override;
+
+	// end IControllable
 
 	virtual void drawVerts() const {};
 	virtual QModelIndex vertexAt( int ) const { return QModelIndex(); };
 
+protected:
 	int shapeNumber;
 
-protected:
-	//! Sets the Controller
 	void setController( const NifModel * nif, const QModelIndex & controller ) override;
-
-	void updateShaderProperties( const NifModel * nif );
+	void updateImpl( const NifModel * nif, const QModelIndex & index ) override;
+	virtual void updateData( const NifModel* nif ) = 0;
 
 	void boneSphere( const NifModel * nif, const QModelIndex & index ) const;
 
-	int nifVersion = 0;
-
 	//! Shape data
 	QPersistentModelIndex iData;
+	//! Tangent data
+	QPersistentModelIndex iTangentData;
 	//! Does the data need updating?
-	bool updateData = false;
-	//! Was Skinning enabled last update?
-	bool doSkinning = false;
+	bool needUpdateData = false;
 
 	//! Skin instance
 	QPersistentModelIndex iSkin;
@@ -90,6 +91,10 @@ protected:
 	QPersistentModelIndex iSkinData;
 	//! Skin partition
 	QPersistentModelIndex iSkinPart;
+
+	void resetSkinning();
+
+	int numVerts = 0;
 
 	//! Vertices
 	QVector<Vector3> verts;
@@ -109,8 +114,8 @@ protected:
 	QVector<TriStrip> tristrips;
 	//! Sorted triangles
 	QVector<Triangle> sortedTriangles;
-	//! Triangle indices
-	QVector<quint16> indices;
+
+	void resetVertexData();
 
 	//! Is the transform rigid or weighted?
 	bool transformRigid = true;
@@ -125,8 +130,6 @@ protected:
 	//! Transformed bitangents
 	QVector<Vector3> transBitangents;
 
-	//! Does the skin data need updating?
-	bool updateSkin = false;
 	//! Toggle for skinning
 	bool isSkinned = false;
 
@@ -135,6 +138,8 @@ protected:
 	QVector<int> bones;
 	QVector<BoneWeights> weights;
 	QVector<SkinPartition> partitions;
+
+	void resetSkeletonData();
 
 	//! Holds the name of the shader, or "" if no shader
 	QString shader = "";
@@ -145,6 +150,9 @@ protected:
 	BSLightingShaderProperty * bslsp = nullptr;
 	//! Skyrim effect shader property
 	BSEffectShaderProperty * bsesp = nullptr;
+
+	AlphaProperty * alphaProperty = nullptr;
+
 	//! Is shader set to double sided?
 	bool isDoubleSided = false;
 	//! Is shader set to animate using vertex alphas?
@@ -154,11 +162,13 @@ protected:
 
 	bool depthTest = true;
 	bool depthWrite = true;
-	bool drawSecond = false;
+	bool drawInSecondPass = false;
 	bool translucent = false;
 
+	void updateShader();
+
 	mutable BoundSphere boundSphere;
-	mutable bool updateBounds = false;
+	mutable bool needUpdateBounds = false;
 
 	bool isLOD = false;
 };
@@ -168,16 +178,7 @@ class Mesh : public Shape
 {
 
 public:
-	Mesh( Scene * s, const QModelIndex & b );
-	~Mesh() { clear(); }
-
-	// IControllable
-
-	void clear() override;
-	void update( const NifModel * nif, const QModelIndex & ) override;
-	void transform() override;
-
-	// end IControllable
+	Mesh( Scene * s, const QModelIndex & b ) : Shape( s, b ) { }
 
 	// Node
 
@@ -188,8 +189,7 @@ public:
 
 	BoundSphere bounds() const override;
 
-	bool isHidden() const override;
-	QString textStats() const override;
+	QString textStats() const override; // TODO (Gavrant): move to Shape
 
 	// end Node
 
@@ -199,10 +199,11 @@ public:
 	QModelIndex vertexAt( int ) const override;
 
 protected:
+	void updateImpl( const NifModel * nif, const QModelIndex & index ) override;
+	void updateData( const NifModel * nif ) override;
 
-	//! Tangent data
-	QPersistentModelIndex iTangentData;
+	void updateData_NiMesh( const NifModel * nif );
+	void updateData_NiTriShape( const NifModel * nif );
 };
-
 
 #endif

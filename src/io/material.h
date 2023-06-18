@@ -49,15 +49,12 @@ class Material : public QObject
 	Q_OBJECT
 
 	friend class Renderer;
-	friend class BSShape;
-	friend class BSShaderLightingProperty;
-	friend class BSLightingShaderProperty;
-	friend class BSEffectShaderProperty;
 
 public:
 	Material( QString name, Game::GameMode game );
 
 	bool isValid() const;
+	bool hasDecal() const { return (bDecal != 0); }
 	QStringList textures() const;
 	QString getPath() const;
 
@@ -129,7 +126,6 @@ class ShaderMaterial : public Material
 	Q_OBJECT
 
 	friend class Renderer;
-	friend class BSShape;
 	friend class BSShaderLightingProperty;
 	friend class BSLightingShaderProperty;
 
@@ -213,7 +209,6 @@ class EffectMaterial : public Material
 	Q_OBJECT
 
 	friend class Renderer;
-	friend class BSShape;
 	friend class BSShaderLightingProperty;
 	friend class BSEffectShaderProperty;
 

@@ -321,17 +321,17 @@ const float hkScale2010 = 1.0 / 1.42875 * 100.0;
 
 float bhkScale( const NifModel * nif )
 {
-	return (nif->getUserVersion2() < 47) ? hkScale660 : hkScale2010;
+	return (nif->getBSVersion() < 47) ? hkScale660 : hkScale2010;
 }
 
 float bhkInvScale( const NifModel * nif )
 {
-	return (nif->getUserVersion2() < 47) ? 1.0 / hkScale660 : 1.0 / hkScale2010;
+	return (nif->getBSVersion() < 47) ? 1.0 / hkScale660 : 1.0 / hkScale2010;
 }
 
 float bhkScaleMult( const NifModel * nif )
 {
-	return (nif->getUserVersion2() < 47) ? 1.0 : 10.0;
+	return (nif->getBSVersion() < 47) ? 1.0 : 10.0;
 }
 
 Transform bhkBodyTrans( const NifModel * nif, const QModelIndex & index )

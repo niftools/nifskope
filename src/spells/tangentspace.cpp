@@ -43,11 +43,11 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 	QPersistentModelIndex iShape = iBlock;
 	QModelIndex iData;
 	QModelIndex iPartBlock;
-	if ( nif->getUserVersion2() < 100 ) {
+	if ( nif->getBSVersion() < 100 ) {
 		iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
 	} else {
 		auto vf = nif->get<BSVertexDesc>( iShape, "Vertex Desc" );
-		if ( (vf & VertexFlags::VF_SKINNED) && nif->getUserVersion2() == 100 ) {
+		if ( (vf & VertexFlags::VF_SKINNED) && nif->getBSVersion() == 100 ) {
 			// Skinned SSE
 			auto skinID = nif->getLink( nif->getIndex( iShape, "Skin" ) );
 			auto partID = nif->getLink( nif->getBlock( skinID, "NiSkinInstance" ), "Skin Partition" );
@@ -63,7 +63,7 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 	QVector<Vector3> norms;
 	QVector<Vector2> texco;
 
-	if ( nif->getUserVersion2() < 100 ) {
+	if ( nif->getBSVersion() < 100 ) {
 		verts = nif->getArray<Vector3>( iData, "Vertices" );
 		norms = nif->getArray<Vector3>( iData, "Normals" );
 	} else {
@@ -88,7 +88,7 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 
 	QVector<Color4> vxcol = nif->getArray<Color4>( iData, "Vertex Colors" );
 
-	if ( nif->getUserVersion2() < 100 ) {
+	if ( nif->getBSVersion() < 100 ) {
 		QModelIndex iTexCo = nif->getIndex( iData, "UV Sets" );
 		iTexCo = iTexCo.child( 0, 0 );
 		texco = nif->getArray<Vector2>( iTexCo );
@@ -105,9 +105,9 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 			strips.append( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
 
 		triangles = triangulate( strips );
-	} else if ( nif->getUserVersion2() < 100 ) {
+	} else if ( nif->getBSVersion() < 100 ) {
 		triangles = nif->getArray<Triangle>( iData, "Triangles" );
-	} else if ( nif->getUserVersion2() >= 100 ) {
+	} else if ( nif->getBSVersion() >= 100 ) {
 		if ( iPartBlock.isValid() ) {
 			// Get triangles from all partitions
 			auto numParts = nif->get<int>( iPartBlock, "Num Partitions" );
@@ -270,14 +270,14 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 		}
 
 		nif->set<QByteArray>( iTSpace, "Binary Data", QByteArray( (const char *)tan.data(), tan.count() * sizeof( Vector3 ) ) + QByteArray( (const char *)bin.data(), bin.count() * sizeof( Vector3 ) ) );
-	} else if ( nif->getUserVersion2() < 100 ) {
+	} else if ( nif->getBSVersion() < 100 ) {
 		QModelIndex iBinorms  = nif->getIndex( iData, "Bitangents" );
 		QModelIndex iTangents = nif->getIndex( iData, "Tangents" );
 		nif->updateArray( iBinorms );
 		nif->updateArray( iTangents );
 		nif->setArray( iBinorms, bin );
 		nif->setArray( iTangents, tan );
-	} else if ( nif->getUserVersion2() >= 100 ) {
+	} else if ( nif->getBSVersion() >= 100 ) {
 		int numVerts;
 		// "Num Vertices" does not exist in the partition
 		if ( iPartBlock.isValid() )
