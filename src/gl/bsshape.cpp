@@ -50,12 +50,10 @@ void BSShape::updateData( const NifModel * nif )
 		}
 	}
 
-	bool hasDataOnSkinPart = ( isSkinned && iSkinPart.isValid() );
-
 	// Fill vertex data
 	resetVertexData();
 	numVerts = 0;
-	if ( hasDataOnSkinPart ) {
+	if ( isSkinned && iSkinPart.isValid() ) {
 		// For skinned geometry, the vertex data is stored in the NiSkinPartition
 		// The triangles are split up among the partitions
 		iData = nif->getIndex( iSkinPart, "Vertex Data" );
@@ -113,15 +111,14 @@ void BSShape::updateData( const NifModel * nif )
 	numVerts = verts.count();
 
 	// Fill triangle data
-	if ( hasDataOnSkinPart ) {
+	if ( isSkinned && iSkinPart.isValid() ) {
 		auto iPartitions = nif->getIndex( iSkinPart, "Partitions" );
 		if ( iPartitions.isValid() ) {
 			int n = nif->rowCount( iPartitions );
 			for ( int i = 0; i < n; i++ )
 				triangles << nif->getArray<Triangle>( nif->index( i, 0, iPartitions ), "Triangles" );
 		}
-	}
-	else {
+	} else {
 		auto iTriData = nif->getIndex( iBlock, "Triangles" );
 		if ( iTriData.isValid() )
 			triangles = nif->getArray<Triangle>( iTriData );

@@ -70,6 +70,7 @@ void Shape::clear()
 	transColors.clear();
 	transTangents.clear();
 	transBitangents.clear();
+	sortedTriangles.clear();
 
 	bssp = nullptr;
 	bslsp = nullptr;
@@ -189,9 +190,6 @@ void Shape::resetVertexData()
 	bitangents.clear();
 	triangles.clear();
 	tristrips.clear();
-	weights.clear();
-	partitions.clear();
-	sortedTriangles.clear();
 }
 
 void Shape::resetSkeletonData()
@@ -630,6 +628,7 @@ void Mesh::updateData_NiMesh( const NifModel * nif )
 
 	Q_ASSERT( verts.size() == maxIndex + 1 );
 	Q_ASSERT( indices.size() == totalIndices );
+	numVerts = verts.count();
 
 	// Make geometry
 	triangles.resize( indices.size() / 3 );
