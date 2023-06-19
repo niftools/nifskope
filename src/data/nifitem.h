@@ -685,8 +685,12 @@ public:
 	template <typename T> QVector<T> getArray() const
 	{
 		QVector<T> array;
-		for ( NifItem * child : childItems ) {
-			array.append( child->itemData.value.get<T>() );
+		int nSize = childItems.count();
+		if ( nSize > 0 ) {
+			array.reserve( nSize );
+			for ( NifItem * child : childItems ) {
+				array.append( child->itemData.value.get<T>() );
+			}
 		}
 		return array;
 	}
