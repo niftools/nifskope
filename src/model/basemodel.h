@@ -153,7 +153,7 @@ public:
 	* @param array The item to check.
 	* @return		true if the index is an array.
 	*/
-	bool isArray( NifItem * item ) const;
+	bool isArray( const NifItem * item ) const;
 
 	/*! Update the size of an array (append or remove items).
 	 *

@@ -148,9 +148,11 @@ bool BaseModel::isArray( const QModelIndex & index ) const
 	return !itemArr1( index ).isEmpty();
 }
 
-bool BaseModel::isArray( NifItem * item ) const
+bool BaseModel::isArray( const NifItem * item ) const
 {
-	return item->isArray() || (item->parent() && item->parent()->isMultiArray());
+	if ( !item )
+		return false;
+	return item->isArray() || ( item->parent() && item->parent()->isMultiArray() );
 }
 
 int BaseModel::getArraySize( NifItem * array ) const
