@@ -706,7 +706,7 @@ NifItem * BaseModel::getItem( NifItem * item, const QString & name ) const
 	for ( int c = 0; c < item->childCount(); c++ ) {
 		NifItem * child = item->child( c );
 
-		if ( child->name() == name && evalCondition( child ) )
+		if ( child->hasName(name) && evalCondition( child ) )
 			return child;
 	}
 
@@ -726,7 +726,7 @@ NifItem * BaseModel::getItemX( NifItem * item, const QString & name ) const
 	for ( int c = item->row() - 1; c >= 0; c-- ) {
 		NifItem * child = parent->child( c );
 
-		if ( child && child->name() == name && evalCondition( child ) )
+		if ( child && child->hasName(name) && evalCondition( child ) )
 			return child;
 	}
 

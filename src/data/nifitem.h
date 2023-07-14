@@ -448,23 +448,21 @@ public:
 	}
 
 	//! Return the child item with the specified name
-	NifItem * child( const QString & name )
+	// Does NOT evaluate children's conditions!
+	const NifItem * child( const QLatin1String & name ) const
 	{
-		for ( NifItem * child : childItems ) {
-			if ( child->name() == name )
+		for ( const NifItem * child : childItems ) {
+			if ( child && child->hasName(name) )
 				return child;
 		}
 		return nullptr;
 	}
 
 	//! Return the child item with the specified name
-	const NifItem * child( const QString & name ) const
+	// Does NOT evaluate children's conditions!
+	inline const NifItem * child( const char * name ) const
 	{
-		for ( const NifItem * child : childItems ) {
-			if ( child->name() == name )
-				return child;
-		}
-		return nullptr;
+		return child( QLatin1String(name) );
 	}
 
 	//! Return a count of the number of child items
@@ -605,36 +603,36 @@ public:
 	inline NifValue & value() { return itemData.value; }
 
 	//! Return the name of the data
-	inline QString name() const {   return itemData.name(); }
+	inline const QString & name() const { return itemData.name(); }
 	//! Return the type of the data
-	inline QString type() const {   return itemData.type(); }
+	inline const QString & type() const { return itemData.type(); }
 	//! Return the template type of the data
-	inline QString temp() const {   return itemData.temp(); }
+	inline const QString & temp() const { return itemData.temp(); }
 	//! Return the argument attribute of the data
-	inline QString arg()  const {   return itemData.arg();  }
+	inline const QString & arg()  const { return itemData.arg();  }
 	//! Return the first array length of the data
-	inline QString arr1() const {   return itemData.arr1(); }
+	inline const QString & arr1() const { return itemData.arr1(); }
 	//! Return the second array length of the data
-	inline QString arr2() const {   return itemData.arr2(); }
+	inline const QString & arr2() const { return itemData.arr2(); }
 	//! Return the condition attribute of the data
-	inline QString cond() const {   return itemData.cond(); }
+	inline const QString & cond() const { return itemData.cond(); }
 	//! Return the earliest version attribute of the data
-	inline quint32 ver1() const {   return itemData.ver1(); }
+	inline quint32 ver1() const { return itemData.ver1(); }
 	//! Return the latest version attribute of the data
-	inline quint32 ver2() const {   return itemData.ver2(); }
+	inline quint32 ver2() const { return itemData.ver2(); }
 	//! Return the description text of the data
-	inline QString text() const {   return itemData.text(); }
+	inline const QString & text() const { return itemData.text(); }
 
 	//! Return the condition attribute of the data, as an expression
 	inline const NifExpr & argexpr() const { return itemData.argexpr(); }
 	//! Return the condition attribute of the data, as an expression
-	inline const NifExpr & condexpr() const {   return itemData.condexpr(); }
+	inline const NifExpr & condexpr() const { return itemData.condexpr(); }
 	//! Return the arr1 attribute of the data, as an expression
-	inline const NifExpr & arr1expr() const {   return itemData.arr1expr(); }
+	inline const NifExpr & arr1expr() const { return itemData.arr1expr(); }
 	//! Return the version condition attribute of the data
-	inline QString vercond() const {   return itemData.vercond();  }
+	inline QString vercond() const { return itemData.vercond(); }
 	//! Return the version condition attribute of the data, as an expression
-	inline const NifExpr & verexpr() const {   return itemData.verexpr();  }
+	inline const NifExpr & verexpr() const { return itemData.verexpr(); }
 	//! Return the abstract attribute of the data
 	inline bool isAbstract() const { return itemData.isAbstract(); }
 	//! Is the item data binary. Binary means the data is being treated as one blob.
@@ -649,6 +647,22 @@ public:
 	inline bool isMultiArray() const { return itemData.isMultiArray(); }
 	//! Is the item data conditionless. Conditionless means no expression evaluation is necessary.
 	inline bool isConditionless() const { return itemData.isConditionless(); }
+
+	//! Does the item's name matches testName?
+	inline bool hasName( const QString & testName ) const { return itemData.name() == testName; }
+	//! Does the item's name matches testName?
+	inline bool hasName( const QLatin1String & testName ) const { return itemData.name() == testName; }
+	//! Does the item's name matches testName?
+	// item->hasName("Foo") is much faster than item->name() == "Foo"
+	inline bool hasName( const char * testName ) const { return itemData.name() == QLatin1String(testName); }
+
+	//! Does the item's name matches testName?
+	inline bool hasType( const QString & testName ) const { return itemData.type() == testName; }
+	//! Does the item's name matches testName?
+	inline bool hasType( const QLatin1String & testName ) const { return itemData.type() == testName; }
+	//! Does the item's name matches testName?
+	// item->hasType("Foo") is much faster than item->type() == "Foo"
+	inline bool hasType( const char * testName ) const { return itemData.type() == QLatin1String(testName); }
 
 	//! Set the name
 	inline void setName( const QString & name ) {   itemData.setName( name );   }
@@ -681,6 +695,15 @@ public:
 		return ( ( ver1() == 0 || ver1() <= v ) && ( ver2() == 0 || v <= ver2() ) );
 	}
 
+	//! Get the value of an item if it's not nullptr
+	template <typename T> static inline T get( const NifItem * item ) { return item ? item->get<T>() : T(); }
+
+	//! Get the value of the item
+	template <typename T> inline T get() const { return itemData.value.get<T>(); }
+
+	//! Get the child items of arrayRoot as an array if arrayRoot is not nullptr
+	template <typename T> static inline QVector<T> getArray( const NifItem * arrayRoot ) { return arrayRoot ? arrayRoot->getArray<T>() : QVector<T>(); }
+
 	//! Get the child items as an array
 	template <typename T> QVector<T> getArray() const
 	{
@@ -689,7 +712,7 @@ public:
 		if ( nSize > 0 ) {
 			array.reserve( nSize );
 			for ( NifItem * child : childItems ) {
-				array.append( child->itemData.value.get<T>() );
+				array.append( NifItem::get<T>( child ) );
 			}
 		}
 		return array;

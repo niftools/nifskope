@@ -350,14 +350,13 @@ QString NifModel::createRTTIName( const NifItem * block ) const
 	if ( !block )
 		return {};
 
-	QString blockName = block->name();
-	if ( blockName == QLatin1String( "NiDataStream" ) ) {
-		blockName = QString( "NiDataStream\x01%1\x01%2" )
-			.arg( block->child( "Usage" )->value().get<quint32>() )
-			.arg( block->child( "Access" )->value().get<quint32>() );
+	if ( block->hasName("NiDataStream") ) {
+		return QString( "NiDataStream\x01%1\x01%2" )
+			.arg( NifItem::get<quint32>( block->child("Usage") ) )
+			.arg( NifItem::get<quint32>( block->child("Access") ) );
 	}
 
-	return blockName;
+	return block->name();
 }
 
 QModelIndex NifModel::getHeader() const
@@ -488,7 +487,7 @@ NifItem * NifModel::getItem( NifItem * item, const QString & name ) const
 	//}
 
 	for ( auto child : item->children() ) {
-		if ( child && child->name() == name && evalCondition( child ) )
+		if ( child && child->hasName(name) && evalCondition( child ) )
 			return child;
 	}
 
@@ -783,7 +782,7 @@ void NifModel::updateStrings( NifModel * src, NifModel * tgt, NifItem * item )
 
 	NifValue::Type vt = item->value().type();
 
-	if ( vt == NifValue::tStringIndex || vt == NifValue::tSizedString || item->type() == "string" ) {
+	if ( vt == NifValue::tStringIndex || vt == NifValue::tSizedString || item->hasType("string") ) {
 		QString str = src->string( src->createIndex( 0, 0, item ) );
 		tgt->assignString( tgt->createIndex( 0, 0, item ), str, false );
 	}
@@ -994,7 +993,7 @@ bool NifModel::isNiBlock( const QModelIndex & index, const QString & name ) cons
 		if ( name.isEmpty() )
 			return true;
 
-		return item->name() == name;
+		return item->hasName(name);
 	}
 
 	return false;
@@ -1228,7 +1227,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 					else if ( isArray(item->parent()) ) {
 						auto arrayName = arrayPseudonyms.value(iname);
 						if ( arrayName.isEmpty() ) {
-							if (iname == "UV Sets")
+							if ( item->hasName("UV Sets") )
 								arrayName = QString( (item->value().type() == NifValue::tVector2) ? "UV" : "UV Set" );
 							else
 								arrayName = iname;
@@ -1332,7 +1331,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 					{
 						QString optId = NifValue::enumOptionName( item->type(), value.toCount() );
 
-						if ( item->type() == "BSVertexDesc" )
+						if ( item->hasType("BSVertexDesc") )
 							return BSVertexDesc(value.toCount()).toString();
 
 						if ( optId.isEmpty() )
@@ -1629,19 +1628,19 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 
 	// reverse buddy lookup
 	if ( index.column() == ValueCol ) {
-		if ( item->name() == "File Name" ) {
+		if ( item->hasName("File Name") ) {
 			NifItem * parent = item->parent();
 
-			if ( parent && ( parent->name() == "Texture Source" || parent->name() == "NiImage" ) ) {
+			if ( parent && ( parent->hasName("Texture Source") || parent->hasName("NiImage") ) ) {
 				parent = parent->parent();
 
-				if ( parent && parent->type() == "NiBlock" && parent->name() == "NiSourceTexture" )
+				if ( parent && parent->hasType("NiBlock") && parent->hasName("NiSourceTexture") )
 					emit dataChanged( createIndex( parent->row(), ValueCol, parent ), createIndex( parent->row(), ValueCol, parent ) );					
 			}
-		} else if ( item->name() == "Name" ) {
+		} else if ( item->hasName("Name") ) {
 			NifItem * parent = item->parent();
 
-			if ( parent && parent->type() == "NiBlock" )
+			if ( parent && parent->hasType("NiBlock") )
 				emit dataChanged( createIndex( parent->row(), ValueCol, parent ), createIndex( parent->row(), ValueCol, parent ) );
 		}
 	}
@@ -1700,11 +1699,11 @@ QModelIndex NifModel::buddy( const QModelIndex & index ) const
 		return QModelIndex();
 
 	QModelIndex buddy;
-	if ( index.column() == ValueCol && item->parent() == root && item->type() == "NiBlock" ) {
+	if ( index.column() == ValueCol && item->parent() == root && item->hasType("NiBlock") ) {
 
-		if ( item->name() == "NiSourceTexture" || item->name() == "NiImage" ) {
+		if ( item->hasName("NiSourceTexture") || item->hasName("NiImage") ) {
 			buddy = getIndex( index, "File Name" );
-		} else if ( item->name() == "NiStringExtraData" ) {
+		} else if ( item->hasName("NiStringExtraData") ) {
 			buddy = getIndex( index, "String Data" );
 		} else {
 			buddy = getIndex( index, "Name" );
@@ -1717,7 +1716,7 @@ QModelIndex NifModel::buddy( const QModelIndex & index ) const
 			return buddy;
 	} else if ( index.column() == ValueCol && item->parent() != root ) {
 
-		if ( item->type() == "ControlledBlock" && item->name() == "Controlled Blocks" ) {
+		if ( item->hasType("ControlledBlock") && item->hasName("Controlled Blocks") ) {
 			if ( version >= 0x14010003 ) {
 				buddy = getIndex( index, "Node Name" );
 			} else if ( version <= 0x14000005 ) {
@@ -2282,7 +2281,7 @@ bool NifModel::loadItem( NifItem * parent, NifIStream & stream )
 	// Be advised, getBSVersion returns 0 if it's the file's header that is being loaded.
 	// Though for shader properties loadItem happens after the header is fully processed, so the check below should work w/o issues.
 	if ( getBSVersion() == 155 && parent->parent() == root ) {
-		if ( parent->name() == "BSLightingShaderProperty" || parent->name() == "BSEffectShaderProperty" )
+		if ( parent->hasName("BSLightingShaderProperty") || parent->hasName("BSEffectShaderProperty") )
 			stopRead = true;
 	}
 
@@ -2310,7 +2309,7 @@ bool NifModel::loadItem( NifItem * parent, NifIStream & stream )
 			}
 		}
 
-		if ( stopRead && child->name() == "Name" ) {
+		if ( stopRead && child->hasName("Name") ) {
 			auto idx = child->value().get<int>();
 			if ( idx != -1 ) {
 				NifItem * header = getHeaderItem();
@@ -2319,7 +2318,7 @@ bool NifModel::loadItem( NifItem * parent, NifIStream & stream )
 			}
 		}
 
-		if ( stopRead && child->name() == "Controller" && !name.isEmpty() )
+		if ( stopRead && child->hasName("Controller") && !name.isEmpty() )
 			break;
 	}
 
@@ -2899,7 +2898,7 @@ bool NifModel::assignString( NifItem * item, const QString & string, bool replac
 			idx = get<int>( pItem = item );
 			break;
 		case NifValue::tSizedString:
-			if ( item->type() == "string" ) {
+			if ( item->hasType("string") ) {
 				pItem = item;
 				idx = -1;
 				break;

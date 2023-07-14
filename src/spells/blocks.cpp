@@ -858,7 +858,7 @@ public:
 
 		if ( nif->inherits( type, "NiTimeController" ) ) {
 			// Show only applicable types for controller links for the given block
-			if ( nif->inherits( iBlock, "NiTimeController" ) && item->name() == "Next Controller" )
+			if ( nif->inherits( iBlock, "NiTimeController" ) && item->hasName("Next Controller") )
 				iBlock = nif->getBlock( nif->getLink( index.parent(), "Target" ) );
 
 			if ( nif->getVersionNumber() > 0x14050000 ) {
