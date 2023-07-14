@@ -34,7 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "message.h"
 #include "nifskope.h"
-#include "gl/glmesh.h"
+#include "gl/glshape.h"
 #include "gl/glproperty.h"
 #include "gl/glscene.h"
 #include "gl/gltex.h"

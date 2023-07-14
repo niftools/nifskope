@@ -32,8 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "controllers.h"
 
-#include "gl/glmesh.h"
-#include "gl/glnode.h"
+#include "gl/glshape.h"
 #include "gl/glparticles.h"
 #include "gl/glproperty.h"
 #include "gl/glscene.h"

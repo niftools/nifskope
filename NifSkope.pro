@@ -152,6 +152,7 @@ HEADERS += \
 	src/gl/glparticles.h \
 	src/gl/glproperty.h \
 	src/gl/glscene.h \
+	src/gl/glshape.h \
 	src/gl/gltex.h \
 	src/gl/gltexloaders.h \
 	src/gl/gltools.h \
@@ -218,6 +219,7 @@ SOURCES += \
 	src/gl/glparticles.cpp \
 	src/gl/glproperty.cpp \
 	src/gl/glscene.cpp \
+	src/gl/glshape.cpp \
 	src/gl/gltex.cpp \
 	src/gl/gltexloaders.cpp \
 	src/gl/gltools.cpp \

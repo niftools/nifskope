@@ -1,8 +1,7 @@
 #ifndef BSSHAPE_H
 #define BSSHAPE_H
 
-#include "gl/glmesh.h"
-#include "gl/gltools.h"
+#include "gl/glshape.h"
 
 
 class NifModel;
