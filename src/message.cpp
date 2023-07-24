@@ -3,6 +3,8 @@
 #include <QApplication>
 #include <QAbstractButton>
 #include <QMap>
+#include <QCloseEvent>
+#include <QScreen>
 
 
 Q_LOGGING_CATEGORY( ns, "nifskope" )
@@ -135,49 +137,112 @@ void Message::info( QWidget * parent, const QString & str, const QString & err )
 *
 */
 
-static QMap<QString, QMessageBox *> messageBoxes;
+class DetailsMessageBox : public QMessageBox
+{
+public:
+	explicit DetailsMessageBox( QWidget * parent, const QString & txt )
+	: QMessageBox( parent ), m_key( txt ) { }
+
+	~DetailsMessageBox();
+
+	const QString & key() const { return m_key; }
+
+protected:
+	void closeEvent( QCloseEvent * event ) override;
+
+	QString m_key;
+};
+
+static QVector<DetailsMessageBox *> messageBoxes;
+
+void unregisterMessageBox( DetailsMessageBox * msgBox ) 
+{
+	messageBoxes.removeOne( msgBox );
+}
 
 void Message::append( QWidget * parent, const QString & str, const QString & err, QMessageBox::Icon icon )
 {
 	if ( !parent )
 		parent = qApp->activeWindow();
 
-	// Create one box per error string, accumulate messages
-	auto box = messageBoxes[str];
-	if ( box ) {
+	// Create one box per parent widget and error string, accumulate messages
+	DetailsMessageBox * msgBox = nullptr;
+	for ( auto box : messageBoxes ) {
+		if ( box->parentWidget() == parent && box->key() == str ) {
+			msgBox = box;
+			break;
+		}
+	}
+
+	if ( msgBox ) {
 		// Append strings to existing message box's Detailed Text
 		// Show box if it has been closed before
-		box->show();
-		box->setDetailedText( box->detailedText().append( err + "\n" ) );
+		msgBox->show();
+		if ( !err.isEmpty() )
+			msgBox->setDetailedText( msgBox->detailedText().append( err + "\n" ) );
+
 	} else {
 		// Create new message box
-		auto msgBox = new QMessageBox( parent );
+		msgBox = new DetailsMessageBox( parent, str );
+		messageBoxes.append( msgBox );
+
 		msgBox->setAttribute( Qt::WA_DeleteOnClose );
 		msgBox->setWindowModality( Qt::NonModal );
 		msgBox->setWindowFlags( msgBox->windowFlags() | Qt::Tool );
 
+		// Set the min. width of the label containing str to a quarter of the screen resolution.
+		// This makes the detailed text more readable even when str is short.
+		auto screen = QGuiApplication::primaryScreen();
+		if ( screen ) {
+			msgBox->setStyleSheet( 
+				QString(" QLabel[objectName^=\"qt_msgbox_label\"]{min-width: %1px;}" )
+				.arg ( screen->size().width() / 4 )
+			);
+		}
+
 		msgBox->setText( str );
 		msgBox->setIcon( icon );
-		msgBox->setDetailedText( err + "\n" );
-		msgBox->show();
 
+		if ( !err.isEmpty() ) {
+			msgBox->setDetailedText( err + "\n" );
+
+			// Auto-show detailed text on first show.
+			// https://stackoverflow.com/questions/36083551/qmessagebox-show-details
+			for ( auto btn : msgBox->buttons() ) {
+				if ( msgBox->buttonRole( btn ) == QMessageBox::ActionRole) {
+					btn->click(); // "Click" it to expand the detailed text
+					break;
+				}
+			}
+		}
+
+		msgBox->show();
 		msgBox->activateWindow();
 
-		messageBoxes[str] = msgBox;
-
 		// Clear Detailed Text with each confirmation
-		connect( msgBox, &QMessageBox::buttonClicked, [msgBox, str]( QAbstractButton * button ) { 
+		connect( msgBox, &QMessageBox::buttonClicked, [msgBox]( QAbstractButton * button ) { 
 			Q_UNUSED( button );
-			if ( messageBoxes.contains( str ) )
-				messageBoxes.remove( str );
+			unregisterMessageBox( msgBox );
 		} );
 	}
 }
+
 void Message::append( const QString & str, const QString & err, QMessageBox::Icon icon )
 {
 	append( nullptr, str, err, icon );
 }
 
+DetailsMessageBox::~DetailsMessageBox()
+{
+	unregisterMessageBox( this ); // Just in case if buttonClicked or closeEvent fail
+}
+
+void DetailsMessageBox::closeEvent( QCloseEvent * event ) {
+	
+	QMessageBox::closeEvent(event);
+	if ( event->isAccepted() )
+		unregisterMessageBox( this );
+}
 
 
 /*
