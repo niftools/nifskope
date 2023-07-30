@@ -154,7 +154,7 @@ void ValueEdit::setValue( const NifValue & v )
 			QSpinBox * be = new QSpinBox( this );
 			be->setFrame( false );
 			be->setRange( 0, 0xff );
-			be->setValue( v.toCount() );
+			be->setValue( v.toCount( nullptr, nullptr ) );
 			edit = be;
 		}
 		break;
@@ -164,7 +164,7 @@ void ValueEdit::setValue( const NifValue & v )
 			QSpinBox * we = new QSpinBox( this );
 			we->setFrame( false );
 			we->setRange( 0, 0xffff );
-			we->setValue( v.toCount() );
+			we->setValue( v.toCount( nullptr, nullptr ) );
 			edit = we;
 		}
 		break;
@@ -173,7 +173,7 @@ void ValueEdit::setValue( const NifValue & v )
 			QSpinBox * we = new QSpinBox( this );
 			we->setFrame( false );
 			we->setRange( SHRT_MIN, SHRT_MAX );
-			we->setValue( (short)v.toCount() );
+			we->setValue( (short)v.toCount( nullptr, nullptr ) );
 			edit = we;
 		}
 		break;
@@ -182,7 +182,7 @@ void ValueEdit::setValue( const NifValue & v )
 			QSpinBox * ie = new QSpinBox( this );
 			ie->setFrame( false );
 			ie->setRange( INT_MIN, INT_MAX );
-			ie->setValue( (int)v.toCount() );
+			ie->setValue( (int)v.toCount( nullptr, nullptr ) );
 			edit = ie;
 		}
 		break;
@@ -191,7 +191,7 @@ void ValueEdit::setValue( const NifValue & v )
 			QSpinBox * ie = new QSpinBox( this );
 			ie->setFrame( false );
 			ie->setRange( -1, INT_MAX );
-			ie->setValue( (int)v.toCount() );
+			ie->setValue( (int)v.toCount( nullptr, nullptr ) );
 			edit = ie;
 		}
 		break;
@@ -201,7 +201,7 @@ void ValueEdit::setValue( const NifValue & v )
 			UIntSpinBox * ie = new UIntSpinBox( this );
 			ie->setFrame( false );
 			ie->setRange( INT_MIN, INT_MAX );
-			ie->setValue( v.toCount() );
+			ie->setValue( v.toCount( nullptr, nullptr ) );
 			edit = ie;
 		}
 		break;
@@ -209,7 +209,7 @@ void ValueEdit::setValue( const NifValue & v )
 	case NifValue::tUpLink:
 		{
 			QLineEdit * le = new QLineEdit( this );
-			int tmp = v.toLink();
+			int tmp = v.toLink( nullptr, nullptr );
 
 			if ( tmp > 0 ) {
 				le->setText( QString::number( tmp ) );
@@ -227,7 +227,7 @@ void ValueEdit::setValue( const NifValue & v )
 			fe->setRange( -1e10, +1e10 );
 			fe->setDecimals( 4 );
 			*/
-			fe->setValue( v.toFloat() );
+			fe->setValue( v.toFloat( nullptr, nullptr ) );
 			edit = fe;
 		}
 		break;
@@ -259,70 +259,70 @@ void ValueEdit::setValue( const NifValue & v )
 	case NifValue::tByteColor4:
 		{
 			ColorEdit * ce = new ColorEdit( this );
-			ce->setColor4( v.get<ByteColor4>() );
+			ce->setColor4( v.get<ByteColor4>( nullptr, nullptr ) );
 			edit = ce;
 		}
 		break;
 	case NifValue::tColor4:
 		{
 			ColorEdit * ce = new ColorEdit( this );
-			ce->setColor4( v.get<Color4>() );
+			ce->setColor4( v.get<Color4>( nullptr, nullptr ) );
 			edit = ce;
 		}
 		break;
 	case NifValue::tColor3:
 		{
 			ColorEdit * ce = new ColorEdit( this );
-			ce->setColor3( v.get<Color3>() );
+			ce->setColor3( v.get<Color3>( nullptr, nullptr ) );
 			edit = ce;
 		}
 		break;
 	case NifValue::tVector4:
 		{
 			VectorEdit * ve = new VectorEdit( this );
-			ve->setVector4( v.get<Vector4>() );
+			ve->setVector4( v.get<Vector4>( nullptr, nullptr ) );
 			edit = ve;
 		}
 		break;
 	case NifValue::tByteVector3:
 		{
 			VectorEdit * ve = new VectorEdit( this );
-			ve->setVector3( v.get<ByteVector3>() );
+			ve->setVector3( v.get<ByteVector3>( nullptr, nullptr ) );
 			edit = ve;
 		}
 		break;
 	case NifValue::tHalfVector3:
 		{
 			VectorEdit * ve = new VectorEdit( this );
-			ve->setVector3( v.get<HalfVector3>() );
+			ve->setVector3( v.get<HalfVector3>( nullptr, nullptr ) );
 			edit = ve;
 		}
 		break;
 	case NifValue::tVector3:
 		{
 			VectorEdit * ve = new VectorEdit( this );
-			ve->setVector3( v.get<Vector3>() );
+			ve->setVector3( v.get<Vector3>( nullptr, nullptr ) );
 			edit = ve;
 		}
 		break;
 	case NifValue::tHalfVector2:
 		{
 			VectorEdit * ve = new VectorEdit( this );
-			ve->setVector2( v.get<HalfVector2>() );
+			ve->setVector2( v.get<HalfVector2>( nullptr, nullptr ) );
 			edit = ve;
 		}
 		break;
 	case NifValue::tVector2:
 		{
 			VectorEdit * ve = new VectorEdit( this );
-			ve->setVector2( v.get<Vector2>() );
+			ve->setVector2( v.get<Vector2>( nullptr, nullptr ) );
 			edit = ve;
 		}
 		break;
 	case NifValue::tMatrix:
 		{
 			RotationEdit * re = new RotationEdit( this );
-			re->setMatrix( v.get<Matrix>() );
+			re->setMatrix( v.get<Matrix>( nullptr, nullptr ) );
 			edit = re;
 		}
 		break;
@@ -330,14 +330,14 @@ void ValueEdit::setValue( const NifValue & v )
 	case NifValue::tQuatXYZW:
 		{
 			RotationEdit * re = new RotationEdit( this );
-			re->setQuat( v.get<Quat>() );
+			re->setQuat( v.get<Quat>( nullptr, nullptr ) );
 			edit = re;
 		}
 		break;
 	case NifValue::tTriangle:
 		{
 			TriangleEdit * te = new TriangleEdit( this );
-			te->setTriangle( v.get<Triangle>() );
+			te->setTriangle( v.get<Triangle>( nullptr, nullptr ) );
 			edit = te;
 		}
 		break;
@@ -346,7 +346,7 @@ void ValueEdit::setValue( const NifValue & v )
 			if ( /*???*/ false ) {
 				QSpinBox * ie = new UIntSpinBox( this );
 				ie->setFrame( false );
-				ie->setValue( v.toCount() );
+				ie->setValue( v.toCount( nullptr, nullptr ) );
 				edit = ie;
 			} else {
 				QLineEdit * le = new QLineEdit( this );
@@ -360,7 +360,7 @@ void ValueEdit::setValue( const NifValue & v )
 			if ( /*???*/ false ) {
 				QSpinBox * ie = new UIntSpinBox( this );
 				ie->setFrame( false );
-				ie->setValue( v.toCount() );
+				ie->setValue( v.toCount( nullptr, nullptr ) );
 				edit = ie;
 			} else {
 				QLineEdit * le = new QLineEdit( this );
@@ -393,7 +393,7 @@ NifValue ValueEdit::getValue() const
 		case NifValue::tUInt:
 		case NifValue::tULittle32:
 		case NifValue::tStringIndex:
-			val.setCount( qobject_cast<QSpinBox *>( edit )->value() );
+			val.setCount( qobject_cast<QSpinBox *>( edit )->value(), nullptr, nullptr );
 			break;
 		case NifValue::tLink:
 		case NifValue::tUpLink:
@@ -402,74 +402,70 @@ NifValue ValueEdit::getValue() const
 				bool ok = false;
 				int tmp = str.toInt( &ok );
 
-				if ( ok == false || tmp < 0 ) {
-					val.setLink( -1 );
-				} else {
-					val.setLink( tmp );
-				}
+				val.setLink( ( ok && tmp >= 0 ) ? tmp : -1, nullptr, nullptr );
 			}
 			break;
 		case NifValue::tFloat:
 		case NifValue::tHfloat:
-			val.setFloat( qobject_cast<FloatEdit *>( edit )->value() );
+			val.setFloat( qobject_cast<FloatEdit *>( edit )->value(), nullptr, nullptr );
 			break;
 		case NifValue::tLineString:
 		case NifValue::tShortString:
 		case NifValue::tChar8String:
-			val.setFromString( qobject_cast<QLineEdit *>( edit )->text() );
+			val.setFromString( qobject_cast<QLineEdit *>( edit )->text(), nullptr, nullptr );
 			break;
 		case NifValue::tSizedString:
 		case NifValue::tText:
-			val.setFromString( qobject_cast<QTextEdit *>( edit )->toPlainText() );
+			val.setFromString( qobject_cast<QTextEdit *>( edit )->toPlainText(), nullptr, nullptr );
 			break;
 		case NifValue::tByteColor4:
 			{
 				auto col = qobject_cast<ColorEdit *>(edit)->getColor4();
-				val.set<ByteColor4>( *static_cast<ByteColor4 *>(&col) );
+				val.set<ByteColor4>( *static_cast<ByteColor4 *>(&col), nullptr, nullptr );
 				break;
 			}
 		case NifValue::tColor4:
-			val.set<Color4>( qobject_cast<ColorEdit *>( edit )->getColor4() );
+			val.set<Color4>( qobject_cast<ColorEdit *>( edit )->getColor4(), nullptr, nullptr );
 			break;
 		case NifValue::tColor3:
-			val.set<Color3>( qobject_cast<ColorEdit *>( edit )->getColor3() );
+			val.set<Color3>( qobject_cast<ColorEdit *>( edit )->getColor3(), nullptr, nullptr );
 			break;
 		case NifValue::tVector4:
-			val.set<Vector4>( qobject_cast<VectorEdit *>( edit )->getVector4() );
+			val.set<Vector4>( qobject_cast<VectorEdit *>( edit )->getVector4(), nullptr, nullptr );
 			break;
 		case NifValue::tByteVector3:
 			{
 				auto vec = qobject_cast<VectorEdit *>(edit)->getVector3();
-				val.set<ByteVector3>( *static_cast<ByteVector3 *>(&vec) );
+				val.set<ByteVector3>( *static_cast<ByteVector3 *>(&vec), nullptr, nullptr );
 				break;
 			}
 		case NifValue::tHalfVector3:
 			{
 				auto vec = qobject_cast<VectorEdit *>(edit)->getVector3();
-				val.set<HalfVector3>( *static_cast<HalfVector3 *>(&vec) );
+				val.set<HalfVector3>( *static_cast<HalfVector3 *>(&vec), nullptr, nullptr );
 				break;
 			}
 		case NifValue::tVector3:
-			val.set<Vector3>( qobject_cast<VectorEdit *>( edit )->getVector3() );
+			val.set<Vector3>( qobject_cast<VectorEdit *>( edit )->getVector3(), nullptr, nullptr );
 			break;
 		case NifValue::tHalfVector2:
 			{
 				auto vec = qobject_cast<VectorEdit *>(edit)->getVector2();
-				val.set<HalfVector2>( *static_cast<HalfVector2 *>(&vec) );
+				val.set<HalfVector2>( *static_cast<HalfVector2 *>(&vec), nullptr, nullptr );
 				break;
 			}
 		case NifValue::tVector2:
-			val.set<Vector2>( qobject_cast<VectorEdit *>( edit )->getVector2() );
+			val.set<Vector2>( qobject_cast<VectorEdit *>( edit )->getVector2(), nullptr, nullptr );
 			break;
 		case NifValue::tMatrix:
-			val.set<Matrix>( qobject_cast<RotationEdit *>( edit )->getMatrix() );
+			val.set<Matrix>( qobject_cast<RotationEdit *>( edit )->getMatrix(), nullptr, nullptr );
 			break;
 		case NifValue::tQuat:
 		case NifValue::tQuatXYZW:
-			val.set<Quat>( qobject_cast<RotationEdit *>( edit )->getQuat() );
+			val.set<Quat>( qobject_cast<RotationEdit *>( edit )->getQuat(), nullptr, nullptr );
 			break;
 		case NifValue::tTriangle:
-			val.set<Triangle>( qobject_cast<TriangleEdit *>( edit )->getTriangle() );
+			val.set<Triangle>( qobject_cast<TriangleEdit *>( edit )->getTriangle(), nullptr, nullptr );
 			break;
 		default:
 			break;

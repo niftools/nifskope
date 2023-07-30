@@ -138,7 +138,7 @@ public:
 			return false;
 
 		if ( TheHavokCode.Initialize() ) {
-			//QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
+			//QModelIndex iData = nif->getBlockIndex( nif->getLink( index, "Data" ) );
 
 			if ( nif->isNiBlock( index, "bhkMoppBvTreeShape" ) ) {
 				return ( nif->checkVersion( 0x14000004, 0x14000005 )
@@ -158,14 +158,14 @@ public:
 
 		QPersistentModelIndex ibhkMoppBvTreeShape = iBlock;
 
-		QModelIndex ibhkPackedNiTriStripsShape = nif->getBlock( nif->getLink( ibhkMoppBvTreeShape, "Shape" ) );
+		QModelIndex ibhkPackedNiTriStripsShape = nif->getBlockIndex( nif->getLink( ibhkMoppBvTreeShape, "Shape" ) );
 
 		if ( !nif->isNiBlock( ibhkPackedNiTriStripsShape, "bhkPackedNiTriStripsShape" ) ) {
 			Message::warning( nullptr, Spell::tr( "Only bhkPackedNiTriStripsShape is supported at this time." ) );
 			return iBlock;
 		}
 
-		QModelIndex ihkPackedNiTriStripsData = nif->getBlock( nif->getLink( ibhkPackedNiTriStripsShape, "Data" ) );
+		QModelIndex ihkPackedNiTriStripsData = nif->getBlockIndex( nif->getLink( ibhkPackedNiTriStripsShape, "Data" ) );
 
 		if ( !nif->isNiBlock( ihkPackedNiTriStripsData, "hkPackedNiTriStripsData" ) )
 			return iBlock;
@@ -224,7 +224,7 @@ public:
 
 			if ( iCodeSize.isValid() && iCode.isValid() ) {
 				nif->set<int>( iCodeSize, moppcode.size() );
-				nif->updateArray( iCode );
+				nif->updateArraySize( iCode );
 				nif->set<QByteArray>( iCode, moppcode );
 			}
 		}
@@ -264,7 +264,7 @@ public:
 		spMoppCode TSpacer;
 
 		for ( int n = 0; n < nif->getBlockCount(); n++ ) {
-			QModelIndex idx = nif->getBlock( n );
+			QModelIndex idx = nif->getBlockIndex( n );
 
 			if ( TSpacer.isApplicable( nif, idx ) )
 				indices << idx;

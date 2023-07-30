@@ -12,7 +12,7 @@
 template <typename T> void copyArray( NifModel * nif, const QModelIndex & iDst, const QModelIndex & iSrc )
 {
 	if ( iDst.isValid() && iSrc.isValid() ) {
-		nif->updateArray( iDst );
+		nif->updateArraySize( iDst );
 		nif->setArray<T>( iDst, nif->getArray<T>( iSrc ) );
 	}
 }
@@ -41,7 +41,7 @@ class spStrippify final : public Spell
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QPersistentModelIndex idx = index;
-		QPersistentModelIndex iData = nif->getBlock( nif->getLink( idx, "Data" ), "NiTriShapeData" );
+		QPersistentModelIndex iData = nif->getBlockIndex( nif->getLink( idx, "Data" ), "NiTriShapeData" );
 
 		if ( !iData.isValid() )
 			return idx;
@@ -109,7 +109,7 @@ class spStrippify final : public Spell
 			QModelIndex iSrcUV = nif->getIndex( iData, "UV Sets" );
 
 			if ( iDstUV.isValid() && iSrcUV.isValid() ) {
-				nif->updateArray( iDstUV );
+				nif->updateArraySize( iDstUV );
 
 				for ( int r = 0; r < nif->rowCount( iDstUV ); r++ ) {
 					copyArray<Vector2>( nif, iDstUV.child( r, 0 ), iSrcUV.child( r, 0 ) );
@@ -126,13 +126,13 @@ class spStrippify final : public Spell
 			QModelIndex iPoints  = nif->getIndex( iStripData, "Points" );
 
 			if ( iLengths.isValid() && iPoints.isValid() ) {
-				nif->updateArray( iLengths );
-				nif->updateArray( iPoints );
+				nif->updateArraySize( iLengths );
+				nif->updateArraySize( iPoints );
 				int x = 0;
 				for ( const QVector<quint16>& strip : strips ) {
 					nif->set<int>( iLengths.child( x, 0 ), strip.count() );
 					QModelIndex iStrip = iPoints.child( x, 0 );
-					nif->updateArray( iStrip );
+					nif->updateArraySize( iStrip );
 					nif->setArray<quint16>( iStrip, strip );
 					x++;
 				}
@@ -152,7 +152,7 @@ class spStrippify final : public Spell
 
 			// Copy the entire NiTriStrips branch
 			auto iStrip2 = dupe.cast( nif, idx );
-			auto iStrip2Data = nif->getBlock( nif->getLink( iStrip2, "Data" ), "NiTriStripsData" );
+			auto iStrip2Data = nif->getBlockIndex( nif->getLink( iStrip2, "Data" ), "NiTriStripsData" );
 			if ( !iStrip2Data.isValid() || strips.count() != 2 )
 				return QModelIndex();
 
@@ -165,10 +165,10 @@ class spStrippify final : public Spell
 
 			auto stripsA = strips.at(0);
 			if ( iLengths.isValid() && iPoints.isValid() ) {
-				nif->updateArray( iLengths );
+				nif->updateArraySize( iLengths );
 				nif->set<quint16>( iLengths.child( 0, 0 ), stripsA.count() );
-				nif->updateArray( iPoints );
-				nif->updateArray( iPoints.child( 0, 0 ) );
+				nif->updateArraySize( iPoints );
+				nif->updateArraySize( iPoints.child( 0, 0 ) );
 				nif->setArray<quint16>( iPoints.child( 0, 0 ), stripsA );
 				nif->set<quint16>( iStripData, "Num Triangles", stripsA.count() - 2 );
 			}
@@ -182,10 +182,10 @@ class spStrippify final : public Spell
 
 			auto stripsB = strips.at(1);
 			if ( iLengths.isValid() && iPoints.isValid() ) {
-				nif->updateArray( iLengths );
+				nif->updateArraySize( iLengths );
 				nif->set<quint16>( iLengths.child( 0, 0 ), stripsB.count() );
-				nif->updateArray( iPoints );
-				nif->updateArray( iPoints.child( 0, 0 ) );
+				nif->updateArraySize( iPoints );
+				nif->updateArraySize( iPoints.child( 0, 0 ) );
 				nif->setArray<quint16>( iPoints.child( 0, 0 ), stripsB );
 				nif->set<quint16>( iStrip2Data, "Num Triangles", stripsB.count() - 2 );
 			}
@@ -214,7 +214,7 @@ public:
 		QList<QPersistentModelIndex> iTriShapes;
 
 		for ( int l = 0; l < nif->getBlockCount(); l++ ) {
-			QModelIndex idx = nif->getBlock( l, "NiTriShape" );
+			QModelIndex idx = nif->getBlockIndex( l, "NiTriShape" );
 
 			if ( idx.isValid() )
 				iTriShapes << idx;
@@ -246,7 +246,7 @@ class spTriangulate final : public Spell
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QPersistentModelIndex idx = index;
-		QPersistentModelIndex iStripData = nif->getBlock( nif->getLink( idx, "Data" ), "NiTriStripsData" );
+		QPersistentModelIndex iStripData = nif->getBlockIndex( nif->getLink( idx, "Data" ), "NiTriStripsData" );
 
 		if ( !iStripData.isValid() )
 			return idx;
@@ -271,7 +271,7 @@ class spTriangulate final : public Spell
 		QVector<Triangle> triangles = triangulate( strips );
 
 		nif->insertNiBlock( "NiTriShapeData", nif->getBlockNumber( idx ) + 1 );
-		QModelIndex iTriData = nif->getBlock( nif->getBlockNumber( idx ) + 1, "NiTriShapeData" );
+		QModelIndex iTriData = nif->getBlockIndex( nif->getBlockNumber( idx ) + 1, "NiTriShapeData" );
 
 		if ( iTriData.isValid() ) {
 			copyValue<int>( nif, iTriData, iStripData, "Num Vertices" );
@@ -296,7 +296,7 @@ class spTriangulate final : public Spell
 			QModelIndex iSrcUV = nif->getIndex( iStripData, "UV Sets" );
 
 			if ( iDstUV.isValid() && iSrcUV.isValid() ) {
-				nif->updateArray( iDstUV );
+				nif->updateArraySize( iDstUV );
 
 				for ( int r = 0; r < nif->rowCount( iDstUV ); r++ ) {
 					copyArray<Vector2>( nif, iDstUV.child( r, 0 ), iSrcUV.child( r, 0 ) );
@@ -313,7 +313,7 @@ class spTriangulate final : public Spell
 			QModelIndex iTriangles = nif->getIndex( iTriData, "Triangles" );
 
 			if ( iTriangles.isValid() ) {
-				nif->updateArray( iTriangles );
+				nif->updateArraySize( iTriangles );
 				nif->setArray<Triangle>( iTriangles, triangles );
 			}
 
@@ -346,7 +346,7 @@ public:
 		QList<QPersistentModelIndex> triStrips;
 
 		for ( int l = 0; l < nif->getBlockCount(); l++ ) {
-			QModelIndex idx = nif->getBlock( l, "NiTriStrips" );
+			QModelIndex idx = nif->getBlockIndex( l, "NiTriStrips" );
 			if ( idx.isValid() )
 				triStrips << idx;
 		}
@@ -371,9 +371,9 @@ public:
 	static QModelIndex getStripsData( const NifModel * nif, const QModelIndex & index )
 	{
 		if ( nif->isNiBlock( index, "NiTriStrips" ) )
-			return nif->getBlock( nif->getLink( index, "Data" ), "NiTriStripsData" );
+			return nif->getBlockIndex( nif->getLink( index, "Data" ), "NiTriStripsData" );
 
-		return nif->getBlock( index, "NiTriStripsData" );
+		return nif->getBlockIndex( index, "NiTriStripsData" );
 	}
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
@@ -411,10 +411,10 @@ public:
 		}
 
 		nif->set<int>( iData, "Num Strips", 1 );
-		nif->updateArray( iLength );
+		nif->updateArraySize( iLength );
 		nif->set<int>( iLength.child( 0, 0 ), strip.size() );
-		nif->updateArray( iPoints );
-		nif->updateArray( iPoints.child( 0, 0 ) );
+		nif->updateArraySize( iPoints );
+		nif->updateArraySize( iPoints.child( 0, 0 ) );
 		nif->setArray<quint16>( iPoints.child( 0, 0 ), strip );
 
 		return index;
@@ -483,12 +483,12 @@ public:
 			strips << scratch;
 
 		nif->set<int>( iData, "Num Strips", strips.size() );
-		nif->updateArray( iLength );
-		nif->updateArray( iPoints );
+		nif->updateArraySize( iLength );
+		nif->updateArraySize( iPoints );
 
 		for ( int r = 0; r < strips.count(); r++ ) {
 			nif->set<int>( iLength.child( r, 0 ), strips[r].size() );
-			nif->updateArray( iPoints.child( r, 0 ) );
+			nif->updateArraySize( iPoints.child( r, 0 ) );
 			nif->setArray<quint16>( iPoints.child( r, 0 ), strips[r] );
 		}
 

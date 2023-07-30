@@ -766,35 +766,35 @@ bool NifValue::setFromVariant( const QVariant & var )
 		operator=( var.value<NifValue>() );
 		return true;
 	} else if ( var.type() == QVariant::String ) {
-		return set<QString>( var.toString() );
+		return set<QString>( var.toString(), nullptr, nullptr );
 	}
 
 	return false;
 }
 
-bool NifValue::setFromString( const QString & s )
+bool NifValue::setFromString( const QString & s, const BaseModel * model, const NifItem * item )
 {
-	bool ok;
+	bool ok = false;
 
 	switch ( typ ) {
 	case tBool:
 		val.u64 = 0;
 
-		if ( s == "yes" || s == "true" ) {
+		if ( s == QLatin1String("yes") || s == QLatin1String("true") ) {
 			val.u32 = 1;
-			return true;
-		} else if ( s == "no" || s == "false" ) {
+			ok = true;
+		} else if ( s == QLatin1String("no") || s == QLatin1String("false") ) {
 			val.u32 = 0;
-			return true;
-		} else if ( s == "undefined" ) {
+			ok = true;
+		} else if ( s == QLatin1String("undefined") ) {
 			val.u32 = 2;
-			return true;
+			ok = true;
 		}
-
+		break;
 	case tByte:
 		val.u64 = 0;
 		val.u08 = s.toUInt( &ok, 0 );
-		return ok;
+		break;
 	case tWord:
 	case tFlags:
 	case tStringOffset:
@@ -802,38 +802,38 @@ bool NifValue::setFromString( const QString & s )
 	case tShort:
 		val.u64 = 0;
 		val.u16 = s.toShort( &ok, 0 );
-		return ok;
+		break;
 	case tInt:
 		val.i32 = s.toInt( &ok, 0 );
-		return ok;
+		break;
 	case tUInt:
 	case tULittle32:
 		val.u64 = 0;
 		val.u32 = s.toUInt( &ok, 0 );
-		return ok;
+		break;
 	case tInt64:
 		val.i64 = s.toLongLong( &ok, 0 );
-		return ok;
+		break;
 	case tUInt64:
 		val.u64 = s.toULongLong( &ok, 0 );
-		return ok;
+		break;
 	case tStringIndex:
 		val.u64 = 0;
 		val.u32 = s.toUInt( &ok );
-		return ok;
+		break;
 	case tLink:
 	case tUpLink:
 		val.u64 = 0;
 		val.i32 = s.toInt( &ok );
-		return ok;
+		break;
 	case tFloat:
 		val.u64 = 0;
 		val.f32 = s.toDouble( &ok );
-		return ok;
+		break;
 	case tHfloat:
 		val.u64 = 0;
 		val.f32 = s.toDouble( &ok );
-		return ok;
+		break;
 	case tString:
 	case tSizedString:
 	case tText:
@@ -842,45 +842,44 @@ bool NifValue::setFromString( const QString & s )
 	case tLineString:
 	case tChar8String:
 		*static_cast<QString *>( val.data ) = s;
-		return true;
+		ok = true;
+		break;
 	case tColor3:
 		static_cast<Color3 *>( val.data )->fromQColor( QColor( s ) );
-		return true;
+		ok = true;
+		break;
 	case tColor4:
 	case tByteColor4:
 		static_cast<Color4 *>( val.data )->fromQColor( QColor( s ) );
-		return true;
+		ok = true;
+		break;
 	case tFileVersion:
 		val.u64 = 0;
 		val.u32 = NifModel::version2number( s );
-		return val.u32 != 0;
+		ok = (val.u32 != 0);
+		break;
 	case tVector2:
 		static_cast<Vector2 *>( val.data )->fromString( s );
-		return true;
+		ok = true;
+		break;
 	case tVector3:
 		static_cast<Vector3 *>( val.data )->fromString( s );
-		return true;
+		ok = true;
+		break;
 	case tVector4:
 		static_cast<Vector4 *>( val.data )->fromString( s );
-		return true;
+		ok = true;
+		break;
 	case tQuat:
 	case tQuatXYZW:
 		static_cast<Quat *>( val.data )->fromString( s );
-		return true;
-	case tByteArray:
-	case tByteMatrix:
-	case tStringPalette:
-	case tMatrix:
-	case tMatrix4:
-	case tTriangle:
-	case tBlob:
-	case tNone:
-		return false;
-	default:
-		return false;
+		ok = true;
+		break;
 	}
 
-	return false;
+	if ( !ok && model )
+		reportConvertFromError( model, item, QString("string \"%1\"").arg(s) );
+	return ok;
 }
 
 QString NifValue::toString() const
@@ -1081,14 +1080,93 @@ QString NifValue::toString() const
 	}
 }
 
-QColor NifValue::toColor() const
+void NifValue::reportModelError( const BaseModel * model, const NifItem * item, const QString & msg )
 {
-	if ( type() == tColor3 )
-		return static_cast<Color3 *>( val.data )->toQColor();
-	else if ( type() == tColor4 || type() == tByteColor4 )
-		return static_cast<Color4 *>( val.data )->toQColor();
+	if ( item )
+		model->reportError( item, msg );
+	else
+		model->reportError( msg );
+}
 
-	return QColor();
+void NifValue::reportConvertToError( const BaseModel * model, const NifItem * item, const QString & toType ) const
+{
+	reportModelError( model, item, QString("Could not convert a value of type %1 to %2.").arg( getTypeDebugStr( type() ), toType ) );
+}
+
+void NifValue::reportConvertFromError( const BaseModel * model, const NifItem * item, const QString & fromType ) const
+{
+	reportModelError( model, item, QString("Could not assign %1 to a value of type %2.").arg( fromType, getTypeDebugStr( type() ) ) );
+}
+
+QString NifValue::getTypeDebugStr( NifValue::Type t )
+{
+	const char * typeStr;
+	switch ( t ) {
+	case tBool:             typeStr = "Bool"; break;
+	case tByte:             typeStr = "Byte"; break;
+	case tWord:             typeStr = "Word"; break;
+	case tFlags:            typeStr = "Flags"; break;
+	case tStringOffset:     typeStr = "StringOffset"; break;
+	case tStringIndex:      typeStr = "StringIndex"; break;
+	case tBlockTypeIndex:   typeStr = "BlockTypeIndex"; break;
+	case tInt:              typeStr = "Int"; break;
+	case tShort:            typeStr = "Short"; break;
+	case tULittle32:        typeStr = "ULittle32"; break;
+	case tInt64:            typeStr = "Int64"; break;
+	case tUInt64:           typeStr = "UInt64"; break;
+	case tUInt:             typeStr = "UInt"; break;
+	case tLink:             typeStr = "Link"; break;
+	case tUpLink:           typeStr = "UpLink"; break;
+	case tFloat:            typeStr = "Float"; break;
+	case tSizedString:      typeStr = "SizedString"; break;
+	case tText:             typeStr = "Text"; break;
+	case tShortString:      typeStr = "ShortString"; break;
+	case tHeaderString:     typeStr = "HeaderString"; break;
+	case tLineString:       typeStr = "LineString"; break;
+	case tChar8String:      typeStr = "Char8String"; break;
+	case tColor3:           typeStr = "Color3"; break;
+	case tColor4:           typeStr = "Color4"; break;
+	case tVector3:          typeStr = "Vector3"; break;
+	case tQuat:             typeStr = "Quat"; break;
+	case tQuatXYZW:         typeStr = "QuatXYZW"; break;
+	case tMatrix:           typeStr = "Matrix"; break;
+	case tMatrix4:          typeStr = "Matrix4"; break;
+	case tVector2:          typeStr = "Vector2"; break;
+	case tVector4:          typeStr = "Vector4"; break;
+	case tTriangle:         typeStr = "Triangle"; break;
+	case tFileVersion:      typeStr = "FileVersion"; break;
+	case tByteArray:        typeStr = "ByteArray"; break;
+	case tStringPalette:    typeStr = "StringPalette"; break;
+	case tString:           typeStr = "String"; break;
+	case tFilePath:         typeStr = "FilePath"; break;
+	case tByteMatrix:       typeStr = "ByteMatrix"; break;
+	case tBlob:             typeStr = "Blob"; break;
+	case tHfloat:           typeStr = "Hfloat"; break;
+	case tHalfVector3:      typeStr = "HalfVector3"; break;
+	case tByteVector3:      typeStr = "ByteVector3"; break;
+	case tHalfVector2:      typeStr = "HalfVector2"; break;
+	case tByteColor4:       typeStr = "ByteColor4"; break;
+	case tBSVertexDesc:     typeStr = "BSVertexDesc"; break;
+	case tNone:             typeStr = "None"; break;
+	default:                typeStr = "UNKNOWN"; break;
+	}
+
+	return QString("%2 (%1)").arg( int(t) ).arg( typeStr );
+}
+
+QColor NifValue::toColor( const BaseModel * model, const NifItem * item ) const
+{
+	switch ( type() ) {
+	case tColor3:
+		return static_cast<Color3 *>( val.data )->toQColor();
+	case tColor4:
+	case tByteColor4:
+		return static_cast<Color4 *>( val.data )->toQColor();
+	default:
+		if ( model )
+			reportConvertToError(model, item, "a color");
+		return QColor();
+	}
 }
 
 

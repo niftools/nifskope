@@ -132,7 +132,7 @@ void Scene::update( const NifModel * nif, const QModelIndex & index )
 		return;
 
 	if ( index.isValid() ) {
-		QModelIndex block = nif->getBlock( index );
+		QModelIndex block = nif->getBlockIndex( index );
 		if ( !block.isValid() )
 			return;
 
@@ -153,7 +153,7 @@ void Scene::update( const NifModel * nif, const QModelIndex & index )
 
 		roots.clear();
 		for ( const auto link : nif->getRootLinks() ) {
-			QModelIndex iBlock = nif->getBlock( link );
+			QModelIndex iBlock = nif->getBlockIndex( link );
 			if ( iBlock.isValid() ) {
 				Node * node = getNode( nif, iBlock );
 				if ( node ) {
@@ -235,27 +235,27 @@ Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 		return node;
 
 	auto nodeName = nif->itemName(iNode);
-	if ( nif->inherits( iNode, "NiNode" ) ) {
+	if ( nif->blockInherits( iNode, "NiNode" ) ) {
 		if ( nodeName == "NiLODNode" )
 			node = new LODNode( this, iNode );
 		else if ( nodeName == "NiBillboardNode" )
 			node = new BillboardNode( this, iNode );
 		else
 			node = new Node( this, iNode );
-	} else if ( nodeName == "NiTriShape" || nodeName == "NiTriStrips" || nif->inherits( iNode, "NiTriBasedGeom" ) ) {
+	} else if ( nodeName == "NiTriShape" || nodeName == "NiTriStrips" || nif->blockInherits( iNode, "NiTriBasedGeom" ) ) {
 		node = new Mesh( this, iNode );
 		shapes += static_cast<Shape *>(node);
 	} else if ( nif->checkVersion( 0x14050000, 0 ) && nodeName == "NiMesh" ) {
 		node = new Mesh( this, iNode );
 	}
-	//else if ( nif->inherits( iNode, "AParticleNode" ) || nif->inherits( iNode, "AParticleSystem" ) )
-	else if ( nif->inherits( iNode, "NiParticles" ) ) {
+	//else if ( nif->blockInherits( iNode, "AParticleNode" ) || nif->blockInherits( iNode, "AParticleSystem" ) )
+	else if ( nif->blockInherits( iNode, "NiParticles" ) ) {
 		// ... where did AParticleSystem go?
 		node = new Particles( this, iNode );
-	} else if ( nif->inherits( iNode, "BSTriShape" ) ) {
+	} else if ( nif->blockInherits( iNode, "BSTriShape" ) ) {
 		node = new BSShape( this, iNode );
 		shapes += static_cast<Shape *>(node);
-	} else if ( nif->inherits( iNode, "NiAVObject" ) ) {
+	} else if ( nif->blockInherits( iNode, "NiAVObject" ) ) {
 		if ( nodeName == "BSTreeNode" )
 			node = new Node( this, iNode );
 	}
@@ -282,8 +282,8 @@ Property * Scene::getProperty( const NifModel * nif, const QModelIndex & iProper
 
 Property * Scene::getProperty( const NifModel * nif, const QModelIndex & iParentBlock, const QString & itemName, const QString & mustInherit )
 {
-	QModelIndex iPropertyBlock = nif->getBlock( nif->getLink(iParentBlock, itemName) );
-	if ( iPropertyBlock.isValid() && nif->inherits(iPropertyBlock, mustInherit) )
+	QModelIndex iPropertyBlock = nif->getBlockIndex( nif->getLink(iParentBlock, itemName) );
+	if ( iPropertyBlock.isValid() && nif->blockInherits(iPropertyBlock, mustInherit) )
 		return getProperty( nif, iPropertyBlock );
 	return nullptr;
 }

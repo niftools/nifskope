@@ -401,7 +401,7 @@ void InspectView::update()
 	mat.toEuler( x, y, z );
 
 	impl->nameText->setText( nif->get<QString>( selection, "Name" ) );
-	impl->typeText->setText( nif->getBlockName( selection ) );
+	impl->typeText->setText( nif->itemName( selection ) );
 	impl->timeText->setText( QString( "%1" ).Farg( impl->time ) );
 
 	impl->posXText->setText( QString( "%1" ).Farg( tm.translation[0] ) );

@@ -848,7 +848,7 @@ int indexAt( /*GLuint *buffer,*/ NifModel * model, Scene * scene, QList<DrawFunc
 
 	// Pick BSFurnitureMarker
 	if ( choose > 0 ) {
-		auto furnBlock = model->getBlock( model->index( 3, 0, model->getBlock( choose & 0x0ffff ) ), "BSFurnitureMarker" );
+		auto furnBlock = model->getBlockIndex( model->index( 3, 0, model->getBlockIndex( choose & 0x0ffff ) ), "BSFurnitureMarker" );
 
 		if ( furnBlock.isValid() ) {
 			furn = choose >> 16;
@@ -912,7 +912,7 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 			chooseIndex = shape->vertexAt( vert );
 	} else if ( choose != -1 ) {
 		// Block Index
-		chooseIndex = model->getBlock( choose );
+		chooseIndex = model->getBlockIndex( choose );
 
 		if ( furn != -1 ) {
 			// Furniture Row @ Block Index
@@ -1139,7 +1139,7 @@ void GLView::setCurrentIndex( const QModelIndex & index )
 	if ( !( model && index.model() == model ) )
 		return;
 
-	scene->currentBlock = model->getBlock( index );
+	scene->currentBlock = model->getBlockIndex( index );
 	scene->currentIndex = index.sibling( index.row(), 0 );
 
 	update();
@@ -1607,14 +1607,14 @@ void GLView::dragMoveEvent( QDragMoveEvent * e )
 		fnDragTexOrg = QString();
 	}
 
-	QModelIndex iObj = model->getBlock( indexAt( e->pos() ), "NiAVObject" );
+	QModelIndex iObj = model->getBlockIndex( indexAt( e->pos() ), "NiAVObject" );
 
 	if ( iObj.isValid() ) {
 		for ( const auto l : model->getChildLinks( model->getBlockNumber( iObj ) ) ) {
-			QModelIndex iTxt = model->getBlock( l, "NiTexturingProperty" );
+			QModelIndex iTxt = model->getBlockIndex( l, "NiTexturingProperty" );
 
 			if ( iTxt.isValid() ) {
-				QModelIndex iSrc = model->getBlock( model->getLink( iTxt, "Base Texture/Source" ), "NiSourceTexture" );
+				QModelIndex iSrc = model->getBlockIndex( model->getLink( iTxt, "Base Texture/Source" ), "NiSourceTexture" );
 
 				if ( iSrc.isValid() ) {
 					iDragTarget = model->getIndex( iSrc, "File Name" );
@@ -1763,7 +1763,7 @@ void GLView::mouseReleaseEvent( QMouseEvent * event )
 
 	if ( !(mods & Qt::AltModifier) ) {
 		QModelIndex idx = indexAt( event->pos(), cycleSelect );
-		scene->currentBlock = model->getBlock( idx );
+		scene->currentBlock = model->getBlockIndex( idx );
 		scene->currentIndex = idx.sibling( idx.row(), 0 );
 
 		if ( idx.isValid() ) {

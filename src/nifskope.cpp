@@ -440,7 +440,7 @@ void NifSkope::select( const QModelIndex & index )
 
 	if ( sender() != list ) {
 		if ( list->model() == proxy ) {
-			QModelIndex idxProxy = proxy->mapFrom( nif->getBlock( idx ), list->currentIndex() );
+			QModelIndex idxProxy = proxy->mapFrom( nif->getBlockIndex( idx ), list->currentIndex() );
 
 			// Fix for NiDefaultAVObjectPalette (et al.) bug
 			//	mapFrom() stops at the first result for the given block number,
@@ -473,13 +473,13 @@ void NifSkope::select( const QModelIndex & index )
 			}
 
 		} else if ( list->model() == nif ) {
-			list->setCurrentIndex( nif->getBlockOrHeader( idx ) );
+			list->setCurrentIndex( nif->getTopIndex( idx ) );
 		}
 	}
 
 	if ( sender() != tree ) {
 		if ( dList->isVisible() ) {
-			QModelIndex root = nif->getBlockOrHeader( idx );
+			QModelIndex root = nif->getTopIndex( idx );
 
 			if ( tree->rootIndex() != root )
 				tree->setRootIndex( root );

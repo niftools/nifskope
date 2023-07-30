@@ -70,7 +70,7 @@ void Mesh::updateData( const NifModel * nif )
 {
 	resetSkinning();
 	resetVertexData();
-	if ( nif->checkVersion( 0x14050000, 0 ) && nif->inherits( iBlock, "NiMesh" ) )
+	if ( nif->checkVersion( 0x14050000, 0 ) && nif->blockInherits( iBlock, "NiMesh" ) )
 		updateData_NiMesh( nif );
 	else
 		updateData_NiTriShape( nif );
@@ -80,12 +80,12 @@ void Mesh::updateData( const NifModel * nif )
 	if ( iSkin.isValid() ) {
 		isSkinned = true;
 
-		iSkinData = nif->getBlock( nif->getLink( iSkin, "Data" ), "NiSkinData" );
+		iSkinData = nif->getBlockIndex( nif->getLink( iSkin, "Data" ), "NiSkinData" );
 
-		iSkinPart = nif->getBlock( nif->getLink( iSkin, "Skin Partition" ), "NiSkinPartition" );
+		iSkinPart = nif->getBlockIndex( nif->getLink( iSkin, "Skin Partition" ), "NiSkinPartition" );
 		if ( !iSkinPart.isValid() && iSkinData.isValid() ) {
 			// nif versions < 10.2.0.0 have skin partition linked in the skin data block
-			iSkinPart = nif->getBlock( nif->getLink( iSkinData, "Skin Partition" ), "NiSkinPartition" );
+			iSkinPart = nif->getBlockIndex( nif->getLink( iSkinData, "Skin Partition" ), "NiSkinPartition" );
 		}
 
 		skeletonRoot = nif->getLink( iSkin, "Skeleton Root" );
@@ -146,7 +146,7 @@ void Mesh::updateData_NiMesh( const NifModel * nif )
 		auto iStreamEntry = iData.child( i, 0 );
 
 		auto stream = nif->getLink( iStreamEntry, "Stream" );
-		auto iDataStream = nif->getBlock( stream );
+		auto iDataStream = nif->getBlockIndex( stream );
 
 		auto usage = NiMesh::DataStreamUsage( nif->get<uint>( iDataStream, "Usage" ) );
 		auto access = nif->get<uint>( iDataStream, "Access" );
@@ -216,7 +216,7 @@ void Mesh::updateData_NiMesh( const NifModel * nif )
 
 		// Get the datastream
 		quint32 stream = nif->getLink( iStreamEntry, "Stream" );
-		auto iDataStream = nif->getBlock( stream );
+		auto iDataStream = nif->getBlockIndex( stream );
 
 		auto usage = NiMesh::DataStreamUsage(nif->get<uint>( iDataStream, "Usage" ));
 		// Only process USAGE_VERTEX and USAGE_VERTEX_INDEX
@@ -349,19 +349,19 @@ void Mesh::updateData_NiMesh( const NifModel * nif )
 					switch ( compType ) {
 					case NiMesh::E_POSITION:
 					case NiMesh::E_POSITION_BP:
-						verts[j + off] = tempValue.get<Vector3>();
+						verts[j + off] = tempValue.get<Vector3>( nif, nullptr );
 						break;
 					case NiMesh::E_NORMAL:
 					case NiMesh::E_NORMAL_BP:
-						norms[j + off] = tempValue.get<Vector3>();
+						norms[j + off] = tempValue.get<Vector3>( nif, nullptr );
 						break;
 					case NiMesh::E_TANGENT:
 					case NiMesh::E_TANGENT_BP:
-						tangents[j + off] = tempValue.get<Vector3>();
+						tangents[j + off] = tempValue.get<Vector3>( nif, nullptr );
 						break;
 					case NiMesh::E_BINORMAL:
 					case NiMesh::E_BINORMAL_BP:
-						bitangents[j + off] = tempValue.get<Vector3>();
+						bitangents[j + off] = tempValue.get<Vector3>( nif, nullptr );
 						break;
 					default:
 						break;
@@ -373,7 +373,7 @@ void Mesh::updateData_NiMesh( const NifModel * nif )
 						// TODO: The total index value across all submeshes
 						// is likely allowed to exceed USHRT_MAX.
 						// For now limit the index.
-						quint32 ind = tempValue.get<quint16>() + off;
+						quint32 ind = tempValue.get<quint16>( nif, nullptr ) + off;
 						if ( ind > 0xFFFF )
 							qDebug() << QString( "[%1] %2" ).arg( stream ).arg( ind );
 
@@ -392,7 +392,7 @@ void Mesh::updateData_NiMesh( const NifModel * nif )
 					if ( compType == NiMesh::E_TEXCOORD ) {
 						quint32 coordSet = compSemanticIndexMaps[i].value( k ).second;
 						Q_ASSERT( coords.size() > coordSet );
-						coords[coordSet][j + off] = tempValue.get<Vector2>();
+						coords[coordSet][j + off] = tempValue.get<Vector2>( nif, nullptr );
 					}
 					break;
 				case NiMesh::F_UINT8_4:
@@ -401,13 +401,13 @@ void Mesh::updateData_NiMesh( const NifModel * nif )
 				case NiMesh::F_NORMUINT8_4:
 					Q_ASSERT( usage == NiMesh::USAGE_VERTEX );
 					if ( compType == NiMesh::E_COLOR )
-						colors[j + off] = tempValue.get<ByteColor4>();
+						colors[j + off] = tempValue.get<ByteColor4>( nif, nullptr );
 					break;
 				case NiMesh::F_NORMUINT8_4_BGRA:
 					Q_ASSERT( usage == NiMesh::USAGE_VERTEX );
 					if ( compType == NiMesh::E_COLOR ) {
 						// Swizzle BGRA -> RGBA
-						auto c = tempValue.get<ByteColor4>().data();
+						auto c = tempValue.get<ByteColor4>( nif, nullptr ).data();
 						colors[j + off] = {c[2], c[1], c[0], c[3]};
 					}
 					break;
@@ -472,11 +472,11 @@ void Mesh::updateData_NiTriShape( const NifModel * nif )
 {
 	// Find iData and iSkin blocks among the children
 	for ( auto childLink : nif->getChildLinks( id() ) ) {
-		QModelIndex iChild = nif->getBlock( childLink );
+		QModelIndex iChild = nif->getBlockIndex( childLink );
 		if ( !iChild.isValid() )
 			continue;
 
-		if ( nif->inherits( iChild, "NiTriShapeData" ) || nif->inherits( iChild, "NiTriStripsData" ) ) {
+		if ( nif->blockInherits( iChild, "NiTriShapeData" ) || nif->blockInherits( iChild, "NiTriStripsData" ) ) {
 			if ( !iData.isValid() ) {
 				iData = iChild;
 			} else if ( iData != iChild ) {
@@ -484,7 +484,7 @@ void Mesh::updateData_NiTriShape( const NifModel * nif )
 					tr( "Block %1 has multiple data blocks" ).arg( id() )
 				);
 			}
-		} else if ( nif->inherits( iChild, "NiSkinInstance" ) ) {
+		} else if ( nif->blockInherits( iChild, "NiSkinInstance" ) ) {
 			if ( !iSkin.isValid() ) {
 				iSkin = iChild;
 			} else if ( iSkin != iChild ) {
@@ -519,7 +519,7 @@ void Mesh::updateData_NiTriShape( const NifModel * nif )
 	if ( iExtraData.isValid() ) {
 		int nExtra = nif->rowCount( iExtraData );
 		for ( int e = 0; e < nExtra; e++ ) {
-			QModelIndex iExtra = nif->getBlock( nif->getLink( iExtraData.child( e, 0 ) ), "NiBinaryExtraData" );
+			QModelIndex iExtra = nif->getBlockIndex( nif->getLink( iExtraData.child( e, 0 ) ), "NiBinaryExtraData" );
 			if ( nif->get<QString>( iExtra, "Name" ) == "Tangent space (binormal & tangent vectors)" ) {
 				iTangentData = iExtra;
 				QByteArray data = nif->get<QByteArray>( iExtra, "Binary Data" );

@@ -25,10 +25,10 @@ public:
 
 	static QModelIndex getShapeData( const NifModel * nif, const QModelIndex & index )
 	{
-		QModelIndex iData = nif->getBlock( index );
+		QModelIndex iData = nif->getBlockIndex( index );
 
 		if ( nif->isNiBlock( index, { "NiTriShape", "BSLODTriShape", "NiTriStrips" } ) )
-			iData = nif->getBlock( nif->getLink( index, "Data" ) );
+			iData = nif->getBlockIndex( nif->getLink( index, "Data" ) );
 
 		if ( nif->isNiBlock( iData, { "NiTriShapeData", "NiTriStripsData" } ) )
 			return iData;
@@ -38,8 +38,8 @@ public:
 			if ( (vf & VertexFlags::VF_SKINNED) && nif->getBSVersion() == 100 ) {
 				// Skinned SSE
 				auto skinID = nif->getLink( nif->getIndex( index, "Skin" ) );
-				auto partID = nif->getLink( nif->getBlock( skinID, "NiSkinInstance" ), "Skin Partition" );
-				auto iPartBlock = nif->getBlock( partID, "NiSkinPartition" );
+				auto partID = nif->getLink( nif->getBlockIndex( skinID, "NiSkinInstance" ), "Skin Partition" );
+				auto iPartBlock = nif->getBlockIndex( partID, "NiSkinPartition" );
 				if ( iPartBlock.isValid() )
 					return nif->getIndex( iPartBlock, "Vertex Data" );
 			}
@@ -98,7 +98,7 @@ public:
 			faceNormals( verts, triangles, norms );
 
 			nif->set<int>( iData, "Has Normals", 1 );
-			nif->updateArray( iData, "Normals" );
+			nif->updateArraySize( iData, "Normals" );
 			nif->setArray<Vector3>( iData, "Normals", norms );
 		} else {
 			QVector<Triangle> triangles;

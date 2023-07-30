@@ -121,9 +121,9 @@ void IControllable::updateImpl(const NifModel * nif, const QModelIndex & index)
 		name = nif->get<QString>( iBlock, "Name" );
 		// sync the list of attached controllers
 		QList<Controller *> rem( controllers );
-		QModelIndex iCtrl = nif->getBlock( nif->getLink( iBlock, "Controller" ) );
+		QModelIndex iCtrl = nif->getBlockIndex( nif->getLink( iBlock, "Controller" ) );
 
-		while ( iCtrl.isValid() && nif->inherits( iCtrl, "NiTimeController" ) ) {
+		while ( iCtrl.isValid() && nif->blockInherits( iCtrl, "NiTimeController" ) ) {
 			bool add = true;
 
 			for ( Controller * ctrl : controllers ) {
@@ -136,7 +136,7 @@ void IControllable::updateImpl(const NifModel * nif, const QModelIndex & index)
 			if ( add )
 				setController( nif, iCtrl );
 
-			iCtrl = nif->getBlock( nif->getLink( iCtrl, "Next Controller" ) );
+			iCtrl = nif->getBlockIndex( nif->getLink( iCtrl, "Next Controller" ) );
 		}
 
 		for ( Controller * ctrl : rem ) {
@@ -212,7 +212,7 @@ void Controller::setInterpolator( const QModelIndex & index )
 
 	auto nif = NifModel::fromIndex( index );
 	if ( nif )
-		iData = nif->getBlock( nif->getLink( iInterpolator, "Data" ) );
+		iData = nif->getBlockIndex( nif->getLink( iInterpolator, "Data" ) );
 }
 
 bool Controller::update( const NifModel * nif, const QModelIndex & index )
@@ -231,12 +231,12 @@ bool Controller::update( const NifModel * nif, const QModelIndex & index )
 		// TODO: Bit 5 (32) - Generally only set when sequences are present.
 		// TODO: Bit 6 (64) - Always seems to be set on Skyrim NIFs, unknown function.
 
-		QModelIndex idx = nif->getBlock( nif->getLink( iBlock, "Interpolator" ) );
+		QModelIndex idx = nif->getBlockIndex( nif->getLink( iBlock, "Interpolator" ) );
 
 		if ( idx.isValid() ) {
 			setInterpolator( idx );
 		} else {
-			idx = nif->getBlock( nif->getLink( iBlock, "Data" ) );
+			idx = nif->getBlockIndex( nif->getLink( iBlock, "Data" ) );
 
 			if ( idx.isValid() )
 				iData = idx;
@@ -244,7 +244,7 @@ bool Controller::update( const NifModel * nif, const QModelIndex & index )
 	}
 
 	if ( index == iInterpolator && iInterpolator.isValid() )
-		iData = nif->getBlock( nif->getLink( iInterpolator, "Data" ) );
+		iData = nif->getBlockIndex( nif->getLink( iInterpolator, "Data" ) );
 
 	return ( index.isValid() && (index == iBlock || index == iInterpolator || index == iData) );
 }
@@ -720,7 +720,7 @@ TransformInterpolator::TransformInterpolator( Controller * owner )
 bool TransformInterpolator::update( const NifModel * nif, const QModelIndex & index )
 {
 	if ( Interpolator::update( nif, index ) ) {
-		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ), "NiKeyframeData" );
+		QModelIndex iData = nif->getBlockIndex( nif->getLink( index, "Data" ), "NiKeyframeData" );
 		iTranslations = nif->getIndex( iData, "Translations" );
 		iRotations = nif->getIndex( iData, "Rotations" );
 
@@ -755,8 +755,8 @@ bool BSplineTransformInterpolator::update( const NifModel * nif, const QModelInd
 		start = nif->get<float>( index, "Start Time" );
 		stop  = nif->get<float>( index, "Stop Time" );
 
-		iSpline = nif->getBlock( nif->getLink( index, "Spline Data" ) );
-		iBasis  = nif->getBlock( nif->getLink( index, "Basis Data" ) );
+		iSpline = nif->getBlockIndex( nif->getLink( index, "Spline Data" ) );
+		iBasis  = nif->getBlockIndex( nif->getLink( index, "Basis Data" ) );
 
 		if ( iSpline.isValid() )
 			iControl = nif->getIndex( iSpline, "Compact Control Points" );

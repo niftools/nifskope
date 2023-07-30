@@ -58,12 +58,12 @@ void Particles::updateImpl( const NifModel * nif, const QModelIndex & index )
 
 	if ( index == iBlock ) {
 		for (const auto link : nif->getChildLinks(id())) {
-			QModelIndex iChild = nif->getBlock(link);
+			QModelIndex iChild = nif->getBlockIndex(link);
 
 			if (!iChild.isValid())
 				continue;
 
-			if (nif->inherits(iChild, "NiParticlesData")) {
+			if (nif->blockInherits(iChild, "NiParticlesData")) {
 				iData = iChild;
 				updateData = true;
 			}

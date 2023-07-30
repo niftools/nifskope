@@ -418,9 +418,9 @@ public:
 						quint32 enumVal = NifValue::enumOptionValue( type, defval, &ok );
 
 						if ( ok ) {
-							data.value.setCount( enumVal );
+							data.value.setCount( enumVal, nullptr, nullptr );
 						} else {
-							data.value.setFromString( defval );
+							data.value.setFromString( defval, nullptr, nullptr );
 						}
 					}
 

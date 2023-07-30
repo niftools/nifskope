@@ -127,9 +127,9 @@ QModelIndex Renderer::ConditionSingle::getIndex( const NifModel * nif, const QVe
 		auto blk = blkid.remove( "HEADER/" );
 		if ( blk.contains("/") ) {
 			auto blks = blk.split( "/" );
-			return nif->getIndex( nif->getIndex( nif->getHeader(), blks.at(0) ), blks.at(1) );
+			return nif->getIndex( nif->getIndex( nif->getHeaderIndex(), blks.at(0) ), blks.at(1) );
 		}
-		return nif->getIndex( nif->getHeader(), blk );
+		return nif->getIndex( nif->getHeaderIndex(), blk );
 	}
 
 	int pos = blkid.indexOf( "/" );
@@ -140,7 +140,7 @@ QModelIndex Renderer::ConditionSingle::getIndex( const NifModel * nif, const QVe
 	}
 
 	for ( QModelIndex iBlock : iBlocks ) {
-		if ( nif->inherits( iBlock, blkid ) ) {
+		if ( nif->blockInherits( iBlock, blkid ) ) {
 			if ( childid.isEmpty() )
 				return iBlock;
 
@@ -160,18 +160,20 @@ bool Renderer::ConditionSingle::eval( const NifModel * nif, const QVector<QModel
 	if ( comp == NONE )
 		return !invert;
 
-	NifValue val = nif->getValue( iLeft );
+	const NifItem * item = nif->getItem( iLeft );
+	if ( !item )
+		return false;
 
-	if ( val.isString() )
-		return compare( val.toString(), right ) ^ invert;
-	else if ( val.isCount() )
-		return compare( val.toCount(), right.toULongLong( nullptr, 0 ) ) ^ invert;
-	else if ( val.isFloat() )
-		return compare( val.toFloat(), (float)right.toDouble() ) ^ invert;
-	else if ( val.isFileVersion() )
-		return compare( val.toFileVersion(), right.toUInt( nullptr, 0 ) ) ^ invert;
-	else if ( val.type() == NifValue::tBSVertexDesc )
-		return compare( (uint)val.get<BSVertexDesc>().GetFlags(), right.toUInt( nullptr, 0 ) ) ^ invert;
+	if ( item->valueIsString() )
+		return compare( item->valueToString(), right ) ^ invert;
+	else if ( item->valueIsCount() )
+		return compare( item->valueToCount(), right.toULongLong( nullptr, 0 ) ) ^ invert;
+	else if ( item->valueIsFloat() )
+		return compare( item->valueToFloat(), (float)right.toDouble() ) ^ invert;
+	else if ( item->valueIsFileVersion() )
+		return compare( item->valueToFileVersion(), right.toUInt( nullptr, 0 ) ) ^ invert;
+	else if ( item->valueType() == NifValue::tBSVertexDesc )
+		return compare( (uint) item->get<BSVertexDesc>().GetFlags(), right.toUInt( nullptr, 0 ) ) ^ invert;
 
 	return false;
 }

@@ -448,8 +448,8 @@ void TestThread::run()
 
 				if ( !headerOnly && loaded && model == &nif ) {
 					for ( int b = 0; b < nif.getBlockCount(); b++ ) {
-						auto blk = nif.getBlock( b );
-						bool current_match = !blockMatch.isEmpty() && nif.inherits(nif.getBlockName(blk), blockMatch);
+						auto blk = nif.getBlockIndex( b );
+						bool current_match = !blockMatch.isEmpty() && nif.inherits(nif.itemName(blk), blockMatch);
 						blk_match |= current_match;
 
 						NifValue value;
@@ -462,10 +462,8 @@ void TestThread::run()
 								bool isInt = value.isCount() && !value.isFloat();
 								bool isStr = value.isString() || value.type() == NifValue::tStringIndex || value.isFloat();
 
-								auto asInt = value.toCount();
-								auto asStr = value.toString();
-								if ( value.type() == NifValue::tStringIndex )
-									asStr = nif.string(nameIdx);
+								auto asInt = value.toCount( nullptr, nullptr);
+								auto asStr = ( value.type() == NifValue::tStringIndex ) ? nif.resolveString(nameIdx) : value.toString();
 
 								bool current_match = false;
 
@@ -590,14 +588,13 @@ QList<TestMessage> TestThread::checkLinks( const NifModel * nif, const QModelInd
 
 	for ( int r = 0; r < nif->rowCount( iParent ); r++ ) {
 		QModelIndex idx = iParent.child( r, 0 );
-		bool child;
 
-		if ( nif->isLink( idx, &child ) ) {
+		if ( nif->isLink( idx ) ) {
 			qint32 l = nif->getLink( idx );
 
 			if ( l < 0 ) {
 				// This is not really an error
-				// if ( ! child && ! kf )
+				// if ( ! isChildLink && ! kf )
 				//	messages.append( Message() << tr("unassigned parent link") << linkId( nif, idx ) );
 			} else if ( l >= nif->getBlockCount() ) {
 				messages.append( TestMessage() << tr( "invalid link" ) << linkId( nif, idx ) );
@@ -605,9 +602,9 @@ QList<TestMessage> TestThread::checkLinks( const NifModel * nif, const QModelInd
 				QString tmplt = nif->itemTmplt( idx );
 
 				if ( !tmplt.isEmpty() ) {
-					QModelIndex iBlock = nif->getBlock( l );
+					QModelIndex iBlock = nif->getBlockIndex( l );
 
-					if ( !nif->inherits( iBlock, tmplt ) )
+					if ( !nif->blockInherits( iBlock, tmplt ) )
 						messages.append( TestMessage() << tr( "link" ) << linkId( nif, idx ) << tr( "points to wrong block type" ) << nif->itemName( iBlock ) );
 				}
 			}

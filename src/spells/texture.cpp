@@ -132,7 +132,7 @@ static QIconPtr tex42_xpm_icon = nullptr;
 QModelIndex getData( const NifModel * nif, const QModelIndex & index )
 {
 	if ( nif->isNiBlock( index, { "NiTriShape", "NiTriStrips", "BSLODTriShape" } ) )
-		return nif->getBlock( nif->getLink( index, "Data" ) );
+		return nif->getBlockIndex( nif->getLink( index, "Data" ) );
 	
 	if ( nif->isNiBlock( index, { "NiTriShapeData", "NiTriStripsData" } ) )
 		return index;
@@ -171,7 +171,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & idx ) override final
 	{
-		QModelIndex iBlock = nif->getBlock( idx );
+		QModelIndex iBlock = nif->getBlockIndex( idx );
 
 		if ( nif->isNiBlock( iBlock, { "NiSourceTexture", "NiImage" } )
 		     && ( iBlock == idx.sibling( idx.row(), 0 ) || nif->itemName( idx ) == "File Name" ) )
@@ -190,7 +190,7 @@ public:
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & idx ) override final
 	{
-		QModelIndex iBlock = nif->getBlock( idx );
+		QModelIndex iBlock = nif->getBlockIndex( idx );
 		QModelIndex iFile;
 		bool setExternal = false;
 
@@ -267,7 +267,7 @@ public:
 		auto iUVs = getUV( nif, index );
 		auto iTriData = nif->getIndex( index, "Num Triangles" );
 		return (iUVs.isValid() || iTriData.isValid())
-			&& (nif->inherits( index, "NiTriBasedGeom" ) || nif->inherits( index, "BSTriShape" ));
+			&& (nif->blockInherits( index, "NiTriBasedGeom" ) || nif->blockInherits( index, "BSTriShape" ));
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
@@ -287,7 +287,7 @@ REGISTER_SPELL( spEditTexCoords )
  */
 QModelIndex addTexture( NifModel * nif, const QModelIndex & index, const QString & name )
 {
-	QModelIndex iTexProp = nif->getBlock( index, "NiTexturingProperty" );
+	QModelIndex iTexProp = nif->getBlockIndex( index, "NiTexturingProperty" );
 
 	if ( !iTexProp.isValid() )
 		return index;
@@ -329,7 +329,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		QModelIndex block = nif->getBlockIndex( index, "NiTexturingProperty" );
 		return ( block.isValid() && nif->get<int>( block, "Has Base Texture" ) == 0 );
 	}
 
@@ -350,7 +350,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		QModelIndex block = nif->getBlockIndex( index, "NiTexturingProperty" );
 		return ( block.isValid() && nif->get<int>( block, "Has Dark Texture" ) == 0 );
 	}
 
@@ -371,7 +371,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		QModelIndex block = nif->getBlockIndex( index, "NiTexturingProperty" );
 		return ( block.isValid() && nif->get<int>( block, "Has Detail Texture" ) == 0 );
 	}
 
@@ -392,7 +392,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		QModelIndex block = nif->getBlockIndex( index, "NiTexturingProperty" );
 		return ( block.isValid() && nif->get<int>( block, "Has Glow Texture" ) == 0 );
 	}
 
@@ -413,14 +413,14 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		QModelIndex block = nif->getBlockIndex( index, "NiTexturingProperty" );
 		return ( block.isValid() && nif->get<int>( block, "Has Bump Map Texture" ) == 0 );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iSrcTex = addTexture( nif, index, "Bump Map Texture" );
-		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		QModelIndex block = nif->getBlockIndex( index, "NiTexturingProperty" );
 		nif->set<float>( block, "Bump Map Luma Scale", 1.0 );
 		nif->set<float>( block, "Bump Map Luma Offset", 0.0 );
 		QModelIndex iMatrix = nif->getIndex( block, "Bump Map Matrix" );
@@ -443,7 +443,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		QModelIndex block = nif->getBlockIndex( index, "NiTexturingProperty" );
 		return ( block.isValid() && nif->get<int>( block, "Has Decal 0 Texture" ) == 0 );
 	}
 
@@ -464,7 +464,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		QModelIndex block = nif->getBlockIndex( index, "NiTexturingProperty" );
 		return ( block.isValid() && nif->get<int>( block, "Has Decal 1 Texture" ) == 0 );
 	}
 
@@ -485,7 +485,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		QModelIndex block = nif->getBlockIndex( index, "NiTexturingProperty" );
 		return ( block.isValid() && nif->get<int>( block, "Has Decal 2 Texture" ) == 0 );
 	}
 
@@ -506,7 +506,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		QModelIndex block = nif->getBlockIndex( index, "NiTexturingProperty" );
 		return ( block.isValid() && nif->get<int>( block, "Has Decal 3 Texture" ) == 0 );
 	}
 
@@ -532,7 +532,7 @@ class spTextureTemplate final : public Spell
 	{
 		QModelIndex iUVs = getUV( nif, index );
 		auto iTriData = nif->getIndex( index, "Num Triangles" );
-		bool bstri = nif->getBSVersion() >= 100 && nif->inherits( index, "BSTriShape" ) && iTriData.isValid();
+		bool bstri = nif->getBSVersion() >= 100 && nif->blockInherits( index, "BSTriShape" ) && iTriData.isValid();
 		return (iUVs.isValid() && nif->rowCount( iUVs ) >= 1) || bstri;
 	}
 
@@ -634,8 +634,8 @@ class spTextureTemplate final : public Spell
 			if ( (vf & VertexFlags::VF_SKINNED) && nif->getBSVersion() == 100 ) {
 				// Skinned SSE
 				auto skinID = nif->getLink( nif->getIndex( index, "Skin" ) );
-				auto partID = nif->getLink( nif->getBlock( skinID, "NiSkinInstance" ), "Skin Partition" );
-				auto iPartBlock = nif->getBlock( partID, "NiSkinPartition" );
+				auto partID = nif->getLink( nif->getBlockIndex( skinID, "NiSkinInstance" ), "Skin Partition" );
+				auto iPartBlock = nif->getBlockIndex( partID, "NiSkinPartition" );
 				if ( !iPartBlock.isValid() )
 					return index;
 
@@ -790,7 +790,7 @@ public:
 		QList<QPersistentModelIndex> indices;
 
 		for ( int n = 0; n < nif->getBlockCount(); n++ ) {
-			QModelIndex idx = nif->getBlock( n );
+			QModelIndex idx = nif->getBlockIndex( n );
 			indices << idx;
 		}
 
@@ -807,7 +807,7 @@ public:
 		if ( !index.isValid() )
 			return;
 
-		if ( nif->inherits( index, "NiTexturingProperty" )
+		if ( nif->blockInherits( index, "NiTexturingProperty" )
 		     && nif->get<int>( index, "Apply Mode" ) == rep )
 			nif->set<int>( index, "Apply Mode", by );
 
@@ -819,7 +819,7 @@ public:
 				qint32 link = nif->getLink( iChildren.child( c, 0 ) );
 
 				if ( lChildren.contains( link ) ) {
-					QModelIndex iChild = nif->getBlock( link );
+					QModelIndex iChild = nif->getBlockIndex( link );
 					replaceApplyMode( nif, iChild, rep, by );
 				}
 			}
@@ -829,7 +829,7 @@ public:
 
 		if ( iProperties.isValid() ) {
 			for ( int p = 0; p < nif->rowCount( iProperties ); p++ ) {
-				QModelIndex iProp = nif->getBlock( nif->getLink( iProperties.child( p, 0 ) ) );
+				QModelIndex iProp = nif->getBlockIndex( nif->getLink( iProperties.child( p, 0 ) ) );
 				replaceApplyMode( nif, iProp, rep, by );
 			}
 		}
@@ -847,7 +847,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		QModelIndex iBlock = nif->getBlock( index );
+		QModelIndex iBlock = nif->getBlockIndex( index );
 
 		if ( nif->isNiBlock( iBlock, "NiSourceTexture" ) )
 			return true;
@@ -887,17 +887,17 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		QModelIndex iBlock = nif->getBlock( index );
+		QModelIndex iBlock = nif->getBlockIndex( index );
 
 		if ( nif->isNiBlock( iBlock, "NiSourceTexture" ) && nif->get<int>( iBlock, "Use External" ) == 0 ) {
-			QModelIndex iData = nif->getBlock( nif->getLink( index, "Pixel Data" ) );
+			QModelIndex iData = nif->getBlockIndex( nif->getLink( index, "Pixel Data" ) );
 
 			if ( iData.isValid() ) {
 				return true;
 			}
-		} else if ( nif->inherits( iBlock, "NiPixelFormat" ) ) {
+		} else if ( nif->blockInherits( iBlock, "NiPixelFormat" ) ) {
 			int thisBlockNumber = nif->getBlockNumber( index );
-			QModelIndex iParent = nif->getBlock( nif->getParent( thisBlockNumber ) );
+			QModelIndex iParent = nif->getBlockIndex( nif->getParent( thisBlockNumber ) );
 
 			if ( !iParent.isValid() ) {
 				return true;
@@ -911,9 +911,9 @@ public:
 	{
 		TexCache * tex = new TexCache();
 		tex->setNifFolder( nif->getFolder() );
-		QModelIndex iBlock = nif->getBlock( index );
+		QModelIndex iBlock = nif->getBlockIndex( index );
 
-		if ( nif->inherits( iBlock, "NiSourceTexture" ) ) {
+		if ( nif->blockInherits( iBlock, "NiSourceTexture" ) ) {
 			tex->bind( index );
 			QString file = nif->getFolder();
 
@@ -922,7 +922,7 @@ public:
 				file.append( "/" + nif->get<QString>( index, "File Name" ) );
 			}
 
-			QModelIndex iData = nif->getBlock( nif->getLink( index, "Pixel Data" ) );
+			QModelIndex iData = nif->getBlockIndex( nif->getLink( index, "Pixel Data" ) );
 			QString filename  = QFileDialog::getSaveFileName( qApp->activeWindow(), Spell::tr( "Export texture" ), file, "Textures (*.dds *.tga)" );
 
 			if ( !filename.isEmpty() ) {
@@ -935,7 +935,7 @@ public:
 			}
 
 			return index;
-		} else if ( nif->inherits( iBlock, "NiPixelFormat" ) ) {
+		} else if ( nif->blockInherits( iBlock, "NiPixelFormat" ) ) {
 			TexCache * tex = new TexCache();
 			tex->setNifFolder( nif->getFolder() );
 			QString file = nif->getFolder();
@@ -965,7 +965,7 @@ public:
 			return false;
 		}
 
-		QModelIndex iBlock = nif->getBlock( index );
+		QModelIndex iBlock = nif->getBlockIndex( index );
 
 		if ( !( nif->isNiBlock( iBlock, "NiSourceTexture" ) && nif->get<int>( iBlock, "Use External" ) == 1 ) ) {
 			return false;
@@ -991,8 +991,8 @@ public:
 
 			int blockNum = nif->getBlockNumber( index );
 			nif->insertNiBlock( "NiPixelData", blockNum + 1 );
-			QPersistentModelIndex iSourceTexture = nif->getBlock( blockNum, "NiSourceTexture" );
-			QModelIndex iPixelData = nif->getBlock( blockNum + 1, "NiPixelData" );
+			QPersistentModelIndex iSourceTexture = nif->getBlockIndex( blockNum, "NiSourceTexture" );
+			QModelIndex iPixelData = nif->getBlockIndex( blockNum + 1, "NiPixelData" );
 
 			//qDebug() << "spEmbedTexture: Block number" << blockNum << "holds source" << iSourceTexture << "Pixel data will be stored in" << iPixelData;
 
@@ -1144,7 +1144,7 @@ void TexFlipDialog::listFromNif()
 	QStringList sourceFiles;
 
 	for ( int i = 0; i < numSources; i++ ) {
-		QModelIndex source = nif->getBlock( nif->getLink( sources.child( i, 0 ) ) );
+		QModelIndex source = nif->getBlockIndex( nif->getLink( sources.child( i, 0 ) ) );
 		sourceFiles << nif->get<QString>( source, "File Name" );
 	}
 
@@ -1163,7 +1163,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		return ( nif->getBlockName( index ) == "NiFlipController" );
+		return ( nif->itemName( index ) == "NiFlipController" );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
@@ -1199,7 +1199,7 @@ public:
 		}
 
 		nif->set<int>( flipController, "Num Sources", flipNames.size() );
-		nif->updateArray( sources );
+		nif->updateArraySize( sources );
 
 		for ( int i = 0; i < flipNames.size(); i++ ) {
 			QString name = TexCache::stripPath( flipNames.at( i ), nif->getFolder() );
@@ -1209,7 +1209,7 @@ public:
 				sourceTex = nif->insertNiBlock( "NiSourceTexture", nif->getBlockNumber( flipController ) + i + 1 );
 				nif->setLink( sources.child( i, 0 ), nif->getBlockNumber( sourceTex ) );
 			} else {
-				sourceTex = nif->getBlock( nif->getLink( sources.child( i, 0 ) ) );
+				sourceTex = nif->getBlockIndex( nif->getLink( sources.child( i, 0 ) ) );
 			}
 
 			nif->set<QString>( sourceTex, "File Name", name );
@@ -1235,7 +1235,7 @@ public:
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		// also check NiTextureProperty?
-		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		QModelIndex block = nif->getBlockIndex( index, "NiTexturingProperty" );
 		return block.isValid();
 	}
 

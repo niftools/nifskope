@@ -348,7 +348,7 @@ Transform bhkBodyTrans( const NifModel * nif, const QModelIndex & index )
 	qint32 l = nif->getBlockNumber( index );
 
 	while ( (l = nif->getParent( l )) >= 0 ) {
-		QModelIndex iAV = nif->getBlock( l, "NiAVObject" );
+		QModelIndex iAV = nif->getBlockIndex( l, "NiAVObject" );
 
 		if ( iAV.isValid() )
 			t = Transform( nif, iAV ) * t;
@@ -950,7 +950,7 @@ void drawNiTSS( const NifModel * nif, const QModelIndex & iShape, bool solid )
 {
 	QModelIndex iStrips = nif->getIndex( iShape, "Strips Data" );
 	for ( int r = 0; r < nif->rowCount( iStrips ); r++ ) {
-		QModelIndex iStripData = nif->getBlock( nif->getLink( iStrips.child( r, 0 ) ), "NiTriStripsData" );
+		QModelIndex iStripData = nif->getBlockIndex( nif->getLink( iStrips.child( r, 0 ) ), "NiTriStripsData" );
 		if ( iStripData.isValid() ) {
 			QVector<Vector3> verts = nif->getArray<Vector3>( iStripData, "Vertices" );
 
@@ -986,7 +986,7 @@ void drawNiTSS( const NifModel * nif, const QModelIndex & iShape, bool solid )
 
 void drawCMS( const NifModel * nif, const QModelIndex & iShape, bool solid )
 {
-	QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
+	QModelIndex iData = nif->getBlockIndex( nif->getLink( iShape, "Data" ) );
 	if ( iData.isValid() ) {
 		QModelIndex iBigVerts = nif->getIndex( iData, "Big Verts" );
 		QModelIndex iBigTris = nif->getIndex( iData, "Big Tris" );

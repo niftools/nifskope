@@ -22,7 +22,7 @@ void BSShape::updateData( const NifModel * nif )
 {
 	auto vertexFlags = nif->get<BSVertexDesc>(iBlock, "Vertex Desc");
 
-	isDynamic = nif->inherits(iBlock, "BSDynamicTriShape");
+	isDynamic = nif->blockInherits(iBlock, "BSDynamicTriShape");
 
 	hasVertexColors = vertexFlags.HasFlag(VertexAttribute::VA_COLOR);
 
@@ -42,11 +42,11 @@ void BSShape::updateData( const NifModel * nif )
 			skinDataName = "NiSkinData";
 		}
 
-		iSkin = nif->getBlock( nif->getLink( nif->getIndex( iBlock, "Skin" ) ), skinInstName );
+		iSkin = nif->getBlockIndex( nif->getLink( nif->getIndex( iBlock, "Skin" ) ), skinInstName );
 		if ( iSkin.isValid() ) {
-			iSkinData = nif->getBlock( nif->getLink( iSkin, "Data" ), skinDataName );
+			iSkinData = nif->getBlockIndex( nif->getLink( iSkin, "Data" ), skinDataName );
 			if ( nif->getBSVersion() == 100 )
-				iSkinPart = nif->getBlock( nif->getLink( iSkin, "Skin Partition" ), "NiSkinPartition" );
+				iSkinPart = nif->getBlockIndex( nif->getLink( iSkin, "Skin Partition" ), "NiSkinPartition" );
 		}
 	}
 
@@ -87,12 +87,12 @@ void BSShape::updateData( const NifModel * nif )
 			bitX = dynv[3];
 		} else {
 			verts << nif->get<Vector3>( idx, "Vertex" );
-			bitX = nif->getValue( nif->getIndex( idx, "Bitangent X" ) ).toFloat();
+			bitX = nif->get<float>( idx, "Bitangent X" );
 		}
 
 		// Bitangent Y/Z
-		auto bitYi = nif->getValue( nif->getIndex(idx, "Bitangent Y") ).toCount();
-		auto bitZi = nif->getValue( nif->getIndex(idx, "Bitangent Z") ).toCount();
+		auto bitYi = nif->get<unsigned int>( idx, "Bitangent Y" );
+		auto bitZi = nif->get<unsigned int>( idx, "Bitangent Z" );
 		auto bitY = (double(bitYi) / 255.0) * 2.0 - 1.0;
 		auto bitZ = (double(bitZi) / 255.0) * 2.0 - 1.0;
 
@@ -435,7 +435,7 @@ void BSShape::drawSelection() const
 		return;
 
 	// Set current block name and detect if extra data
-	auto blockName = nif->getBlockName( blk );
+	auto blockName = nif->itemName( blk );
 	if ( blockName.startsWith( "BSPackedCombined" ) )
 		extraData = true;
 
@@ -449,7 +449,7 @@ void BSShape::drawSelection() const
 	// Name of this index's parent
 	auto p = idx.parent().data( NifSkopeDisplayRole ).toString();
 	// Parent index
-	auto pBlock = nif->getBlock( nif->getParent( blk ) );
+	auto pBlock = nif->getBlockIndex( nif->getParent( blk ) );
 
 	auto push = [this] ( const Transform & t ) {	
 		if ( transformRigid ) {
@@ -761,7 +761,7 @@ void BSShape::drawSelection() const
 	// Draw all bones' bounding spheres
 	if ( n == "NiSkinData" || n == "BSSkin::BoneData" ) {
 		// Get shape block
-		if ( nif->getBlock( nif->getParent( nif->getParent( blk ) ) ) == iBlock ) {
+		if ( nif->getBlockIndex( nif->getParent( nif->getParent( blk ) ) ) == iBlock ) {
 			auto iBones = nif->getIndex( blk, "Bone List" );
 			int ct = nif->rowCount( iBones );
 

@@ -63,9 +63,9 @@ public:
 
 		auto typ = nif->getValue( colorIdx ).type();
 		if ( typ == NifValue::tColor3 )
-			nif->setArray<Color3>( index, ColorWheel::choose( nif->get<Color3>( colorIdx ) ) );
+			nif->fillArray<Color3>( index, ColorWheel::choose( nif->get<Color3>( colorIdx ) ) );
 		else if ( typ == NifValue::tColor4 )
-			nif->setArray<Color4>( index, ColorWheel::choose( nif->get<Color4>( colorIdx ) ) );
+			nif->fillArray<Color4>( index, ColorWheel::choose( nif->get<Color4>( colorIdx ) ) );
 
 		return index;
 	}

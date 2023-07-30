@@ -26,19 +26,19 @@ public:
 		if ( !nif->checkVersion( 0x14020007, 0x14020007 ) || (nif->getUserVersion() != 11) )
 			return false;
 
-		return !index.isValid() || nif->getBlock( index, "NiGeometryData" ).isValid();
+		return !index.isValid() || nif->getBlockIndex( index, "NiGeometryData" ).isValid();
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
-		if ( index.isValid() && nif->getBlock( index, "NiGeometryData" ).isValid() ) {
+		if ( index.isValid() && nif->getBlockIndex( index, "NiGeometryData" ).isValid() ) {
 			nif->set<int>( index, "Unknown ID", 0 );
 		} else {
 			// set all blocks
 			for ( int n = 0; n < nif->getBlockCount(); n++ ) {
-				QModelIndex iBlock = nif->getBlock( n );
+				QModelIndex iBlock = nif->getBlockIndex( n );
 
-				if ( nif->getBlock( iBlock, "NiGeometryData" ).isValid() ) {
+				if ( nif->getBlockIndex( iBlock, "NiGeometryData" ).isValid() ) {
 					cast( nif, iBlock );
 				}
 			}

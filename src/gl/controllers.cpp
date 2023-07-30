@@ -53,7 +53,7 @@ bool ControllerManager::update( const NifModel * nif, const QModelIndex & index 
 			Scene * scene = target->scene;
 			QVector<qint32> lSequences = nif->getLinkArray( index, "Controller Sequences" );
 			for ( const auto l : lSequences ) {
-				QModelIndex iSeq = nif->getBlock( l, "NiControllerSequence" );
+				QModelIndex iSeq = nif->getBlockIndex( l, "NiControllerSequence" );
 
 				if ( iSeq.isValid() ) {
 					QString name = nif->get<QString>( iSeq, "Name" );
@@ -63,7 +63,7 @@ bool ControllerManager::update( const NifModel * nif, const QModelIndex & index 
 
 						QMap<QString, float> tags = scene->animTags[name];
 
-						QModelIndex iKeys = nif->getBlock( nif->getLink( iSeq, "Text Keys" ), "NiTextKeyExtraData" );
+						QModelIndex iKeys = nif->getBlockIndex( nif->getLink( iSeq, "Text Keys" ), "NiTextKeyExtraData" );
 						QModelIndex iTags = nif->getIndex( iKeys, "Text Keys" );
 
 						for ( int r = 0; r < nif->rowCount( iTags ); r++ ) {
@@ -96,7 +96,7 @@ void ControllerManager::setSequence( const QString & seqname )
 
 		QVector<qint32> lSequences = nif->getLinkArray( iBlock, "Controller Sequences" );
 		for ( const auto l : lSequences ) {
-			QModelIndex iSeq = nif->getBlock( l, "NiControllerSequence" );
+			QModelIndex iSeq = nif->getBlockIndex( l, "NiControllerSequence" );
 
 			if ( iSeq.isValid() && nif->get<QString>( iSeq, "Name" ) == seqname ) {
 				start = nif->get<float>( iSeq, "Start Time" );
@@ -109,9 +109,9 @@ void ControllerManager::setSequence( const QString & seqname )
 				for ( int r = 0; r < nif->rowCount( iCtrlBlcks ); r++ ) {
 					QModelIndex iCB = iCtrlBlcks.child( r, 0 );
 
-					QModelIndex iInterp = nif->getBlock( nif->getLink( iCB, "Interpolator" ), "NiInterpolator" );
+					QModelIndex iInterp = nif->getBlockIndex( nif->getLink( iCB, "Interpolator" ), "NiInterpolator" );
 
-					QModelIndex iController = nif->getBlock( nif->getLink( iCB, "Controller" ), "NiTimeController" );
+					QModelIndex iController = nif->getBlockIndex( nif->getLink( iCB, "Controller" ), "NiTimeController" );
 
 					QString nodename = nif->get<QString>( iCB, "Node Name" );
 
@@ -137,7 +137,7 @@ void ControllerManager::setSequence( const QString & seqname )
 						ctrltype = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
 
 						if ( ctrltype.isEmpty() && iController.isValid() )
-							ctrltype = nif->getBlockName( iController );
+							ctrltype = nif->itemName( iController );
 					}
 
 					QString var1 = nif->get<QString>( iCB, "Controller ID" );
@@ -310,7 +310,7 @@ bool MultiTargetTransformController::update( const NifModel * nif, const QModelI
 
 			QVector<qint32> lTargets = nif->getLinkArray( index, "Extra Targets" );
 			for ( const auto l : lTargets ) {
-				Node * node = scene->getNode( nif, nif->getBlock( l ) );
+				Node * node = scene->getNode( nif, nif->getBlockIndex( l ) );
 
 				if ( node ) {
 					extraTargets.append( TransformTarget( node, 0 ) );
@@ -464,9 +464,9 @@ bool MorphController::update( const NifModel * nif, const QModelIndex & index )
 
 			// this is ugly...
 			if ( iInterpolators.isValid() ) {
-				key->iFrames = nif->getIndex( nif->getBlock( nif->getLink( nif->getBlock( nif->getLink( iInterpolators.child( r, 0 ) ), "NiFloatInterpolator" ), "Data" ), "NiFloatData" ), "Data" );
+				key->iFrames = nif->getIndex( nif->getBlockIndex( nif->getLink( nif->getBlockIndex( nif->getLink( iInterpolators.child( r, 0 ) ), "NiFloatInterpolator" ), "Data" ), "NiFloatData" ), "Data" );
 			} else if ( iInterpolatorWeights.isValid() ) {
-				key->iFrames = nif->getIndex( nif->getBlock( nif->getLink( nif->getBlock( nif->getLink( iInterpolatorWeights.child( r, 0 ), "Interpolator" ), "NiFloatInterpolator" ), "Data" ), "NiFloatData" ), "Data" );
+				key->iFrames = nif->getIndex( nif->getBlockIndex( nif->getLink( nif->getBlockIndex( nif->getLink( iInterpolatorWeights.child( r, 0 ), "Interpolator" ), "NiFloatInterpolator" ), "Data" ), "NiFloatData" ), "Data" );
 			} else {
 				key->iFrames = iKey;
 			}
@@ -563,7 +563,7 @@ bool ParticleController::update( const NifModel * nif, const QModelIndex & index
 		return false;
 
 	if ( Controller::update( nif, index ) || (index.isValid() && iExtras.contains( index )) ) {
-		emitNode = target->scene->getNode( nif, nif->getBlock( nif->getLink( iBlock, "Emitter" ) ) );
+		emitNode = target->scene->getNode( nif, nif->getBlockIndex( nif->getLink( iBlock, "Emitter" ) ) );
 		emitStart = nif->get<float>( iBlock, "Emit Start Time" );
 		emitStop = nif->get<float>( iBlock, "Emit Stop Time" );
 		emitRate = nif->get<float>( iBlock, "Birth Rate" );
@@ -619,7 +619,7 @@ bool ParticleController::update( const NifModel * nif, const QModelIndex & index
 		iExtras.clear();
 		grav.clear();
 		iColorKeys = QModelIndex();
-		QModelIndex iExtra = nif->getBlock( nif->getLink( iBlock, "Particle Modifier" ) );
+		QModelIndex iExtra = nif->getBlockIndex( nif->getLink( iBlock, "Particle Modifier" ) );
 
 		while ( iExtra.isValid() ) {
 			iExtras.append( iExtra );
@@ -630,7 +630,7 @@ bool ParticleController::update( const NifModel * nif, const QModelIndex & index
 				grow = nif->get<float>( iExtra, "Grow" );
 				fade = nif->get<float>( iExtra, "Fade" );
 			} else if ( name == "NiParticleColorModifier" ) {
-				iColorKeys = nif->getIndex( nif->getBlock( nif->getLink( iExtra, "Color Data" ), "NiColorData" ), "Data" );
+				iColorKeys = nif->getIndex( nif->getBlockIndex( nif->getLink( iExtra, "Color Data" ), "NiColorData" ), "Data" );
 			} else if ( name == "NiGravity" ) {
 				Gravity g;
 				g.force = nif->get<float>( iExtra, "Force" );
@@ -640,7 +640,7 @@ bool ParticleController::update( const NifModel * nif, const QModelIndex & index
 				grav.append( g );
 			}
 
-			iExtra = nif->getBlock( nif->getLink( iExtra, "Next Modifier" ) );
+			iExtra = nif->getBlockIndex( nif->getLink( iExtra, "Next Modifier" ) );
 		}
 
 		return true;
@@ -889,9 +889,9 @@ void TexFlipController::updateTime( float time )
 
 	// TexturingProperty
 	if ( target ) {
-		target->textures[flipSlot & 7].iSource = nif->getBlock( nif->getLink( iSources.child( (int)r, 0 ) ), "NiSourceTexture" );
+		target->textures[flipSlot & 7].iSource = nif->getBlockIndex( nif->getLink( iSources.child( (int)r, 0 ) ), "NiSourceTexture" );
 	} else if ( oldTarget ) {
-		oldTarget->iImage = nif->getBlock( nif->getLink( iSources.child( (int)r, 0 ) ), "NiImage" );
+		oldTarget->iImage = nif->getBlockIndex( nif->getLink( iSources.child( (int)r, 0 ) ), "NiImage" );
 	}
 }
 

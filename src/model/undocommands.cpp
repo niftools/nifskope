@@ -196,7 +196,7 @@ void ArrayUpdateCommand::redo()
 {
 	if ( idx.isValid() ) {
 		oldSize = nif->rowCount( idx );
-		nif->updateArray( idx );
+		nif->updateArraySize( idx );
 		newSize = nif->rowCount( idx );
 	}
 }
@@ -205,6 +205,6 @@ void ArrayUpdateCommand::undo()
 {
 	if ( idx.isValid() ) {
 		// TODO: Actually attempt to set the array size back
-		nif->updateArray( idx );
+		nif->updateArraySize( idx );
 	}
 }

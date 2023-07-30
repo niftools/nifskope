@@ -413,7 +413,7 @@ int TexCache::bind( const QModelIndex & iSource, Game::GameMode game )
 	auto nif = NifModel::fromValidIndex(iSource);
 	if ( nif ) {
 		if ( nif->get<quint8>( iSource, "Use External" ) == 0 ) {
-			QModelIndex iData = nif->getBlock( nif->getLink( iSource, "Pixel Data" ) );
+			QModelIndex iData = nif->getBlockIndex( nif->getLink( iSource, "Pixel Data" ) );
 
 			if ( iData.isValid() ) {
 				Tex * tx = embedTextures.value( iData );
@@ -481,7 +481,7 @@ QString TexCache::info( const QModelIndex & iSource )
 	auto nif = NifModel::fromValidIndex(iSource);
 	if ( nif ) {
 		if ( nif->get<quint8>( iSource, "Use External" ) == 0 ) {
-			QModelIndex iData = nif->getBlock( nif->getLink( iSource, "Pixel Data" ) );
+			QModelIndex iData = nif->getBlockIndex( nif->getLink( iSource, "Pixel Data" ) );
 
 			if ( iData.isValid() ) {
 				Tex * tx = embedTextures.value( iData );

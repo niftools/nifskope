@@ -321,7 +321,7 @@ void TexturingProperty::updateImpl( const NifModel * nif, const QModelIndex & in
 			QModelIndex iTex = nif->getIndex( iBlock, texnames[t] );
 
 			if ( iTex.isValid() ) {
-				textures[t].iSource  = nif->getBlock( nif->getLink( iTex, "Source" ), "NiSourceTexture" );
+				textures[t].iSource  = nif->getBlockIndex( nif->getLink( iTex, "Source" ), "NiSourceTexture" );
 				textures[t].coordset = nif->get<int>( iTex, "UV Set" );
 				
 				int filterMode = 0, clampMode = 0;
@@ -544,7 +544,7 @@ void TextureProperty::updateImpl( const NifModel * nif, const QModelIndex & inde
 	Property::updateImpl( nif, index );
 
 	if ( index == iBlock ) {
-		iImage = nif->getBlock( nif->getLink( iBlock, "Image" ), "NiImage" );
+		iImage = nif->getBlockIndex( nif->getLink( iBlock, "Image" ), "NiImage" );
 	}
 }
 
@@ -848,7 +848,7 @@ void BSShaderLightingProperty::updateImpl( const NifModel * nif, const QModelInd
 	Property::updateImpl( nif, index );
 
 	if ( index == iBlock ) {
-		iTextureSet = nif->getBlock( nif->getLink( iBlock, "Texture Set" ), "BSShaderTextureSet" );
+		iTextureSet = nif->getBlockIndex( nif->getLink( iBlock, "Texture Set" ), "BSShaderTextureSet" );
 		iWetMaterial = nif->getIndex( iBlock, "Root Material" );
 	}
 }

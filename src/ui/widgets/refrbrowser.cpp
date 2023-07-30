@@ -88,10 +88,10 @@ void ReferenceBrowser::browse( const QModelIndex & index )
 		return;
 	}
 
-	QString blockType = nif->getBlockType( index );
+	QString blockType = nif->itemType( index );
 
 	if ( blockType == "NiBlock" ) {
-		blockType = nif->getBlockName( index );
+		blockType = nif->itemName( index );
 	}
 
 	if ( !QFileInfo( docFolder.filePath( "%1.html" ).arg( blockType ) ).exists() ) {

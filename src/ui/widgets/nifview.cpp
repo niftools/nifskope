@@ -107,11 +107,23 @@ void NifTreeView::setRowHiding( bool show )
 
 bool NifTreeView::isRowHidden( int r, const QModelIndex & index ) const
 {
-	NifItem * item = static_cast<NifItem *>(index.internalPointer());
-	if ( !item || !doRowHiding )
-		return false;
+	const NifItem * item = static_cast<const NifItem *>( index.internalPointer() );
+	return isRowHidden( item );
+}
 
-	return !item->condition();
+bool NifTreeView::isRowHidden( const NifItem * rowItem ) const
+{
+	if ( rowItem && nif ) {
+		if ( doRowHiding ) {
+			if ( !nif->evalCondition( rowItem ))
+				return true;
+		} /* else {
+			if ( !nif->evalVersion( rowItem ) )
+				return true;
+		} */
+	}
+
+	return false;
 }
 
 void NifTreeView::setAllExpanded( const QModelIndex & index, bool e )
@@ -161,23 +173,21 @@ void NifTreeView::pasteTo( QModelIndex iDest, const NifValue & srcValue )
 	if ( iDest.column() != NifModel::ValueCol )
 		return;
 
-	NifItem * item = static_cast<NifItem *>(iDest.internalPointer());
+	NifItem * item = nif->getItem( iDest );
+	if ( !item || item->valueType() != srcValue.type() )
+		return;
 
 	auto valueType = model()->sibling( iDest.row(), 0, iDest ).data().toString();
 
-	NifValue destValue = item->value();
-	if ( destValue.type() != srcValue.type() )
-		return;
-
-	switch ( destValue.type() ) {
+	switch ( item->valueType() ) {
 	case NifValue::tByte:
-		nif->set<quint8>( iDest, srcValue.get<quint8>() );
+		item->set<quint8>( srcValue.get<quint8>( nif, nullptr ) );
 		break;
 	case NifValue::tWord:
 	case NifValue::tShort:
 	case NifValue::tFlags:
 	case NifValue::tBlockTypeIndex:
-		nif->set<quint16>( iDest, srcValue.get<quint16>() );
+		item->set<quint16>( srcValue.get<quint16>( nif, nullptr ) );
 		break;
 	case NifValue::tStringOffset:
 	case NifValue::tInt:
@@ -186,40 +196,40 @@ void NifTreeView::pasteTo( QModelIndex iDest, const NifValue & srcValue )
 	case NifValue::tStringIndex:
 	case NifValue::tUpLink:
 	case NifValue::tLink:
-		nif->set<quint32>( iDest, srcValue.get<quint32>() );
+		item->set<quint32>( srcValue.get<quint32>( nif, nullptr ) );
 		break;
 	case NifValue::tVector2:
 	case NifValue::tHalfVector2:
-		nif->set<Vector2>( iDest, srcValue.get<Vector2>() );
+		item->set<Vector2>( srcValue.get<Vector2>( nif, nullptr ) );
 		break;
 	case NifValue::tVector3:
 	case NifValue::tByteVector3:
 	case NifValue::tHalfVector3:
-		nif->set<Vector3>( iDest, srcValue.get<Vector3>() );
+		item->set<Vector3>( srcValue.get<Vector3>( nif, nullptr ) );
 		break;
 	case NifValue::tVector4:
-		nif->set<Vector4>( iDest, srcValue.get<Vector4>() );
+		item->set<Vector4>( srcValue.get<Vector4>( nif, nullptr ) );
 		break;
 	case NifValue::tFloat:
 	case NifValue::tHfloat:
-		nif->set<float>( iDest, srcValue.get<float>() );
+		item->set<float>( srcValue.get<float>( nif, nullptr ) );
 		break;
 	case NifValue::tColor3:
-		nif->set<Color3>( iDest, srcValue.get<Color3>() );
+		item->set<Color3>( srcValue.get<Color3>( nif, nullptr ) );
 		break;
 	case NifValue::tColor4:
 	case NifValue::tByteColor4:
-		nif->set<Color4>( iDest, srcValue.get<Color4>() );
+		item->set<Color4>( srcValue.get<Color4>( nif, nullptr ) );
 		break;
 	case NifValue::tQuat:
 	case NifValue::tQuatXYZW:
-		nif->set<Quat>( iDest, srcValue.get<Quat>() );
+		item->set<Quat>( srcValue.get<Quat>( nif, nullptr ) );
 		break;
 	case NifValue::tMatrix:
-		nif->set<Matrix>( iDest, srcValue.get<Matrix>() );
+		item->set<Matrix>( srcValue.get<Matrix>( nif, nullptr ) );
 		break;
 	case NifValue::tMatrix4:
-		nif->set<Matrix4>( iDest, srcValue.get<Matrix4>() );
+		item->set<Matrix4>( srcValue.get<Matrix4>( nif, nullptr ) );
 		break;
 	case NifValue::tString:
 	case NifValue::tSizedString:
@@ -228,7 +238,7 @@ void NifTreeView::pasteTo( QModelIndex iDest, const NifValue & srcValue )
 	case NifValue::tHeaderString:
 	case NifValue::tLineString:
 	case NifValue::tChar8String:
-		nif->set<QString>( iDest, srcValue.get<QString>() );
+		item->set<QString>( srcValue.get<QString>( nif, nullptr ) );
 		break;
 	default:
 		// Return and do not push to Undo Stack
@@ -237,7 +247,7 @@ void NifTreeView::pasteTo( QModelIndex iDest, const NifValue & srcValue )
 
 	auto n = static_cast<NifModel*>(nif);
 	if ( n )
-		n->undoStack->push( new ChangeValueCommand( iDest, destValue, srcValue, valueType, n ) );
+		n->undoStack->push( new ChangeValueCommand( iDest, item->value(), srcValue, valueType, n ) );
 }
 
 void NifTreeView::paste()
@@ -306,7 +316,7 @@ void NifTreeView::updateConditionRecurse( const QModelIndex & index )
 		updateConditionRecurse( child );
 	}
 
-	setRowHidden( index.row(), index.parent(), doRowHiding && !item->condition() );
+	setRowHidden( index.row(), index.parent(), isRowHidden(item) );
 }
 
 auto splitMime = []( QString format ) {
@@ -444,7 +454,7 @@ void NifTreeView::keyPressEvent( QKeyEvent * e )
 				nif->resetState();
 
 			// Refresh the header
-			nif->invalidateConditions( nif->getHeader(), true );
+			nif->invalidateHeaderConditions();
 			nif->updateHeader();
 
 			if ( noSignals && nif->getProcessingResult() ) {
@@ -488,16 +498,16 @@ void NifTreeView::currentChanged( const QModelIndex & current, const QModelIndex
 	if ( mdl && mdl->isNiBlock( current ) ) {
 		auto cnt = mdl->rowCount( current );
 		const int ARRAY_LIMIT = 100;
-		if ( mdl->inherits( current, "NiTransformInterpolator" ) 
-			 || mdl->inherits( current, "NiBSplineTransformInterpolator" ) ) {
+		if ( mdl->blockInherits( current, "NiTransformInterpolator" ) 
+			 || mdl->blockInherits( current, "NiBSplineTransformInterpolator" ) ) {
 			// Auto-Expand NiQuatTransform
 			autoExpand( current.child( 0, 0 ) );
-		} else if ( mdl->inherits( current, "NiNode" ) ) {
+		} else if ( mdl->blockInherits( current, "NiNode" ) ) {
 			// Auto-Expand Children array
 			auto iChildren = mdl->getIndex( current, "Children" );
 			if ( mdl->rowCount( iChildren ) < ARRAY_LIMIT )
 				autoExpand( iChildren );
-		} else if ( mdl->inherits( current, "NiSkinPartition" ) ) {
+		} else if ( mdl->blockInherits( current, "NiSkinPartition" ) ) {
 			// Auto-Expand skin partitions array
 			autoExpand( current.child( 1, 0 ) );
 		} else if ( mdl->getValue( current.child( cnt - 1, 0 ) ).type() == NifValue::tNone

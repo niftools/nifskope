@@ -108,14 +108,14 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		QModelIndex iBlock  = nif->getBlock( index, "NiMaterialProperty" );
+		QModelIndex iBlock  = nif->getBlockIndex( index, "NiMaterialProperty" );
 		QModelIndex sibling = index.sibling( index.row(), 0 );
 		return index.isValid() && ( iBlock == sibling || nif->getIndex( iBlock, "Name" ) == sibling );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
-		QModelIndex iMaterial = nif->getBlock( index );
+		QModelIndex iMaterial = nif->getBlockIndex( index );
 		NifBlockEditor * me = new NifBlockEditor( nif, iMaterial );
 
 		me->pushLayout( new QHBoxLayout );

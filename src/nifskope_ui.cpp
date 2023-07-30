@@ -808,11 +808,11 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 		// Scroll panel back to top
 		tree->scrollTo( nif->index( 0, 0 ) );
 
-		select( nif->getHeader() );
+		select( nif->getHeaderIndex() );
 
-		header->setRootIndex( nif->getHeader() );
+		header->setRootIndex( nif->getHeaderIndex() );
 		// Refresh the header rows
-		header->updateConditions( nif->getHeader().child( 0, 0 ), nif->getHeader().child( 20, 0 ) );
+		header->updateConditions( nif->getHeaderIndex().child( 0, 0 ), nif->getHeaderIndex().child( 20, 0 ) );
 
 		ogl->setOrientation( GLView::ViewFront );
 
@@ -1412,7 +1412,7 @@ void NifSkope::on_aHeader_triggered()
 	if ( tree )
 		tree->clearRootIndex();
 
-	select( nif->getHeader() );
+	select( nif->getHeaderIndex() );
 }
 
 

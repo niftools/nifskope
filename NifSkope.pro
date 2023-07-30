@@ -208,6 +208,7 @@ HEADERS += \
 	lib/half.h
 
 SOURCES += \
+	src/data/nifitem.cpp \
 	src/data/niftypes.cpp \
 	src/data/nifvalue.cpp \
 	src/gl/bsshape.cpp \

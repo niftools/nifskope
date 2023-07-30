@@ -140,7 +140,7 @@ void SpellBook::cast( NifModel * nif, const QModelIndex & index, SpellPtr spell 
 			nif->resetState();
 
 		// Refresh the header
-		nif->invalidateConditions( nif->getHeader(), true );
+		nif->invalidateHeaderConditions();
 		nif->updateHeader();
 
 		if ( noSignals && nif->getProcessingResult() ) {

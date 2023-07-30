@@ -136,7 +136,7 @@ public:
 	//! Gets the string palette referred to by this string offset
 	static QModelIndex getStringPalette( const NifModel * nif, const QModelIndex & index )
 	{
-		QModelIndex iPalette = nif->getBlock( nif->getLink( index.parent(), "String Palette" ) );
+		QModelIndex iPalette = nif->getBlockIndex( nif->getLink( index.parent(), "String Palette" ) );
 
 		if ( iPalette.isValid() )
 			return iPalette;
@@ -295,8 +295,8 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		return nif->inherits( index, "NiSequence" )
-		       && nif->getBlock( nif->getLink( index, "String Palette" ) ).isValid()
+		return nif->blockInherits( index, "NiSequence" )
+		       && nif->getBlockIndex( nif->getLink( index, "String Palette" ) ).isValid()
 		       && nif->checkVersion( 0x0A020000, 0x14000005 );
 	}
 
@@ -305,11 +305,11 @@ public:
 		// string offset is used in ControllerLink which exists in NiSequence
 		// a single palette could be share by multiple NiSequences
 
-		QPersistentModelIndex iPalette = nif->getBlock( nif->getLink( index, "String Palette" ) );
+		QPersistentModelIndex iPalette = nif->getBlockIndex( nif->getLink( index, "String Palette" ) );
 		qDebug() << "This block uses " << iPalette;
 
 		if ( !iPalette.isValid() ) {
-			iPalette = nif->getBlock( nif->getLink( index.parent(), "String Palette" ) );
+			iPalette = nif->getBlockIndex( nif->getLink( index.parent(), "String Palette" ) );
 
 			if ( !iPalette.isValid() ) {
 				qCWarning( nsSpell ) << Spell::tr( "Cannot find string palette" );
@@ -373,7 +373,7 @@ public:
 		QList<QPersistentModelIndex> sequenceList;
 
 		for ( int i = 0; i < nif->getBlockCount(); i++ ) {
-			QPersistentModelIndex current = nif->getBlock( i, "NiSequence" );
+			QPersistentModelIndex current = nif->getBlockIndex( i, "NiSequence" );
 
 			if ( current.isValid() ) {
 				sequenceList.append( current );
@@ -388,7 +388,7 @@ public:
 
 		while ( sequenceListIterator.hasNext() ) {
 			QPersistentModelIndex temp = sequenceListIterator.next();
-			QPersistentModelIndex tempPalette = nif->getBlock( nif->getLink( temp, "String Palette" ) );
+			QPersistentModelIndex tempPalette = nif->getBlockIndex( nif->getLink( temp, "String Palette" ) );
 
 			//qDebug() << "Sequence " << temp << " uses " << tempPalette;
 			if ( iPalette == tempPalette ) {
@@ -465,7 +465,7 @@ public:
 		QList<QModelIndex> sequenceList;
 
 		for ( int i = 0; i < nif->getBlockCount(); i++ ) {
-			QModelIndex current = nif->getBlock( i, "NiSequence" );
+			QModelIndex current = nif->getBlockIndex( i, "NiSequence" );
 
 			if ( current.isValid() ) {
 				sequenceList.append( current );
