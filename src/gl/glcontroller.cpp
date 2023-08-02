@@ -395,9 +395,9 @@ template <typename T> bool interpolate( T & value, const QModelIndex & array, fl
 				*/
 
 				// Tangent 1
-				float t1 = nif->get<float>( frames.child( last, 0 ), "Backward" );
+				T t1 = nif->get<T>( frames.child( last, 0 ), "Backward" );
 				// Tangent 2
-				float t2 = nif->get<float>( frames.child( next, 0 ), "Forward" );
+				T t2 = nif->get<T>( frames.child( next, 0 ), "Forward" );
 
 				float x2 = x * x;
 				float x3 = x2 * x;
