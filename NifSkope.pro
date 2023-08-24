@@ -5,6 +5,8 @@
 TEMPLATE = app
 TARGET   = NifSkope
 
+ICON = nifskope.icns
+
 QT += xml opengl network widgets
 
 # Require Qt 5.7 or higher
