@@ -32,6 +32,13 @@ For information about development:
 - Refer to our [GitHub wiki](https://github.com/niftools/nifskope/wiki#wiki-development) for information on compilation.  
 
 
+### Build instructions
+
+```
+git clone --recursive git://github.com/<YOUR_USERNAME>/nifskope.git
+```
+Important : once the project is compiled, put the nif.xml and kfm.xml files into your app directory 
+
 ### Miscellaneous
 
 Refer to these other documents in your installation folder or at the links provided:

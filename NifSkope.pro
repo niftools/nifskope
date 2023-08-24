@@ -5,6 +5,8 @@
 TEMPLATE = app
 TARGET   = NifSkope
 
+ICON = nifskope.icns
+
 QT += xml opengl network widgets
 
 # Require Qt 5.7 or higher
@@ -346,7 +348,7 @@ gli {
 }
 
 zlib {
-    !*msvc*:QMAKE_CFLAGS += -isystem ../nifskope/lib/zlib
+    !*msvc*:QMAKE_CFLAGS += -isystem ../nifskope/lib/zlib -DHAVE_UNISTD_H
     !*msvc*:QMAKE_CXXFLAGS += -isystem ../nifskope/lib/zlib
     else:INCLUDEPATH += lib/zlib
     HEADERS += $$files($$PWD/lib/zlib/*.h, false)
