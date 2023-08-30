@@ -50,12 +50,12 @@ public:
 				qCWarning( nsSpell ) << Spell::tr( "overriding base key frame, all other frames will be cleared" );
 				nif->set<int>( iMorphData, "Num Vertices", nif->get<int>( iMeshData, "Num Vertices" ) );
 				QVector<Vector3> verts = nif->getArray<Vector3>( iMeshData, "Vertices" );
-				nif->updateArray( iFrames.child( 0, 0 ), "Vectors" );
+				nif->updateArraySize( iFrames.child( 0, 0 ), "Vectors" );
 				nif->setArray( iFrames.child( 0, 0 ), "Vectors", verts );
 				verts.fill( Vector3() );
 
 				for ( int f = 1; f < nif->rowCount( iFrames ); f++ ) {
-					nif->updateArray( iFrames.child( f, 0 ), "Vectors" );
+					nif->updateArraySize( iFrames.child( f, 0 ), "Vectors" );
 					nif->setArray<Vector3>( iFrames.child( f, 0 ), "Vectors", verts );
 				}
 			} else {
@@ -76,12 +76,12 @@ public:
 	//! Helper function to get the Mesh data
 	QModelIndex getMeshData( const NifModel * nif, const QModelIndex & iMorpher )
 	{
-		QModelIndex iMesh = nif->getBlock( nif->getParent( nif->getBlockNumber( iMorpher ) ) );
+		QModelIndex iMesh = nif->getBlockIndex( nif->getParent( nif->getBlockNumber( iMorpher ) ) );
 
-		if ( nif->inherits( iMesh, "NiTriBasedGeom" ) ) {
-			QModelIndex iData = nif->getBlock( nif->getLink( iMesh, "Data" ) );
+		if ( nif->blockInherits( iMesh, "NiTriBasedGeom" ) ) {
+			QModelIndex iData = nif->getBlockIndex( nif->getLink( iMesh, "Data" ) );
 
-			if ( nif->inherits( iData, "NiTriBasedGeomData" ) )
+			if ( nif->blockInherits( iData, "NiTriBasedGeomData" ) )
 				return iData;
 
 			return QModelIndex();
@@ -93,7 +93,7 @@ public:
 	//! Helper function to get the morph data
 	QModelIndex getMorphData( const NifModel * nif, const QModelIndex & iMorpher )
 	{
-		return nif->getBlock( nif->getLink( iMorpher, "Data" ), "NiMorphData" );
+		return nif->getBlockIndex( nif->getLink( iMorpher, "Data" ), "NiMorphData" );
 	}
 
 	//! Helper function to get the morph frame array

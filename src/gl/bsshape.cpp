@@ -7,202 +7,171 @@
 #include "model/nifmodel.h"
 
 
-BSShape::BSShape( Scene * s, const QModelIndex & b ) : Shape( s, b )
+void BSShape::updateImpl( const NifModel * nif, const QModelIndex & index )
 {
-	
+	Shape::updateImpl( nif, index );
+
+	if ( index == iBlock ) {
+		isLOD = nif->isNiBlock( iBlock, "BSMeshLODTriShape" );
+		if ( isLOD )
+			emit nif->lodSliderChanged(true);
+	}
 }
 
-void BSShape::clear()
+void BSShape::updateData( const NifModel * nif )
 {
-	Node::clear();
+	auto vertexFlags = nif->get<BSVertexDesc>(iBlock, "Vertex Desc");
 
-	iSkin = iSkinData = iSkinPart = QModelIndex();
-	bssp = nullptr;
-	bslsp = nullptr;
-	bsesp = nullptr;
+	isDynamic = nif->blockInherits(iBlock, "BSDynamicTriShape");
 
-	verts.clear();
-	norms.clear();
-	tangents.clear();
-	bitangents.clear();
-	triangles.clear();
-	coords.clear();
-	colors.clear();
-	bones.clear();
-	weights.clear();
-}
+	hasVertexColors = vertexFlags.HasFlag(VertexAttribute::VA_COLOR);
 
-void BSShape::update( const NifModel * nif, const QModelIndex & index )
-{
-	Shape::update( nif, index );
+	dataBound = BoundSphere(nif, iBlock);
 
-	if ( !iBlock.isValid() || !index.isValid() )
-		return;
+	// Is the shape skinned?
+	resetSkinning();
+	if ( vertexFlags.HasFlag(VertexAttribute::VA_SKINNING) ) {
+		isSkinned = true;
 
-	bool extraData = nif->inherits( index, "NiProperty" ) || nif->inherits( index, "BSShaderTextureSet" );
-
-	if ( iBlock != index && iSkin != index && iSkinData != index && !extraData )
-		return;
-
-	nifVersion = nif->getUserVersion2();
-	// Update shaders from this mesh's shader property
-	updateShaderProperties( nif );
-
-	if ( extraData )
-		return;
-
-	isLOD = nif->isNiBlock( iBlock, "BSMeshLODTriShape" );
-	if ( isLOD )
-		emit nif->lodSliderChanged( true );
-
-	auto vertexFlags = nif->get<BSVertexDesc>( iBlock, "Vertex Desc" );
-
-	hasVertexColors = vertexFlags.HasFlag( VertexAttribute::VA_COLOR );
-
-	bool isDynamic = nif->inherits( iBlock, "BSDynamicTriShape" );
-
-	bool isDataOnSkin = false;
-	bool isSkinned = vertexFlags & VertexFlags::VF_SKINNED;
-	if ( nifVersion >= 130 ) {
-		skinInstName = "BSSkin::Instance";
-		skinDataName = "BSSkin::BoneData";
-	} else {
-		skinInstName = "NiSkinInstance";
-		skinDataName = "NiSkinData";
-	}
-
-	iSkin = nif->getBlock( nif->getLink( nif->getIndex( iBlock, "Skin" ) ), skinInstName );
-	if ( !iSkin.isValid() )
-		isSkinned = false;
-
-	if ( isSkinned ) {
-		iSkinData = nif->getBlock( nif->getLink( iSkin, "Data" ), skinDataName );
-		iSkinPart = nif->getBlock( nif->getLink( iSkin, "Skin Partition" ), "NiSkinPartition" );
-
-		if ( nifVersion == 100 )
-			isDataOnSkin = true;
-	}
-
-	updateData = true;
-	updateBounds |= updateData;
-	updateSkin = isSkinned;
-	transformRigid = !isSkinned;
-
-	if ( updateBounds )
-		dataBound = BoundSphere( nif, iBlock );
-
-	int dataSize = 0;
-	if ( !isDataOnSkin ) {
-		iVertData = nif->getIndex( iBlock, "Vertex Data" );
-		iTriData = nif->getIndex( iBlock, "Triangles" );
-		iData = iVertData;
-		if ( !iVertData.isValid() || !iTriData.isValid() )
-			return;
-
-		numVerts = std::min( nif->get<int>( iBlock, "Num Vertices" ), nif->rowCount( iVertData ) );
-		numTris = std::min( nif->get<int>( iBlock, "Num Triangles" ), nif->rowCount( iTriData ) );
-
-		dataSize = nif->get<int>( iBlock, "Data Size" );
-	} else {
-		// For skinned geometry, the vertex data is stored on the NiSkinPartition
-		// The triangles are split up among the partitions
-
-		iSkinPart = nif->getBlock( nif->getLink( iSkin, "Skin Partition" ), "NiSkinPartition" );
-		if ( !iSkinPart.isValid() )
-			return;
-
-		iVertData = nif->getIndex( iSkinPart, "Vertex Data" );
-		iTriData = QModelIndex();
-		iData = iVertData;
-
-		dataSize = nif->get<int>( iSkinPart, "Data Size" );
-		auto vertexSize = nif->get<int>( iSkinPart, "Vertex Size" );
-		if ( !iVertData.isValid() || dataSize == 0 || vertexSize == 0 )
-			return;
-
-		numVerts = dataSize / vertexSize;
-	}
-
-	if ( iBlock == index && dataSize > 0 ) {
-		verts.clear();
-		norms.clear();
-		tangents.clear();
-		bitangents.clear();
-		triangles.clear();
-		coords.clear();
-		colors.clear();
-
-		// For compatibility with coords list
-		TexCoords coordset;
-
-		auto dynVerts = nif->getArray<Vector4>(iBlock, "Vertices");
-		if ( isDynamic ) {
-			for ( const auto & v : dynVerts )
-				verts << Vector3(v);
+		QString skinInstName, skinDataName;
+		if ( nif->getBSVersion() >= 130 ) {
+			skinInstName = "BSSkin::Instance";
+			skinDataName = "BSSkin::BoneData";
+		} else {
+			skinInstName = "NiSkinInstance";
+			skinDataName = "NiSkinData";
 		}
+
+		iSkin = nif->getBlockIndex( nif->getLink( nif->getIndex( iBlock, "Skin" ) ), skinInstName );
+		if ( iSkin.isValid() ) {
+			iSkinData = nif->getBlockIndex( nif->getLink( iSkin, "Data" ), skinDataName );
+			if ( nif->getBSVersion() == 100 )
+				iSkinPart = nif->getBlockIndex( nif->getLink( iSkin, "Skin Partition" ), "NiSkinPartition" );
+		}
+	}
+
+	// Fill vertex data
+	resetVertexData();
+	numVerts = 0;
+	if ( isSkinned && iSkinPart.isValid() ) {
+		// For skinned geometry, the vertex data is stored in the NiSkinPartition
+		// The triangles are split up among the partitions
+		iData = nif->getIndex( iSkinPart, "Vertex Data" );
+		int dataSize = nif->get<int>( iSkinPart, "Data Size" );
+		int vertexSize = nif->get<int>( iSkinPart, "Vertex Size" );
+		if ( iData.isValid() && dataSize > 0 && vertexSize > 0 )
+			numVerts = dataSize / vertexSize;
+	} else {
+		iData = nif->getIndex( iBlock, "Vertex Data" );
+		if ( iData.isValid() )
+			numVerts = nif->rowCount( iData );
+	}
+
+	TexCoords coordset; // For compatibility with coords list
+
+	QVector<Vector4> dynVerts;
+	if ( isDynamic ) {
+		dynVerts = nif->getArray<Vector4>( iBlock, "Vertices" );
+		int nDynVerts = dynVerts.count();
+		if ( nDynVerts < numVerts )
+			numVerts = nDynVerts;
+	}
+
+	for ( int i = 0; i < numVerts; i++ ) {
+		auto idx = nif->index( i, 0, iData );
+		float bitX;
+
+		if ( isDynamic ) {
+			auto dynv = dynVerts.at(i);
+			verts << Vector3( dynv );
+			bitX = dynv[3];
+		} else {
+			verts << nif->get<Vector3>( idx, "Vertex" );
+			bitX = nif->get<float>( idx, "Bitangent X" );
+		}
+
+		// Bitangent Y/Z
+		auto bitYi = nif->get<unsigned int>( idx, "Bitangent Y" );
+		auto bitZi = nif->get<unsigned int>( idx, "Bitangent Z" );
+		auto bitY = (double(bitYi) / 255.0) * 2.0 - 1.0;
+		auto bitZ = (double(bitZi) / 255.0) * 2.0 - 1.0;
+
+		coordset << nif->get<HalfVector2>( idx, "UV" );
+		norms += nif->get<ByteVector3>( idx, "Normal" );
+		tangents += nif->get<ByteVector3>( idx, "Tangent" );
+		bitangents += Vector3( bitX, bitY, bitZ );
+
+		auto vcIdx = nif->getIndex( idx, "Vertex Colors" );
+		colors += vcIdx.isValid() ? nif->get<ByteColor4>( vcIdx ) : Color4(0, 0, 0, 1);
+	}
+
+	// Add coords as the first set of QList
+	coords.append( coordset );
+
+	numVerts = verts.count();
+
+	// Fill triangle data
+	if ( isSkinned && iSkinPart.isValid() ) {
+		auto iPartitions = nif->getIndex( iSkinPart, "Partitions" );
+		if ( iPartitions.isValid() ) {
+			int n = nif->rowCount( iPartitions );
+			for ( int i = 0; i < n; i++ )
+				triangles << nif->getArray<Triangle>( nif->index( i, 0, iPartitions ), "Triangles" );
+		}
+	} else {
+		auto iTriData = nif->getIndex( iBlock, "Triangles" );
+		if ( iTriData.isValid() )
+			triangles = nif->getArray<Triangle>( iTriData );
+	}
+	// TODO (Gavrant): validate triangles' vertex indices, throw out triangles with the wrong ones
+
+	// Fill skeleton data
+	resetSkeletonData();
+	if ( isSkinned && iSkin.isValid() ) {
+		skeletonRoot = nif->getLink( iSkin, "Skeleton Root" );
+		if ( nif->getBSVersion() < 130 )
+			skeletonTrans = Transform( nif, iSkinData );
+
+		bones = nif->getLinkArray( iSkin, "Bones" );
+		auto nTotalBones = bones.count();
+
+		weights.fill( BoneWeights(), nTotalBones );
+		for ( int i = 0; i < nTotalBones; i++ )
+			weights[i].bone = bones[i];
+		auto nTotalWeights = weights.count();
 
 		for ( int i = 0; i < numVerts; i++ ) {
-			auto idx = nif->index( i, 0, iVertData );
+			auto idx = nif->index( i, 0, iData );
+			auto wts = nif->getArray<float>( idx, "Bone Weights" );
+			auto bns = nif->getArray<quint8>( idx, "Bone Indices" );
+			if ( wts.count() < 4 || bns.count() < 4 )
+				continue;
 
-			if ( !isDynamic )
-				verts << nif->get<Vector3>( idx, "Vertex" );
+			for ( int j = 0; j < 4; j++ ) {
+				if ( bns[j] >= nTotalWeights )
+					continue;
 
-			coordset << nif->get<HalfVector2>( idx, "UV" );
-
-			// Bitangent X
-			auto bitX = nif->getValue( nif->getIndex( idx, "Bitangent X" ) ).toFloat();
-			if ( isDynamic ) {
-				bitX = dynVerts.at(i)[3];
-			}
-			// Bitangent Y/Z
-			auto bitYi = nif->getValue( nif->getIndex( idx, "Bitangent Y" ) ).toCount();
-			auto bitZi = nif->getValue( nif->getIndex( idx, "Bitangent Z" ) ).toCount();
-			auto bitY = (double( bitYi ) / 255.0) * 2.0 - 1.0;
-			auto bitZ = (double( bitZi ) / 255.0) * 2.0 - 1.0;
-
-			norms += nif->get<ByteVector3>( idx, "Normal" );
-			tangents += nif->get<ByteVector3>( idx, "Tangent" );
-			bitangents += Vector3( bitX, bitY, bitZ );
-
-			auto vcIdx = nif->getIndex( idx, "Vertex Colors" );
-			if ( vcIdx.isValid() ) {
-				colors += nif->get<ByteColor4>( vcIdx );
+				if ( wts[j] > 0.0 )
+					weights[bns[j]].weights << VertexWeight( i, wts[j] );
 			}
 		}
 
-
-		// Add coords as first set of QList
-		coords.append( coordset );
-
-		if ( !isDataOnSkin ) {
-			triangles = nif->getArray<Triangle>( iTriData );
-			triangles = triangles.mid( 0, numTris );
-		} else {
-			auto partIdx = nif->getIndex( iSkinPart, "Partitions" );
-			for ( int i = 0; i < nif->rowCount( partIdx ); i++ )
-				triangles << nif->getArray<Triangle>( nif->index( i, 0, partIdx ), "Triangles" );
-		}
-	}
-
-	if ( bssp )
-		isVertexAlphaAnimation = bssp->hasSF2( ShaderFlags::SLSF2_Tree_Anim );
-
-	if ( isVertexAlphaAnimation ) {
-		for ( int i = 0; i < colors.count(); i++ )
-			colors[i].setRGBA( colors[i].red(), colors[i].green(), colors[i].blue(), 1.0 );
+		auto b = nif->getIndex( iSkinData, "Bone List" );
+		for ( int i = 0; i < nTotalWeights; i++ )
+			weights[i].setTransform( nif, b.child( i, 0 ) );
 	}
 }
 
 QModelIndex BSShape::vertexAt( int idx ) const
 {
-	auto nif = static_cast<const NifModel *>(iBlock.model());
+	auto nif = NifModel::fromIndex( iBlock );
 	if ( !nif )
 		return QModelIndex();
 
 	// Vertices are on NiSkinPartition in version 100
 	auto blk = iBlock;
-	if ( nifVersion < 130 && iSkinPart.isValid() ) {
-		if ( nif->inherits( blk, "BSDynamicTriShape" ) )
+	if ( iSkinPart.isValid() ) {
+		if ( isDynamic )
 			return nif->getIndex( blk, "Vertices" ).child( idx, 0 );
 
 		blk = iSkinPart;
@@ -211,74 +180,13 @@ QModelIndex BSShape::vertexAt( int idx ) const
 	return nif->getIndex( nif->getIndex( blk, "Vertex Data" ).child( idx, 0 ), "Vertex" );
 }
 
-
-void BSShape::transform()
-{
-	if ( isHidden() )
-		return;
-
-	const NifModel * nif = static_cast<const NifModel *>(iBlock.model());
-	if ( !nif || !iBlock.isValid() ) {
-		clear();
-		return;
-	}	
-	
-	if ( updateData ) {
-		updateData = false;
-	}
-
-	if ( updateSkin ) {
-		updateSkin = false;
-		isSkinned = false;
-
-		bones.clear();
-		weights.clear();
-		partitions.clear();
-
-		if ( iSkin.isValid() && iSkinData.isValid() ) {
-			skeletonRoot = nif->getLink( iSkin, "Skeleton Root" );
-			if ( nifVersion < 130 )
-				skeletonTrans = Transform( nif, iSkinData );
-
-			bones = nif->getLinkArray( iSkin, "Bones" );
-			weights.fill( BoneWeights(), bones.count() );
-			for ( int i = 0; i < bones.count(); i++ )
-				weights[i].bone = bones[i];
-
-			for ( int i = 0; i < numVerts; i++ ) {
-				auto idx = nif->index( i, 0, iVertData );
-				auto wts = nif->getArray<float>( idx, "Bone Weights" );
-				auto bns = nif->getArray<quint8>( idx, "Bone Indices" );
-				if ( wts.count() < 4 || bns.count() < 4 )
-					continue;
-
-				for ( int j = 0; j < 4; j++ ) {
-					if ( bns[j] >= weights.count() )
-						continue;
-
-					if ( wts[j] > 0.0 )
-						weights[bns[j]].weights << VertexWeight( i, wts[j] );
-				}
-			}
-
-			auto b = nif->getIndex( iSkinData, "Bone List" );
-			for ( int i = 0; i < weights.count(); i++ )
-				weights[i].setTransform( nif, b.child( i, 0 ) );
-
-			isSkinned = weights.count();
-		}
-	}
-
-	Node::transform();
-}
-
 void BSShape::transformShapes()
 {
 	if ( isHidden() )
 		return;
 
-	const NifModel * nif = static_cast<const NifModel *>(iBlock.model());
-	if ( !nif || !iBlock.isValid() ) {
+	auto nif = NifModel::fromValidIndex( iBlock );
+	if ( !nif ) {
 		clear();
 		return;
 	}
@@ -287,20 +195,17 @@ void BSShape::transformShapes()
 
 	transformRigid = true;
 
-	if ( isSkinned && scene->options & Scene::DoSkinning ) {
+	if ( isSkinned && weights.count() && scene->hasOption(Scene::DoSkinning) ) {
 		transformRigid = false;
 
-		int vcnt = verts.count();
-
-		transVerts.resize( vcnt );
+		transVerts.resize( numVerts );
 		transVerts.fill( Vector3() );
-		transNorms.resize( vcnt );
+		transNorms.resize( numVerts );
 		transNorms.fill( Vector3() );
-		transTangents.resize( vcnt );
+		transTangents.resize( numVerts );
 		transTangents.fill( Vector3() );
-		transBitangents.resize( vcnt );
+		transBitangents.resize( numVerts );
 		transBitangents.fill( Vector3() );
-
 
 		Node * root = findParent( 0 );
 		for ( const BoneWeights & bw : weights ) {
@@ -308,7 +213,7 @@ void BSShape::transformShapes()
 			if ( bone ) {
 				Transform t = scene->view * bone->localTrans( 0 ) * bw.trans;
 				for ( const VertexWeight & w : bw.weights ) {
-					if ( w.vertex >= vcnt )
+					if ( w.vertex >= numVerts )
 						continue;
 
 					transVerts[w.vertex] += t * verts[w.vertex] * w.weight;
@@ -319,7 +224,7 @@ void BSShape::transformShapes()
 			}
 		}
 
-		for ( int n = 0; n < vcnt; n++ ) {
+		for ( int n = 0; n < numVerts; n++ ) {
 			transNorms[n].normalize();
 			transTangents[n].normalize();
 			transBitangents[n].normalize();
@@ -327,7 +232,7 @@ void BSShape::transformShapes()
 
 		boundSphere = BoundSphere( transVerts );
 		boundSphere.applyInv( viewTrans() );
-		updateBounds = false;
+		needUpdateBounds = false;
 	} else {
 		transVerts = verts;
 		transNorms = norms;
@@ -336,11 +241,10 @@ void BSShape::transformShapes()
 	}
 
 	transColors = colors;
-	if ( nifVersion < 130 && bslsp ) {
-		if ( !(bslsp->getFlags1() & ShaderFlags::SLSF1_Vertex_Alpha) ) {
-			for ( int c = 0; c < colors.count(); c++ )
-				transColors[c] = Color4( colors[c].red(), colors[c].green(), colors[c].blue(), 1.0f );
-		}
+	// TODO (Gavrant): suspicious code. Should the check be replaced with !bssp.hasVertexAlpha ?
+	if ( nif->getBSVersion() < 130 && bslsp && !bslsp->hasSF1(ShaderFlags::SLSF1_Vertex_Alpha) ) {
+		for ( int c = 0; c < colors.count(); c++ )
+			transColors[c] = Color4( colors[c].red(), colors[c].green(), colors[c].blue(), 1.0f );
 	}
 }
 
@@ -352,30 +256,24 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 	glPointSize( 8.5 );
 
 	// TODO: Only run this if BSXFlags has "EditorMarkers present" flag
-	if ( !(scene->options & Scene::ShowMarkers) && name.contains( "EditorMarker" ) )
+	if ( !scene->hasOption(Scene::ShowMarkers) && name.contains( "EditorMarker" ) )
 		return;
 
-	auto nif = static_cast<const NifModel *>(iBlock.model());
+	// Draw translucent meshes in second pass
+	if ( secondPass && drawInSecondPass ) {
+		secondPass->add( this );
+		return;
+	}
+
+	auto nif = NifModel::fromIndex( iBlock );
 
 	if ( Node::SELECTING ) {
-		if ( scene->selMode & Scene::SelObject ) {
+		if ( scene->isSelModeObject() ) {
 			int s_nodeId = ID2COLORKEY( nodeId );
 			glColor4ubv( (GLubyte *)&s_nodeId );
 		} else {
 			glColor4f( 0, 0, 0, 1 );
 		}
-	}
-
-	// Draw translucent meshes in second pass
-	AlphaProperty * aprop = findProperty<AlphaProperty>();
-	Material * mat = (bssp) ? bssp->mat() : nullptr;
-
-	drawSecond |= aprop && aprop->blend();
-	drawSecond |= mat && mat->bDecal;
-
-	if ( secondPass && drawSecond ) {
-		secondPass->add( this );
-		return;
 	}
 
 	if ( transformRigid ) {
@@ -384,10 +282,11 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 	}
 
 	// Render polygon fill slightly behind alpha transparency and wireframe
-	if ( !drawSecond ) {
-		glEnable( GL_POLYGON_OFFSET_FILL );
+	glEnable( GL_POLYGON_OFFSET_FILL );
+	if ( drawInSecondPass )
+		glPolygonOffset( 0.5f, 1.0f );
+	else
 		glPolygonOffset( 1.0f, 2.0f );
-	}
 
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glVertexPointer( 3, GL_FLOAT, 0, transVerts.constData() );
@@ -396,15 +295,15 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 		glEnableClientState( GL_NORMAL_ARRAY );
 		glNormalPointer( GL_FLOAT, 0, transNorms.constData() );
 
-		bool doVCs = (bssp && (bssp->getFlags2() & ShaderFlags::SLSF2_Vertex_Colors));
+		bool doVCs = ( bssp && bssp->hasSF2(ShaderFlags::SLSF2_Vertex_Colors) );
 		// Always do vertex colors for FO4 if colors present
-		if ( nifVersion >= 130 && hasVertexColors && colors.count() )
+		if ( nif->getBSVersion() >= 130 && hasVertexColors && colors.count() )
 			doVCs = true;
 
-		if ( transColors.count() && (scene->options & Scene::DoVertexColors) && doVCs ) {
+		if ( transColors.count() && scene->hasOption(Scene::DoVertexColors) && doVCs ) {
 			glEnableClientState( GL_COLOR_ARRAY );
 			glColorPointer( 4, GL_FLOAT, 0, transColors.constData() );
-		} else if ( nifVersion < 130 && !hasVertexColors && (bslsp && bslsp->hasVertexColors) ) {
+		} else if ( nif->getBSVersion() < 130 && !hasVertexColors && (bslsp && bslsp->hasVertexColors) ) {
 			// Correctly blacken the mesh if SLSF2_Vertex_Colors is still on
 			//	yet "Has Vertex Colors" is not.
 			glColor( Color3( 0.0f, 0.0f, 0.0f ) );
@@ -413,16 +312,16 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 		}
 	}
 
-
 	if ( !Node::SELECTING ) {
-		if ( nifVersion == 155 )
+		if ( nif->getBSVersion() == 155 )
 			glEnable( GL_FRAMEBUFFER_SRGB );
 		else
 			glDisable( GL_FRAMEBUFFER_SRGB );
 		shader = scene->renderer->setupProgram( this, shader );
 	
-	} else if ( nifVersion == 155 ) {
-		glDisable( GL_FRAMEBUFFER_SRGB );
+	} else {
+		if ( nif->getBSVersion() == 155 )
+			glDisable( GL_FRAMEBUFFER_SRGB );
 	}
 	
 	if ( isDoubleSided ) {
@@ -468,8 +367,7 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 
 	glDisable( GL_POLYGON_OFFSET_FILL );
 
-
-	if ( scene->selMode & Scene::SelVertex ) {
+	if ( scene->isSelModeVertex() ) {
 		drawVerts();
 	}
 
@@ -492,15 +390,15 @@ void BSShape::drawVerts() const
 		glVertex( transVerts.value( i ) );
 	}
 
-	auto nif = static_cast<const NifModel *>(iBlock.model());
+	auto nif = NifModel::fromIndex( iBlock );
 	if ( !nif )
 		return;
 
 	// Vertices are on NiSkinPartition in version 100
 	bool selected = iBlock == scene->currentBlock;
-	if ( nifVersion < 130 && iSkinPart.isValid() ) {
+	if ( iSkinPart.isValid() ) {
 		selected |= iSkinPart == scene->currentBlock;
-		selected |= nif->inherits( iBlock, "BSDynamicTriShape" );
+		selected |= isDynamic;
 	}
 
 
@@ -520,10 +418,10 @@ void BSShape::drawVerts() const
 void BSShape::drawSelection() const
 {
 	glDisable(GL_FRAMEBUFFER_SRGB);
-	if ( scene->options & Scene::ShowNodes )
+	if ( scene->hasOption(Scene::ShowNodes) )
 		Node::drawSelection();
 
-	if ( isHidden() || !(scene->selMode & Scene::SelObject) )
+	if ( isHidden() || !scene->isSelModeObject() )
 		return;
 
 	auto idx = scene->currentIndex;
@@ -532,12 +430,12 @@ void BSShape::drawSelection() const
 	// Is the current block extra data
 	bool extraData = false;
 
-	auto nif = static_cast<const NifModel *>(idx.model());
-	if ( !nif || !blk.isValid() )
+	auto nif = NifModel::fromValidIndex(blk);
+	if ( !nif )
 		return;
 
 	// Set current block name and detect if extra data
-	auto blockName = nif->getBlockName( blk );
+	auto blockName = nif->itemName( blk );
 	if ( blockName.startsWith( "BSPackedCombined" ) )
 		extraData = true;
 
@@ -551,7 +449,7 @@ void BSShape::drawSelection() const
 	// Name of this index's parent
 	auto p = idx.parent().data( NifSkopeDisplayRole ).toString();
 	// Parent index
-	auto pBlock = nif->getBlock( nif->getParent( blk ) );
+	auto pBlock = nif->getBlockIndex( nif->getParent( blk ) );
 
 	auto push = [this] ( const Transform & t ) {	
 		if ( transformRigid ) {
@@ -615,7 +513,7 @@ void BSShape::drawSelection() const
 	if ( n == "Bounding Sphere" && !extraData ) {
 		auto sph = BoundSphere( nif, idx );
 		if ( sph.radius > 0.0 ) {
-			glColor4f( 1, 1, 1, 0.33 );
+			glColor4f( 1, 1, 1, 0.33f );
 			drawSphereSimple( sph.center, sph.radius, 72 );
 		}
 	}
@@ -631,7 +529,6 @@ void BSShape::drawSelection() const
 			for ( int i = 0; i < dataCt; i++ ) {
 				auto d = data.child( i, 0 );
 
-				int numC = nif->get<int>( d, "Num Combined" );
 				auto c = nif->getIndex( d, "Combined" );
 				int cCt = nif->rowCount( c );
 
@@ -652,7 +549,7 @@ void BSShape::drawSelection() const
 		float pbvR = nif->get<float>( iBSphere.child( 1, 2 ) );
 
 		if ( pbvR > 0.0 ) {
-			glColor4f( 0, 1, 0, 0.33 );
+			glColor4f( 0, 1, 0, 0.33f );
 			drawSphereSimple( pbvC, pbvR, 72 );
 		}
 
@@ -677,7 +574,7 @@ void BSShape::drawSelection() const
 			glMultMatrix( scene->view * t );
 
 			if ( bvR > 0.0 ) {
-				glColor4f( 1, 1, 1, 0.33 );
+				glColor4f( 1, 1, 1, 0.33f );
 				drawSphereSimple( Vector3( 0, 0, 0 ), bvR, 72 );
 			}
 
@@ -864,7 +761,7 @@ void BSShape::drawSelection() const
 	// Draw all bones' bounding spheres
 	if ( n == "NiSkinData" || n == "BSSkin::BoneData" ) {
 		// Get shape block
-		if ( nif->getBlock( nif->getParent( nif->getParent( blk ) ) ) == iBlock ) {
+		if ( nif->getBlockIndex( nif->getParent( nif->getParent( blk ) ) ) == iBlock ) {
 			auto iBones = nif->getIndex( blk, "Bone List" );
 			int ct = nif->rowCount( iBones );
 
@@ -888,7 +785,7 @@ void BSShape::drawSelection() const
 	}
 
 	// General wireframe
-	if ( blk == iBlock && idx != iVertData && p != "Vertex Data" && p != "Vertices" ) {
+	if ( blk == iBlock && idx != iData && p != "Vertex Data" && p != "Vertices" ) {
 		glLineWidth( 1.6f );
 		glNormalColor();
 		for ( const Triangle& tri : triangles ) {
@@ -907,8 +804,8 @@ void BSShape::drawSelection() const
 
 BoundSphere BSShape::bounds() const
 {
-	if ( updateBounds ) {
-		updateBounds = false;
+	if ( needUpdateBounds ) {
+		needUpdateBounds = false;
 		if ( verts.count() ) {
 			boundSphere = BoundSphere( verts );
 		} else {
@@ -917,9 +814,4 @@ BoundSphere BSShape::bounds() const
 	}
 
 	return worldTrans() * boundSphere;
-}
-
-bool BSShape::isHidden() const
-{
-	return Node::isHidden();
 }

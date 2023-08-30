@@ -659,9 +659,9 @@ GLuint texLoadDDS( const QString & filepath, QString & format, GLenum & target, 
 bool texLoad( const QModelIndex & iData, QString & texformat, GLenum & target, GLuint & width, GLuint & height, GLuint & mipmaps, GLuint & id )
 {
 	bool ok = false;
-	const NifModel * nif = qobject_cast<const NifModel *>( iData.model() );
-
-	if ( nif && iData.isValid() ) {
+	
+	auto nif = NifModel::fromValidIndex(iData);
+	if ( nif ) {
 		mipmaps = nif->get<uint>( iData, "Num Mipmaps" );
 		QModelIndex iMipmaps = nif->getIndex( iData, "Mipmaps" );
 
@@ -759,7 +759,7 @@ bool texLoad( const QModelIndex & iData, QString & texformat, GLenum & target, G
 			{
 				texformat += " (PAL8)";
 				// Read the NiPalette entries; change this if we change NiPalette in nif.xml
-				QModelIndex iPalette = nif->getBlock( nif->getLink( iData, "Palette" ) );
+				QModelIndex iPalette = nif->getBlockIndex( nif->getLink( iData, "Palette" ) );
 
 				if ( iPalette.isValid() ) {
 					QVector<quint32> map;
@@ -833,7 +833,7 @@ GLuint texLoadNIF( QIODevice & f, QString & texformat, GLenum & target, GLuint &
 	QPersistentModelIndex iRoot;
 
 	for ( const auto l : pix.getRootLinks() ) {
-		QModelIndex iData = pix.getBlock( l, "NiPixelFormat" );
+		QModelIndex iData = pix.getBlockIndex( l, "NiPixelFormat" );
 
 		if ( !iData.isValid() || iData == QModelIndex() )
 			throw QString( "this is not a normal .nif file; there should be only pixel data as root blocks" );
@@ -1203,7 +1203,7 @@ bool texCanLoad( const QString & filepath )
 
 bool texSaveDDS( const QModelIndex & index, const QString & filepath, const GLuint & width, const GLuint & height, const GLuint & mipmaps )
 {
-	const NifModel * nif = qobject_cast<const NifModel *>( index.model() );
+	auto nif = NifModel::fromIndex( index );
 	quint32 format = nif->get<quint32>( index, "Pixel Format" );
 
 	// can't dump palettised textures yet
@@ -1469,7 +1469,7 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, const GLui
 bool texSaveTGA( const QModelIndex & index, const QString & filepath, const GLuint & width, const GLuint & height )
 {
 	Q_UNUSED( index );
-	//const NifModel * nif = qobject_cast<const NifModel *>( index.model() );
+	// auto nif = NifModel::fromIndex(index);
 	QString filename = filepath;
 
 	if ( !filename.toLower().endsWith( ".tga" ) )
@@ -1598,7 +1598,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 
 		// possibly update this to ATextureRenderData...
 		QPersistentModelIndex iPixData;
-		iPixData = pix.getBlock( 0, "NiPixelData" );
+		iPixData = pix.getBlockIndex( 0, "NiPixelData" );
 
 		if ( !iPixData.isValid() )
 			throw QString( "Texture .nifs should only have NiPixelData blocks" );
@@ -1669,7 +1669,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 
 		QModelIndex srcMipMaps  = pix.getIndex( iPixData, "Mipmaps" );
 		QModelIndex destMipMaps = nif->getIndex( iData, "Mipmaps" );
-		nif->updateArray( destMipMaps );
+		nif->updateArraySize( destMipMaps );
 
 		for ( int i = 0; i < pix.rowCount( srcMipMaps ); i++ ) {
 			nif->set<quint32>( destMipMaps.child( i, 0 ), "Width", pix.get<quint32>( srcMipMaps.child( i, 0 ), "Width" ) );
@@ -1683,7 +1683,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		QModelIndex destPixelData = nif->getIndex( iData, "Pixel Data" );
 
 		for ( int i = 0; i < pix.rowCount( srcPixelData ); i++ ) {
-			nif->updateArray( destPixelData.child( i, 0 ) );
+			nif->updateArraySize( destPixelData.child( i, 0 ) );
 			nif->set<QByteArray>( destPixelData.child( i, 0 ), "Pixel Data", pix.get<QByteArray>( srcPixelData.child( i, 0 ), "Pixel Data" ) );
 		}
 
@@ -1737,7 +1737,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		nif->set<quint32>( iData, "Num Mipmaps", mipmaps );
 		nif->set<quint32>( iData, "Bytes Per Pixel", 4 );
 		QModelIndex destMipMaps = nif->getIndex( iData, "Mipmaps" );
-		nif->updateArray( destMipMaps );
+		nif->updateArraySize( destMipMaps );
 
 		QByteArray pixelData;
 
@@ -1773,7 +1773,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		nif->set<quint32>( iData, "Num Pixels", mipmapOffset );
 
 		QModelIndex iPixelData = nif->getIndex( iData, "Pixel Data" );
-		nif->updateArray( iPixelData );
+		nif->updateArraySize( iPixelData );
 
 		nif->set<QByteArray>( iPixelData, "Pixel Data", pixelData );
 
@@ -1916,7 +1916,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		//qDebug() << "Mipmap count: " << ddsHeader.dwMipMapCount;
 		nif->set<quint32>( iData, "Num Mipmaps", ddsHeader.dwMipMapCount );
 		QModelIndex destMipMaps = nif->getIndex( iData, "Mipmaps" );
-		nif->updateArray( destMipMaps );
+		nif->updateArraySize( destMipMaps );
 
 		nif->set<quint32>( iData, "Bytes Per Pixel", ddsHeader.ddspf.dwRGBBitCount / 8 );
 
@@ -1950,7 +1950,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		// finally, copy the data...
 
 		QModelIndex iPixelData = nif->getIndex( iData, "Pixel Data" );
-		nif->updateArray( iPixelData );
+		nif->updateArraySize( iPixelData );
 
 		f.seek( 4 + ddsHeader.dwSize );
 		//qDebug() << "Reading from " << f.pos();

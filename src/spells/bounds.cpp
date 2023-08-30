@@ -28,7 +28,7 @@ public:
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
-		NifBlockEditor * edit = new NifBlockEditor( nif, nif->getBlock( index ) );
+		NifBlockEditor * edit = new NifBlockEditor( nif, nif->getBlockIndex( index ) );
 
 		if ( nif->get<bool>( index, "Has Bounding Box" ) == true || nif->itemName( index ) == "Bounding Box" || nif->itemName( index.parent() ) == "Bounding Box" ) {
 			QModelIndex iBound;

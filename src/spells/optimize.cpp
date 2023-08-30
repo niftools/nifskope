@@ -49,7 +49,7 @@ public:
 			map.clear();
 
 			for ( qint32 b = 0; b < nif->getBlockCount(); b++ ) {
-				QModelIndex iBlock = nif->getBlock( b );
+				QModelIndex iBlock = nif->getBlockIndex( b );
 				QString original_material_name;
 
 				if ( nif->isNiBlock( iBlock, "NiMaterialProperty" ) ) {
@@ -61,12 +61,12 @@ public:
 						nif->set<QString>( iBlock, "Name", "Default" );
 				}
 
-				if ( nif->inherits( iBlock, "BSShaderProperty" ) || nif->isNiBlock( iBlock, "BSShaderTextureSet" ) ) {
+				if ( nif->blockInherits( iBlock, "BSShaderProperty" ) || nif->isNiBlock( iBlock, "BSShaderTextureSet" ) ) {
 					// these need to be unique
 					continue;
 				}
 
-				if ( nif->inherits( iBlock, "NiProperty" ) || nif->inherits( iBlock, "NiSourceTexture" ) ) {
+				if ( nif->blockInherits( iBlock, "NiProperty" ) || nif->blockInherits( iBlock, "NiSourceTexture" ) ) {
 					QBuffer data;
 					data.open( QBuffer::WriteOnly );
 					data.write( nif->itemName( iBlock ).toLatin1() );
@@ -134,7 +134,7 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		for ( int b = 0; b < nif->getBlockCount(); b++ ) {
-			QModelIndex iAVObj = nif->getBlock( b, "NiAVObject" );
+			QModelIndex iAVObj = nif->getBlockIndex( b, "NiAVObject" );
 
 			if ( iAVObj.isValid() ) {
 				QVector<qint32> props = nif->getLinkArray( iAVObj, "Properties" );
@@ -142,14 +142,14 @@ public:
 
 				while ( it.hasNext() ) {
 					qint32 & l = it.next();
-					QModelIndex iProp = nif->getBlock( l, "NiProperty" );
+					QModelIndex iProp = nif->getBlockIndex( l, "NiProperty" );
 
 					if ( iProp.isValid() && nif->getParent( l ) != b ) {
 						QMap<qint32, qint32> map;
 
 						if ( nif->isNiBlock( iProp, "NiTexturingProperty" ) ) {
 							for ( const auto sl : nif->getChildLinks( nif->getBlockNumber( iProp ) ) ) {
-								QModelIndex iSrc = nif->getBlock( sl, "NiSourceTexture" );
+								QModelIndex iSrc = nif->getBlockIndex( sl, "NiSourceTexture" );
 
 								if ( iSrc.isValid() && !map.contains( sl ) ) {
 									QModelIndex iSrc2 = nif->insertNiBlock( "NiSourceTexture", nif->getBlockCount() + 1 );
@@ -213,7 +213,7 @@ public:
 			removed = false;
 
 			for ( int b = 0; b < nif->getBlockCount(); b++ ) {
-				QModelIndex iNode = nif->getBlock( b, "NiNode" );
+				QModelIndex iNode = nif->getBlockIndex( b, "NiNode" );
 
 				if ( iNode.isValid() ) {
 					if ( nif->getChildLinks( b ).isEmpty() && nif->getParentLinks( b ).isEmpty() ) {
@@ -282,7 +282,7 @@ public:
 
 		for ( const auto lChild : nif->getLinkArray( iParent, "Children" ) ) {
 			if ( nif->getParent( lChild ) == nif->getBlockNumber( iParent ) ) {
-				QModelIndex iChild = nif->getBlock( lChild );
+				QModelIndex iChild = nif->getBlockIndex( lChild );
 
 				if ( nif->isNiBlock( iChild, { "NiTriShape", "NiTriStrips" } ) )
 					lTris << lChild;
@@ -299,7 +299,7 @@ public:
 				continue;
 
 			for ( const auto lTriB : lTris ) {
-				if ( matches( nif, nif->getBlock( lTriA ), nif->getBlock( lTriB ) ) ) {
+				if ( matches( nif, nif->getBlockIndex( lTriA ), nif->getBlockIndex( lTriB ) ) ) {
 					match[ lTriA ] << lTriB;
 					found << lTriB;
 				}
@@ -314,15 +314,15 @@ public:
 		QList<QPersistentModelIndex> remove;
 
 		for ( const auto lTriA : match.keys() ) {
-			ApplyTransform.cast( nif, nif->getBlock( lTriA ) );
+			ApplyTransform.cast( nif, nif->getBlockIndex( lTriA ) );
 
 			for ( const auto lTriB : match[lTriA] ) {
-				ApplyTransform.cast( nif, nif->getBlock( lTriB ) );
-				combine( nif, nif->getBlock( lTriA ), nif->getBlock( lTriB ) );
-				remove << nif->getBlock( lTriB );
+				ApplyTransform.cast( nif, nif->getBlockIndex( lTriB ) );
+				combine( nif, nif->getBlockIndex( lTriA ), nif->getBlockIndex( lTriB ) );
+				remove << nif->getBlockIndex( lTriB );
 			}
 
-			TSpace.castIfApplicable( nif, nif->getBlock( lTriA ) );
+			TSpace.castIfApplicable( nif, nif->getBlockIndex( lTriA ) );
 		}
 
 		// remove the now obsolete shapes
@@ -359,7 +359,7 @@ public:
 			if ( lPrpsA.contains( l ) )
 				continue;
 
-			QModelIndex iBlock = nif->getBlock( l );
+			QModelIndex iBlock = nif->getBlockIndex( l );
 
 			if ( nif->isNiBlock( iBlock, "NiTriShapeData" ) )
 				continue;
@@ -380,7 +380,7 @@ public:
 			if ( lPrpsB.contains( l ) )
 				continue;
 
-			QModelIndex iBlock = nif->getBlock( l );
+			QModelIndex iBlock = nif->getBlockIndex( l );
 
 			if ( nif->isNiBlock( iBlock, "NiTriShapeData" ) )
 				continue;
@@ -397,8 +397,8 @@ public:
 			return false;
 		}
 
-		QModelIndex iDataA = nif->getBlock( nif->getLink( iTriA, "Data" ), "NiTriBasedGeomData" );
-		QModelIndex iDataB = nif->getBlock( nif->getLink( iTriB, "Data" ), "NiTriBasedGeomData" );
+		QModelIndex iDataA = nif->getBlockIndex( nif->getLink( iTriA, "Data" ), "NiTriBasedGeomData" );
+		QModelIndex iDataB = nif->getBlockIndex( nif->getLink( iTriB, "Data" ), "NiTriBasedGeomData" );
 
 		return dataMatches( nif, iDataA, iDataB );
 	}
@@ -427,27 +427,27 @@ public:
 	{
 		nif->set<quint32>( iTriB, "Flags", nif->get<quint32>( iTriB, "Flags" ) | 1 );
 
-		QModelIndex iDataA = nif->getBlock( nif->getLink( iTriA, "Data" ), "NiTriBasedGeomData" );
-		QModelIndex iDataB = nif->getBlock( nif->getLink( iTriB, "Data" ), "NiTriBasedGeomData" );
+		QModelIndex iDataA = nif->getBlockIndex( nif->getLink( iTriA, "Data" ), "NiTriBasedGeomData" );
+		QModelIndex iDataB = nif->getBlockIndex( nif->getLink( iTriB, "Data" ), "NiTriBasedGeomData" );
 
 		int numA = nif->get<int>( iDataA, "Num Vertices" );
 		int numB = nif->get<int>( iDataB, "Num Vertices" );
 		nif->set<int>( iDataA, "Num Vertices", numA + numB );
 
-		nif->updateArray( iDataA, "Vertices" );
+		nif->updateArraySize( iDataA, "Vertices" );
 		nif->setArray<Vector3>( iDataA, "Vertices", nif->getArray<Vector3>( iDataA, "Vertices" ).mid( 0, numA ) + nif->getArray<Vector3>( iDataB, "Vertices" ) );
 
-		nif->updateArray( iDataA, "Normals" );
+		nif->updateArraySize( iDataA, "Normals" );
 		nif->setArray<Vector3>( iDataA, "Normals", nif->getArray<Vector3>( iDataA, "Normals" ).mid( 0, numA ) + nif->getArray<Vector3>( iDataB, "Normals" ) );
 
-		nif->updateArray( iDataA, "Vertex Colors" );
+		nif->updateArraySize( iDataA, "Vertex Colors" );
 		nif->setArray<Color4>( iDataA, "Vertex Colors", nif->getArray<Color4>( iDataA, "Vertex Colors" ).mid( 0, numA ) + nif->getArray<Color4>( iDataB, "Vertex Colors" ) );
 
 		QModelIndex iUVa = nif->getIndex( iDataA, "UV Sets" );
 		QModelIndex iUVb = nif->getIndex( iDataB, "UV Sets" );
 
 		for ( int r = 0; r < nif->rowCount( iUVa ); r++ ) {
-			nif->updateArray( iUVa.child( r, 0 ) );
+			nif->updateArraySize( iUVa.child( r, 0 ) );
 			nif->setArray<Vector2>( iUVa.child( r, 0 ), nif->getArray<Vector2>( iUVa.child( r, 0 ) ).mid( 0, numA ) + nif->getArray<Vector2>( iUVb.child( r, 0 ) ) );
 		}
 
@@ -466,15 +466,15 @@ public:
 			tri[2] += numA;
 		}
 
-		nif->updateArray( iDataA, "Triangles" );
+		nif->updateArraySize( iDataA, "Triangles" );
 		nif->setArray<Triangle>( iDataA, "Triangles", triangles + nif->getArray<Triangle>( iDataA, "Triangles" ) );
 
 		int stripCntA = nif->get<int>( iDataA, "Num Strips" );
 		int stripCntB = nif->get<int>( iDataB, "Num Strips" );
 		nif->set<int>( iDataA, "Num Strips", stripCntA + stripCntB );
 
-		nif->updateArray( iDataA, "Strip Lengths" );
-		nif->updateArray( iDataA, "Points" );
+		nif->updateArraySize( iDataA, "Strip Lengths" );
+		nif->updateArraySize( iDataA, "Points" );
 
 		for ( int r = 0; r < stripCntB; r++ ) {
 			QVector<quint16> strip = nif->getArray<quint16>( nif->getIndex( iDataB, "Points" ).child( r, 0 ) );
@@ -484,7 +484,7 @@ public:
 				it.next() += numA;
 
 			nif->set<int>( nif->getIndex( iDataA, "Strip Lengths" ).child( r + stripCntA, 0 ), strip.size() );
-			nif->updateArray( nif->getIndex( iDataA, "Points" ).child( r + stripCntA, 0 ) );
+			nif->updateArraySize( nif->getIndex( iDataA, "Points" ).child( r + stripCntA, 0 ) );
 			nif->setArray<quint16>( nif->getIndex( iDataA, "Points" ).child( r + stripCntA, 0 ), strip );
 		}
 
@@ -538,7 +538,7 @@ public:
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
 	{
-		auto originalStrings = nif->getArray<QString>( nif->getHeader(), "Strings" );
+		auto originalStrings = nif->getArray<QString>( nif->getHeaderIndex(), "Strings" );
 
 		// FO4 workaround for apparently unused but necessary BSClothExtraData string
 		int cedIdx = originalStrings.indexOf( "CED" );
@@ -547,7 +547,7 @@ public:
 
 		QMap<QString, qint32> usedStrings;
 		for ( qint32 b = 0; b < nif->getBlockCount(); b++ )
-			scan( nif->getBlock( b ), nif, usedStrings, hasCED );
+			scan( nif->getBlockIndex( b ), nif, usedStrings, hasCED );
 
 		QVector<QString> newStrings( usedStrings.size() );
 		for ( auto kv : usedStrings.toStdMap() )
@@ -560,9 +560,9 @@ public:
 			newSize++;
 		}
 
-		nif->set<uint>( nif->getHeader(), "Num Strings", newSize );
-		nif->updateArray( nif->getHeader(), "Strings" );
-		nif->setArray<QString>( nif->getHeader(), "Strings", newStrings );
+		nif->set<uint>( nif->getHeaderIndex(), "Num Strings", newSize );
+		nif->updateArraySize( nif->getHeaderIndex(), "Strings" );
+		nif->setArray<QString>( nif->getHeaderIndex(), "Strings", newStrings );
 		nif->updateHeader();
 
 		// Remove new from original to see what was removed

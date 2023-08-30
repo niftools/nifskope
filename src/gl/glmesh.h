@@ -33,151 +33,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLMESH_H
 #define GLMESH_H
 
-#include "gl/glnode.h" // Inherited
-#include "gl/gltools.h"
-
-#include <QPersistentModelIndex>
-#include <QVector>
-#include <QString>
-
+#include "gl/glshape.h" // Inherited
 
 //! @file glmesh.h Mesh
-
-using TriStrip = QVector<quint16>;
-Q_DECLARE_TYPEINFO( TriStrip, Q_MOVABLE_TYPE );
-using TexCoords = QVector<Vector2>;
-Q_DECLARE_TYPEINFO( TexCoords, Q_MOVABLE_TYPE );
-
-class NifModel;
-
-class Shape : public Node
-{
-	friend class MorphController;
-	friend class UVController;
-	friend class Renderer;
-
-public:
-	Shape( Scene * s, const QModelIndex & b );
-	~Shape() { clear(); }
-
-	void update( const NifModel * nif, const QModelIndex & ) override;
-
-	virtual void drawVerts() const {};
-	virtual QModelIndex vertexAt( int ) const { return QModelIndex(); };
-
-	int shapeNumber;
-
-protected:
-	//! Sets the Controller
-	void setController( const NifModel * nif, const QModelIndex & controller ) override;
-
-	void updateShaderProperties( const NifModel * nif );
-
-	void boneSphere( const NifModel * nif, const QModelIndex & index ) const;
-
-	int nifVersion = 0;
-
-	//! Shape data
-	QPersistentModelIndex iData;
-	//! Does the data need updating?
-	bool updateData = false;
-	//! Was Skinning enabled last update?
-	bool doSkinning = false;
-
-	//! Skin instance
-	QPersistentModelIndex iSkin;
-	//! Skin data
-	QPersistentModelIndex iSkinData;
-	//! Skin partition
-	QPersistentModelIndex iSkinPart;
-
-	//! Vertices
-	QVector<Vector3> verts;
-	//! Normals
-	QVector<Vector3> norms;
-	//! Vertex colors
-	QVector<Color4> colors;
-	//! Tangents
-	QVector<Vector3> tangents;
-	//! Bitangents
-	QVector<Vector3> bitangents;
-	//! UV coordinate sets
-	QVector<TexCoords> coords;
-	//! Triangles
-	QVector<Triangle> triangles;
-	//! Strip points
-	QVector<TriStrip> tristrips;
-	//! Sorted triangles
-	QVector<Triangle> sortedTriangles;
-	//! Triangle indices
-	QVector<quint16> indices;
-
-	//! Is the transform rigid or weighted?
-	bool transformRigid = true;
-	//! Transformed vertices
-	QVector<Vector3> transVerts;
-	//! Transformed normals
-	QVector<Vector3> transNorms;
-	//! Transformed colors (alpha blended)
-	QVector<Color4> transColors;
-	//! Transformed tangents
-	QVector<Vector3> transTangents;
-	//! Transformed bitangents
-	QVector<Vector3> transBitangents;
-
-	//! Does the skin data need updating?
-	bool updateSkin = false;
-	//! Toggle for skinning
-	bool isSkinned = false;
-
-	int skeletonRoot = 0;
-	Transform skeletonTrans;
-	QVector<int> bones;
-	QVector<BoneWeights> weights;
-	QVector<SkinPartition> partitions;
-
-	//! Holds the name of the shader, or "" if no shader
-	QString shader = "";
-
-	//! Shader property
-	BSShaderLightingProperty * bssp = nullptr;
-	//! Skyrim shader property
-	BSLightingShaderProperty * bslsp = nullptr;
-	//! Skyrim effect shader property
-	BSEffectShaderProperty * bsesp = nullptr;
-	//! Is shader set to double sided?
-	bool isDoubleSided = false;
-	//! Is shader set to animate using vertex alphas?
-	bool isVertexAlphaAnimation = false;
-	//! Is "Has Vertex Colors" set to Yes
-	bool hasVertexColors = false;
-
-	bool depthTest = true;
-	bool depthWrite = true;
-	bool drawSecond = false;
-	bool translucent = false;
-
-	mutable BoundSphere boundSphere;
-	mutable bool updateBounds = false;
-
-	bool isLOD = false;
-};
 
 //! A mesh
 class Mesh : public Shape
 {
 
 public:
-	Mesh( Scene * s, const QModelIndex & b );
-	~Mesh() { clear(); }
-
-	// IControllable
-
-	void clear() override;
-	void update( const NifModel * nif, const QModelIndex & ) override;
-	void transform() override;
-
-	// end IControllable
+	Mesh( Scene * s, const QModelIndex & b ) : Shape( s, b ) { }
 
 	// Node
 
@@ -188,8 +53,7 @@ public:
 
 	BoundSphere bounds() const override;
 
-	bool isHidden() const override;
-	QString textStats() const override;
+	QString textStats() const override; // TODO (Gavrant): move to Shape
 
 	// end Node
 
@@ -199,10 +63,11 @@ public:
 	QModelIndex vertexAt( int ) const override;
 
 protected:
+	void updateImpl( const NifModel * nif, const QModelIndex & index ) override;
+	void updateData( const NifModel * nif ) override;
 
-	//! Tangent data
-	QPersistentModelIndex iTangentData;
+	void updateData_NiMesh( const NifModel * nif );
+	void updateData_NiTriShape( const NifModel * nif );
 };
-
 
 #endif

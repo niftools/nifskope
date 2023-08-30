@@ -51,6 +51,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Used for Block Name hashing
 unsigned DJB1Hash( const char * key, unsigned tableSize = UINT_MAX );
+// Used to fill arrays
+QString addConditionParentPrefix( const QString & x );
 
 //! @file basemodel.h BaseModel, BaseModelEval
 
@@ -79,7 +81,7 @@ public:
 	~BaseModel();
 
 	//! Get parent window
-	QWidget * getWindow();
+	QWidget * getWindow() const { return parentWindow; }
 
 	//! Clear model data.
 	virtual void clear() = 0;
@@ -91,26 +93,6 @@ public:
 	virtual QString getVersion() const = 0;
 	//! Get version as a number
 	virtual quint32 getVersionNumber() const = 0;
-
-	//! Get an item.
-	template <typename T> T get( const QModelIndex & index ) const;
-	//! Get an item by name.
-	template <typename T> T get( const QModelIndex & parent, const QString & name ) const;
-	//! Set an item.
-	template <typename T> bool set( const QModelIndex & index, const T & d );
-	//! Set an item by name.
-	template <typename T> bool set( const QModelIndex & parent, const QString & name, const T & v );
-
-	//! Get a model index array as a QVector.
-	template <typename T> QVector<T> getArray( const QModelIndex & iArray ) const;
-	//! Get a model index array as a QVector by name.
-	template <typename T> QVector<T> getArray( const QModelIndex & iArray, const QString & name ) const;
-	//! Write a QVector to a model index array.
-	template <typename T> void setArray( const QModelIndex & iArray, const QVector<T> & array );
-	//! Write a value to a model index array.
-	template <typename T> void setArray( const QModelIndex & iArray, const T & val );
-	//! Write a QVector to a model index array by name.
-	template <typename T> void setArray( const QModelIndex & iArray, const QString & name, const QVector<T> & array );
 
 	//! Load from file.
 	bool loadFromFile( const QString & filename );
@@ -153,17 +135,7 @@ public:
 	* @param array The item to check.
 	* @return		true if the index is an array.
 	*/
-	bool isArray( NifItem * item ) const;
-
-	/*! Update the size of an array (append or remove items).
-	 *
-	 * @param array The index of the array whose size to update.
-	 * @return		true if the update succeeded, false otherwise.
-	 */
-	bool updateArray( const QModelIndex & iArray );
-
-	//! Update the size of an array by name.
-	bool updateArray( const QModelIndex & parent, const QString & name );
+	bool isArray( const NifItem * item ) const;
 
 	//! Get an item as a NifValue.
 	NifValue getValue( const QModelIndex & index ) const;
@@ -171,9 +143,7 @@ public:
 	//NifValue getValue( const QModelIndex & parent, const QString & name ) const;
 
 	//! Set an item from a NifValue.
-	bool setValue( const QModelIndex & index, const NifValue & v );
-	//! Set an item from a NifValue by name.
-	bool setValue( const QModelIndex & parent, const QString & name, const NifValue & v );
+	bool setIndexValue( const QModelIndex & index, const NifValue & v );
 
 	//! Get the item name.
 	QString itemName( const QModelIndex & index ) const;
@@ -196,13 +166,7 @@ public:
 	//! Get the item template string.
 	QString itemTmplt( const QModelIndex & index ) const;
 
-	//! Find a branch by name.
-	QModelIndex getIndex( const QModelIndex & parent, const QString & name ) const;
 
-	//! Evaluate condition and version.
-	bool evalCondition( const QModelIndex & idx, bool chkParents = false ) const;
-	//! Evaluate version.
-	bool evalVersion( const QModelIndex & idx, bool chkParents = false ) const;
 	//! Is name a NiBlock identifier (<niobject abstract="0"> or <niobject abstract="1">)?
 	virtual bool isAncestorOrNiBlock( const QString & /*name*/ ) const { return false; }
 	//! Returns true if name inherits ancestor.
@@ -291,22 +255,272 @@ public:
 
 	// end QAbstractItemModel
 
-	// Terrible hack for atomic-like operations
-	//	Setting this to false will suspend dataChanged in set<T>
-	//	Doing so is necessary for performance reasons with setting thousands of rows at once
-	//	e.g. Update Tangent Space with BSTriShapes
-	void setEmitChanges( bool e );
-
 	enum MsgMode
 	{
 		MSG_USER, MSG_TEST
 	};
 
 	void setMessageMode( MsgMode mode );
-	MsgMode getMessageMode() const;
+	MsgMode getMessageMode() const { return msgMode; }
 
+	// TODO(Gavrant): replace with reportError?
 	void logMessage( const QString & message, const QString & details, QMessageBox::Icon lvl = QMessageBox::Warning ) const;
+	// TODO(Gavrant): replace with reportError?
 	void logWarning( const QString & details ) const;
+
+public:
+	//! Return string representation ("path") of an item within the model (e.g., "Block [0]\Vertex Data [3]\Vertex colors") as a QString.
+	// Mostly for messages and debug.
+	QString itemRepr( const NifItem * item ) const;
+protected:
+	virtual QString topItemRepr( const NifItem * item ) const;
+public:
+	void reportError( const QString & err ) const;
+	void reportError( const NifItem * item, const QString & err ) const;
+	void reportError( const NifItem * item, const QString & funcName, const QString & err ) const;
+
+public:
+	QModelIndex itemToIndex( const NifItem * item, int column = 0 ) const;
+
+	//! Get the top-level parent (a child of the model's root item) of an item.
+	// Return null if the item is the root itself or not a child of the root.
+	const NifItem * getTopItem( const NifItem * item ) const;
+	//! Get the top-level parent (a child of the model's root item) of an item.
+	// Return null if the item is the root itself or not a child of the root.
+	NifItem * getTopItem( const NifItem * item );
+	//! Get the top-level parent (a child of the model's root item) of a model index.
+	// Return null if the item is the root itself or not a child of the root.
+	const NifItem * getTopItem( const QModelIndex & index ) const;
+	//! Get the top-level parent (a child of the model's root item) of a model index.
+	// Return null if the item is the root itself or not a child of the root.
+	NifItem * getTopItem( const QModelIndex & index );
+
+	//! Get the model index of the top-level parent (a child of the model's root item) of an item.
+	// Return invalid index if the item is the root itself or not a child of the root.
+	QModelIndex getTopIndex( const NifItem * item ) const;
+	//! Get the model index of the top-level parent (a child of the model's root item) of a model index.
+	// Return invalid index if the index is the root itself or not a child of the root.
+	QModelIndex getTopIndex( const QModelIndex & index ) const;
+
+	// Evaluating NifItem condition and model version
+public:
+	//! Evaluate NifItem model version.
+	bool evalVersion( const NifItem * item ) const;
+protected:
+	virtual bool evalVersionImpl( const NifItem * item ) const = 0;
+
+public:
+	//! Evaluate NifItem model version and condition.
+	bool evalCondition( const NifItem * item ) const;
+protected:
+	virtual bool evalConditionImpl( const NifItem * item ) const;
+
+	// NifItem getters
+public:
+	//! Get a child NifItem from its parent and name.
+	const NifItem * getItem( const NifItem * parent, const QString & name, bool reportErrors = false ) const;
+	//! Get a child NifItem from its parent and name.
+	NifItem * getItem( const NifItem * parent, const QString & name, bool reportErrors = false );
+	//! Get a child NifItem from its parent and name.
+	const NifItem * getItem( const NifItem * parent, const QLatin1String & name, bool reportErrors = false ) const;
+	//! Get a child NifItem from its parent and name.
+	NifItem * getItem( const NifItem * parent, const QLatin1String & name, bool reportErrors = false );
+	//! Get a child NifItem from its parent and name.
+	const NifItem * getItem( const NifItem * parent, const char * name, bool reportErrors = false ) const;
+	//! Get a child NifItem from its parent and name.
+	NifItem * getItem( const NifItem * parent, const char * name, bool reportErrors = false );
+	//! Get a child NifItem from its parent and numerical index.
+	const NifItem * getItem( const NifItem * parent, int childIndex, bool reportErrors = true ) const;
+	//! Get a child NifItem from its parent and numerical index.
+	NifItem * getItem( const NifItem * parent, int childIndex, bool reportErrors = true );
+	//! Get a NifItem from its model index.
+	const NifItem * getItem( const QModelIndex & index ) const;
+	//! Get a NifItem from its model index.
+	NifItem * getItem( const QModelIndex & index );
+	//! Get a child NifItem from its parent and name.
+	const NifItem * getItem( const QModelIndex & parent, const QString & name, bool reportErrors = false ) const;
+	//! Get a child NifItem from its parent and name.
+	NifItem * getItem( const QModelIndex & parent, const QString & name, bool reportErrors = false );
+	//! Get a child NifItem from its parent and name.
+	const NifItem * getItem( const QModelIndex & parent, const QLatin1String & name, bool reportErrors = false ) const;
+	//! Get a child NifItem from its parent and name.
+	NifItem * getItem( const QModelIndex & parent, const QLatin1String & name, bool reportErrors = false );
+	//! Get a child NifItem from its parent and name.
+	const NifItem * getItem( const QModelIndex & parent, const char * name, bool reportErrors = false ) const;
+	//! Get a child NifItem from its parent and name.
+	NifItem * getItem( const QModelIndex & parent, const char * name, bool reportErrors = false );
+	//! Get a child NifItem from its parent and numerical index.
+	const NifItem * getItem( const QModelIndex & parent, int childIndex, bool reportErrors = true ) const;
+	//! Get a child NifItem from its parent and numerical index.
+	NifItem * getItem( const QModelIndex & parent, int childIndex, bool reportErrors = true );
+
+protected:
+	//! Find a NifItem by name, going up from 'item' in the load order.
+	const NifItem * getItemX( const NifItem * item, const QLatin1String & name ) const;
+	//! Find a NifItem by name, going up from 'item' in the load order.
+	const NifItem * getItemX( const NifItem * item, const char * name ) const;
+
+	//! Find a NifItem by name, first in parent, then in parent's parent, etc.
+	const NifItem * findItemX( const NifItem * parent, const QLatin1String & name ) const;
+	//! Find a NifItem by name, first in parent, then in parent's parent, etc.
+	const NifItem * findItemX( const NifItem * parent, const char * name ) const;
+
+	// Item model index getters
+public:
+	//! Get the model index of a child item.
+	QModelIndex getIndex( const NifItem * itemParent, const QString & itemName, int column = 0 ) const;
+	//! Get the model index of a child item.
+	QModelIndex getIndex( const NifItem * itemParent, const QLatin1String & itemName, int column = 0 ) const;
+	//! Get the model index of a child item.
+	QModelIndex getIndex( const NifItem * itemParent, const char * itemName, int column = 0 ) const;
+	//! Get the model index of a child item.
+	QModelIndex getIndex( const QModelIndex & itemParent, const QString & itemName, int column = 0 ) const;
+	//! Get the model index of a child item.
+	QModelIndex getIndex( const QModelIndex & itemParent, const QLatin1String & itemName, int column = 0 ) const;
+	//! Get the model index of a child item.
+	QModelIndex getIndex( const QModelIndex & itemParent, const char * itemName, int column = 0 ) const;
+
+	// Item value getters
+public:
+	//! Get the value of an item.
+	template <typename T> T get( const NifItem * item ) const;
+	//! Get the value of a child item.
+	template <typename T> T get( const NifItem * itemParent, int itemIndex ) const;
+	//! Get the value of a child item.
+	template <typename T> T get( const NifItem * itemParent, const QString & itemName ) const;
+	//! Get the value of a child item.
+	template <typename T> T get( const NifItem * itemParent, const QLatin1String & itemName ) const;
+	//! Get the value of a child item.
+	template <typename T> T get( const NifItem * itemParent, const char * itemName ) const;
+	//! Get the value of a model index.
+	template <typename T> T get( const QModelIndex & index ) const;
+	//! Get the value of a child item.
+	template <typename T> T get( const QModelIndex & itemParent, int itemIndex ) const;
+	//! Get the value of a child item.
+	template <typename T> T get( const QModelIndex & itemParent, const QString & itemName ) const;
+	//! Get the value of a child item.
+	template <typename T> T get( const QModelIndex & itemParent, const QLatin1String & itemName ) const;
+	//! Get the value of a child item.
+	template <typename T> T get( const QModelIndex & itemParent, const char * itemName ) const;
+
+	// Item value setters
+public:
+	//! Set the value of an item.
+	template <typename T> bool set( NifItem * item, const T & val );
+	//! Set the value of a child item.
+	template <typename T> bool set( const NifItem * itemParent, int itemIndex, const T & val );
+	//! Set the value of a child item.
+	template <typename T> bool set( const NifItem * itemParent, const QString & itemName, const T & val );
+	//! Set the value of a child item.
+	template <typename T> bool set( const NifItem * itemParent, const QLatin1String & itemName, const T & val );
+	//! Set the value of a child item.
+	template <typename T> bool set( const NifItem * itemParent, const char * itemName, const T & val );
+	//! Set the value of a model index.
+	template <typename T> bool set( const QModelIndex & index, const T & val );
+	//! Set the value of a child item.
+	template <typename T> bool set( const QModelIndex & itemParent, int itemIndex, const T & val );
+	//! Set the value of a child item.
+	template <typename T> bool set( const QModelIndex & itemParent, const QString & itemName, const T & val );
+	//! Set the value of a child item.
+	template <typename T> bool set( const QModelIndex & itemParent, const QLatin1String & itemName, const T & val );
+	//! Set the value of a child item.
+	template <typename T> bool set( const QModelIndex & itemParent, const char * itemName, const T & val );
+
+	// Array size management
+protected:	
+	//! Get the size of an array
+	int evalArraySize( const NifItem * array ) const;
+	virtual bool updateArraySizeImpl( NifItem * array ) = 0;
+public:
+	//! Update the size of an array from its conditions (append missing or remove excess items).
+	bool updateArraySize( NifItem * arrayRootItem );
+	//! Update the size of a child array from its conditions (append missing or remove excess items).
+	bool updateArraySize( const NifItem * arrayParent, int arrayIndex );
+	//! Update the size of a child array from its conditions (append missing or remove excess items).
+	bool updateArraySize( const NifItem * arrayParent, const QString & arrayName );
+	//! Update the size of a child array from its conditions (append missing or remove excess items).
+	bool updateArraySize( const NifItem * arrayParent, const QLatin1String & arrayName );
+	//! Update the size of a child array from its conditions (append missing or remove excess items).
+	bool updateArraySize( const NifItem * arrayParent, const char * arrayName );
+	//! Update the size of a model index array from its conditions (append missing or remove excess items).
+	bool updateArraySize( const QModelIndex & iArray );
+	//! Update the size of a child array from its conditions (append missing or remove excess items).
+	bool updateArraySize( const QModelIndex & arrayParent, int arrayIndex );
+	//! Update the size of a child array from its conditions (append missing or remove excess items).
+	bool updateArraySize( const QModelIndex & arrayParent, const QString & arrayName );
+	//! Update the size of a child array from its conditions (append missing or remove excess items).
+	bool updateArraySize( const QModelIndex & arrayParent, const QLatin1String & arrayName );
+	//! Update the size of a child array from its conditions (append missing or remove excess items).
+	bool updateArraySize( const QModelIndex & arrayParent, const char * arrayName );
+
+	// Array getters
+public:
+	//! Get an array as a QVector.
+	template <typename T> QVector<T> getArray( const NifItem * arrayRootItem ) const;
+	//! Get a child array as a QVector.
+	template <typename T> QVector<T> getArray( const NifItem * arrayParent, int arrayIndex ) const;
+	//! Get a child array as a QVector.
+	template <typename T> QVector<T> getArray( const NifItem * arrayParent, const QString & arrayName ) const;
+	//! Get a child array as a QVector.
+	template <typename T> QVector<T> getArray( const NifItem * arrayParent, const QLatin1String & arrayName ) const;
+	//! Get a child array as a QVector.
+	template <typename T> QVector<T> getArray( const NifItem * arrayParent, const char * arrayName ) const;
+	//! Get a model index array as a QVector.
+	template <typename T> QVector<T> getArray( const QModelIndex & iArray ) const;
+	//! Get a child array as a QVector.
+	template <typename T> QVector<T> getArray( const QModelIndex & arrayParent, int arrayIndex ) const;
+	//! Get a child array as a QVector.
+	template <typename T> QVector<T> getArray( const QModelIndex & arrayParent, const QString & arrayName ) const;
+	//! Get a child array as a QVector.
+	template <typename T> QVector<T> getArray( const QModelIndex & arrayParent, const QLatin1String & arrayName ) const;
+	//! Get a child array as a QVector.
+	template <typename T> QVector<T> getArray( const QModelIndex & arrayParent, const char * arrayName ) const;
+
+	// Array setters
+public:
+	//! Write a QVector to an array.
+	template <typename T> void setArray( NifItem * arrayRootItem, const QVector<T> & array );
+	//! Write a QVector to a child array.
+	template <typename T> void setArray( const NifItem * arrayParent, int arrayIndex, const QVector<T> & array );
+	//! Write a QVector to a child array.
+	template <typename T> void setArray( const NifItem * arrayParent, const QString & arrayName, const QVector<T> & array );
+	//! Write a QVector to a child array.
+	template <typename T> void setArray( const NifItem * arrayParent, const QLatin1String & arrayName, const QVector<T> & array );
+	//! Write a QVector to a child array.
+	template <typename T> void setArray( const NifItem * arrayParent, const char * arrayName, const QVector<T> & array );
+	//! Write a QVector to a model index array.
+	template <typename T> void setArray( const QModelIndex & iArray, const QVector<T> & array );
+	//! Write a QVector to a child array.
+	template <typename T> void setArray( const QModelIndex & arrayParent, int arrayIndex, const QVector<T> & array );
+	//! Write a QVector to a child array.
+	template <typename T> void setArray( const QModelIndex & arrayParent, const QString & arrayName, const QVector<T> & array );
+	//! Write a QVector to a child array.
+	template <typename T> void setArray( const QModelIndex & arrayParent, const QLatin1String & arrayName, const QVector<T> & array );
+	//! Write a QVector to a child array.
+	template <typename T> void setArray( const QModelIndex & arrayParent, const char * arrayName, const QVector<T> & array );
+
+	// Array fillers
+public:
+	//! Fill an array with a value.
+	template <typename T> void fillArray( NifItem * arrayRootItem, const T & val );
+	//! Fill a child array with a value.
+	template <typename T> void fillArray( const NifItem * arrayParent, int arrayIndex, const T & val );
+	//! Fill a child array with a value.
+	template <typename T> void fillArray( const NifItem * arrayParent, const QString & arrayName, const T & val );
+	//! Fill a child array with a value.
+	template <typename T> void fillArray( const NifItem * arrayParent, const QLatin1String & arrayName, const T & val );
+	//! Fill a child array with a value.
+	template <typename T> void fillArray( const NifItem * arrayParent, const char * arrayName, const T & val );
+	//! Fill a model index array with a value.
+	template <typename T> void fillArray( const QModelIndex & iArray, const T & val );
+	//! Fill a child array with a value.
+	template <typename T> void fillArray( const QModelIndex & arrayParent, int arrayIndex, const T & val );
+	//! Fill a child array with a value.
+	template <typename T> void fillArray( const QModelIndex & arrayParent, const QString & arrayName, const T & val );
+	//! Fill a child array with a value.
+	template <typename T> void fillArray( const QModelIndex & arrayParent, const QLatin1String & arrayName, const T & val );
+	//! Fill a child array with a value.
+	template <typename T> void fillArray( const QModelIndex & arrayParent, const char * arrayName, const T & val );
 
 signals:
 	//! Messaging signal
@@ -315,56 +529,25 @@ signals:
 	void sigProgress( int c, int m ) const;
 
 protected:
-	//! Get an item
-	virtual NifItem * getItem( NifItem * parent, const QString & name ) const;
 	//! Set an item value
-	virtual bool setItemValue( NifItem * item, const NifValue & v ) = 0;
-
-	//! Update an array item
-	virtual bool updateArrayItem( NifItem * array ) = 0;
+	bool setItemValue( NifItem * item, const NifValue & v );
 
 	//! Convert a version number to a string
 	virtual QString ver2str( quint32 ) const = 0;
 	//! Convert a version string to a number
 	virtual quint32 str2ver( QString ) const = 0;
 
-	//! Evaluate version
-	virtual bool evalVersion( NifItem * item, bool chkParents = false ) const = 0;
-
 	//! Set the header string
 	virtual bool setHeaderString( const QString &, uint ver = 0 ) = 0;
-
-	//! Get an item by name
-	template <typename T> T get( NifItem * parent, const QString & name ) const;
-	//! Get an item
-	template <typename T> T get( NifItem * item ) const;
-
-	//! Set an item by name
-	template <typename T> bool set( NifItem * parent, const QString & name, const T & d );
-	//! Set an item
-	template <typename T> bool set( NifItem * item, const T & d );
-
-	//! Get the size of an array
-	int getArraySize( NifItem * array ) const;
-	//! Evaluate a string for an array
-	int evaluateInt( NifItem * item, const NifExpr & expr ) const;
-
-	//! Get an item by name
-	NifItem * getItemX( NifItem * item, const QString & name ) const;
-	//! Find an item by name
-	NifItem * findItemX( NifItem * item, const QString & name ) const;
-
-	//! Set an item value by name
-	bool setItemValue( NifItem * parent, const QString & name, const NifValue & v );
-
-	//! Evaluate conditions
-	bool evalCondition( NifItem * item, bool chkParents = false ) const;
 
 	void beginInsertRows( const QModelIndex & parent, int first, int last );
 	void endInsertRows();
 
 	void beginRemoveRows( const QModelIndex & parent, int first, int last );
 	void endRemoveRows();
+
+	virtual void onItemValueChange( NifItem * item );
+	void onArrayValuesChange( NifItem * arrayRootItem );
 
 	//! NifSkope window the model belongs to
 	QWidget * parentWindow;
@@ -378,9 +561,6 @@ protected:
 	QString filename;
 	//! The file info for the model
 	QFileInfo fileinfo;
-
-	// Whether or not to emit dataChanged() in set<T>
-	bool emitChanges = true;
 
 	//! A list of test messages
 	mutable QList<TestMessage> messages;
@@ -414,141 +594,414 @@ private:
 };
 
 
-// Templates
+// Inlines
 
-template <typename T> inline T BaseModel::get( NifItem * parent, const QString & name ) const
+inline QModelIndex BaseModel::itemToIndex( const NifItem * item, int column ) const
 {
-	NifItem * item = getItem( parent, name );
-
-	if ( item )
-		return item->value().get<T>();
-
-	return T();
+	return item ? createIndex( item->row(), column, const_cast<NifItem *>(item) ) : QModelIndex();
 }
 
-template <typename T> inline T BaseModel::get( const QModelIndex & parent, const QString & name ) const
+inline NifItem * BaseModel::getTopItem( const NifItem * item )
 {
-	NifItem * parentItem = static_cast<NifItem *>( parent.internalPointer() );
-
-	if ( !( parent.isValid() && parentItem && parent.model() == this ) )
-		return T();
-
-	NifItem * item = getItem( parentItem, name );
-
-	if ( item )
-		return item->value().get<T>();
-
-	return T();
+	return const_cast<NifItem *>( const_cast<const BaseModel *>(this)->getTopItem( item ) );
+}
+inline const NifItem * BaseModel::getTopItem( const QModelIndex & index ) const
+{
+	return getTopItem( getItem(index) );
+}
+inline NifItem * BaseModel::getTopItem( const QModelIndex & index )
+{
+	return getTopItem( getItem(index) );
 }
 
-template <typename T> inline bool BaseModel::set( NifItem * parent, const QString & name, const T & d )
+inline QModelIndex BaseModel::getTopIndex( const NifItem * item ) const
 {
-	NifItem * item = getItem( parent, name );
-
-	if ( item )
-		return set( item, d );
-
-	return false;
+	return itemToIndex( getTopItem(item) );
+}
+inline QModelIndex BaseModel::getTopIndex( const QModelIndex & index ) const
+{
+	return itemToIndex( getTopItem(index) );
 }
 
-template <typename T> inline bool BaseModel::set( const QModelIndex & parent, const QString & name, const T & d )
+inline bool BaseModel::setIndexValue( const QModelIndex & index, const NifValue & val )
 {
-	NifItem * parentItem = static_cast<NifItem *>( parent.internalPointer() );
-
-	if ( !( parent.isValid() && parentItem && parent.model() == this ) )
-		return false;
-
-	NifItem * item = getItem( parentItem, name );
-
-	if ( item )
-		return set( item, d );
-
-	return false;
+	return setItemValue( getItem(index), val );
 }
 
-template <typename T> inline T BaseModel::get( NifItem * item ) const
+
+// Item getters
+
+#define _BASEMODEL_NONCONST_GETITEM_1(arg) const_cast<NifItem *>( const_cast<const BaseModel *>(this)->getItem( arg ) )
+#define _BASEMODEL_NONCONST_GETITEM_3(arg1, arg2, arg3) const_cast<NifItem *>( const_cast<const BaseModel *>(this)->getItem( arg1, arg2, arg3 ) )
+
+inline NifItem * BaseModel::getItem( const NifItem * parent, const QString & name, bool reportErrors )
 {
-	return item->value().get<T>();
+	return _BASEMODEL_NONCONST_GETITEM_3( parent, name, reportErrors );
+}
+inline NifItem * BaseModel::getItem( const NifItem * parent, const QLatin1String & name, bool reportErrors )
+{
+	return _BASEMODEL_NONCONST_GETITEM_3( parent, name, reportErrors );
+}
+inline const NifItem * BaseModel::getItem( const NifItem * parent, const char * name, bool reportErrors ) const
+{
+	return getItem( parent, QLatin1String(name), reportErrors );
+}
+inline NifItem * BaseModel::getItem( const NifItem * parent, const char * name, bool reportErrors )
+{
+	return _BASEMODEL_NONCONST_GETITEM_3( parent, QLatin1String(name), reportErrors );
+}
+inline NifItem * BaseModel::getItem( const NifItem * parent, int childIndex, bool reportErrors )
+{
+	return _BASEMODEL_NONCONST_GETITEM_3( parent, childIndex, reportErrors );
+}
+inline NifItem * BaseModel::getItem( const QModelIndex & index )
+{
+	return _BASEMODEL_NONCONST_GETITEM_1( index );
+}
+inline const NifItem * BaseModel::getItem( const QModelIndex & parent, const QString & name, bool reportErrors ) const
+{
+	return getItem( getItem(parent), name, reportErrors );
+}
+inline NifItem * BaseModel::getItem( const QModelIndex & parent, const QString & name, bool reportErrors )
+{
+	return _BASEMODEL_NONCONST_GETITEM_3( getItem(parent), name, reportErrors );
+}
+inline const NifItem * BaseModel::getItem( const QModelIndex & parent, const QLatin1String & name, bool reportErrors ) const
+{
+	return getItem( getItem(parent), name, reportErrors );
+}
+inline NifItem * BaseModel::getItem( const QModelIndex & parent, const QLatin1String & name, bool reportErrors )
+{
+	return _BASEMODEL_NONCONST_GETITEM_3( getItem(parent), name, reportErrors );
+}
+inline const NifItem * BaseModel::getItem( const QModelIndex & parent, const char * name, bool reportErrors ) const
+{
+	return getItem( getItem(parent), QLatin1String(name), reportErrors );
+}
+inline NifItem * BaseModel::getItem( const QModelIndex & parent, const char * name, bool reportErrors )
+{
+	return _BASEMODEL_NONCONST_GETITEM_3( getItem(parent), QLatin1String(name), reportErrors );
+}
+inline const NifItem * BaseModel::getItem( const QModelIndex & parent, int childIndex, bool reportErrors ) const
+{
+	return getItem( getItem(parent), childIndex, reportErrors );
+}
+inline NifItem * BaseModel::getItem( const QModelIndex & parent, int childIndex, bool reportErrors )
+{
+	return _BASEMODEL_NONCONST_GETITEM_3( getItem(parent), childIndex, reportErrors );
 }
 
+inline const NifItem * BaseModel::getItemX( const NifItem * item, const char * name ) const
+{
+	return getItemX( item, QLatin1String(name) );
+}
+
+inline const NifItem * BaseModel::findItemX( const NifItem * parent, const char * name ) const
+{
+	return findItemX( parent, QLatin1String(name) );
+}
+
+
+// Item model index getters
+
+inline QModelIndex BaseModel::getIndex( const NifItem * itemParent, const QString & itemName, int column ) const
+{
+	return itemToIndex( getItem(itemParent, itemName), column );
+}
+inline QModelIndex BaseModel::getIndex( const NifItem * itemParent, const QLatin1String & itemName, int column ) const
+{
+	return itemToIndex( getItem(itemParent, itemName), column );
+}
+inline QModelIndex BaseModel::getIndex( const NifItem * itemParent, const char * itemName, int column ) const
+{
+	return itemToIndex( getItem(itemParent, QLatin1String(itemName)), column );
+}
+inline QModelIndex BaseModel::getIndex( const QModelIndex & itemParent, const QString & itemName, int column ) const
+{
+	return itemToIndex( getItem(itemParent, itemName), column );
+}
+inline QModelIndex BaseModel::getIndex( const QModelIndex & itemParent, const QLatin1String & itemName, int column ) const
+{
+	return itemToIndex( getItem(itemParent, itemName), column );
+}
+inline QModelIndex BaseModel::getIndex( const QModelIndex & itemParent, const char * itemName, int column ) const
+{
+	return itemToIndex( getItem(itemParent, QLatin1String(itemName)), column );
+}
+
+
+// Item value getters
+
+template <typename T> inline T BaseModel::get( const NifItem * item ) const
+{
+	return NifItem::get<T>( item );
+}
+template <typename T> inline T BaseModel::get( const NifItem * itemParent, int itemIndex ) const
+{
+	return NifItem::get<T>( getItem(itemParent, itemIndex) );
+}
+template <typename T> inline T BaseModel::get( const NifItem * itemParent, const QString & itemName ) const
+{
+	return NifItem::get<T>( getItem(itemParent, itemName) );
+}
+template <typename T> inline T BaseModel::get( const NifItem * itemParent, const QLatin1String & itemName ) const
+{
+	return NifItem::get<T>( getItem(itemParent, itemName) );
+}
+template <typename T> inline T BaseModel::get( const NifItem * itemParent, const char * itemName ) const
+{
+	return NifItem::get<T>( getItem(itemParent, QLatin1String(itemName)) );
+}
 template <typename T> inline T BaseModel::get( const QModelIndex & index ) const
 {
-	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
-
-	if ( !( index.isValid() && item && index.model() == this ) )
-		return T();
-
-	return item->value().get<T>();
+	return NifItem::get<T>( getItem(index) );
+}
+template <typename T> inline T BaseModel::get( const QModelIndex & itemParent, int itemIndex ) const
+{
+	return NifItem::get<T>( getItem(itemParent, itemIndex) );
+}
+template <typename T> inline T BaseModel::get( const QModelIndex & itemParent, const QString & itemName ) const
+{
+	return NifItem::get<T>( getItem(itemParent, itemName) );
+}
+template <typename T> inline T BaseModel::get( const QModelIndex & itemParent, const QLatin1String & itemName ) const
+{
+	return NifItem::get<T>( getItem(itemParent, itemName) );
+}
+template <typename T> inline T BaseModel::get( const QModelIndex & itemParent, const char * itemName ) const
+{
+	return NifItem::get<T>( getItem(itemParent, QLatin1String(itemName)) );
 }
 
-template <typename T> inline bool BaseModel::set( NifItem * item, const T & d )
-{
-	if ( item->value().set( d ) ) {
-		if ( state != Processing )
-			emit dataChanged( createIndex( item->row(), ValueCol, item ), createIndex( item->row(), ValueCol, item ) );
-		else
-			changedWhileProcessing = true;
 
+// Item value setters
+
+template <typename T> inline bool BaseModel::set( NifItem * item, const T & val )
+{
+	if ( NifItem::set<T>( item, val ) ) {
+		onItemValueChange( item );
 		return true;
 	}
 
 	return false;
 }
-
-template <typename T> inline bool BaseModel::set( const QModelIndex & index, const T & d )
+template <typename T> inline bool BaseModel::set( const NifItem * itemParent, int itemIndex, const T & val )
 {
-	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
-
-	if ( !( index.isValid() && item && index.model() == this ) )
-		return false;
-
-	return set( item, d );
+	return set( getItem(itemParent, itemIndex, true), val );
+}
+template <typename T> inline bool BaseModel::set( const NifItem * itemParent, const QString & itemName, const T & val )
+{
+	return set( getItem(itemParent, itemName, true), val );
+}
+template <typename T> inline bool BaseModel::set( const NifItem * itemParent, const QLatin1String & itemName, const T & val )
+{
+	return set( getItem(itemParent, itemName, true), val );
+}
+template <typename T> inline bool BaseModel::set( const NifItem * itemParent, const char * itemName, const T & val )
+{
+	return set( getItem(itemParent, QLatin1String(itemName), true), val );
+}
+template <typename T> inline bool BaseModel::set( const QModelIndex & index, const T & val )
+{
+	return set( getItem(index), val );
+}
+template <typename T> inline bool BaseModel::set( const QModelIndex & itemParent, int itemIndex, const T & val )
+{
+	return set( getItem(itemParent, itemIndex, true), val );
+}
+template <typename T> inline bool BaseModel::set( const QModelIndex & itemParent, const QString & itemName, const T & val )
+{
+	return set( getItem(itemParent, itemName, true), val );
+}
+template <typename T> inline bool BaseModel::set( const QModelIndex & itemParent, const QLatin1String & itemName, const T & val )
+{
+	return set( getItem(itemParent, itemName, true), val );
+}
+template <typename T> inline bool BaseModel::set( const QModelIndex & itemParent, const char * itemName, const T & val )
+{
+	return set( getItem(itemParent, QLatin1String(itemName), true), val );
 }
 
+
+// Array size management
+
+inline bool BaseModel::updateArraySize( NifItem * arrayRootItem )
+{
+	return updateArraySizeImpl( arrayRootItem );
+}
+inline bool BaseModel::updateArraySize( const NifItem * arrayParent, int arrayIndex )
+{
+	return updateArraySizeImpl( getItem(arrayParent, arrayIndex) );
+}
+inline bool BaseModel::updateArraySize( const NifItem * arrayParent, const QString & arrayName )
+{
+	return updateArraySizeImpl( getItem(arrayParent, arrayName) );
+}
+inline bool BaseModel::updateArraySize( const NifItem * arrayParent, const QLatin1String & arrayName )
+{
+	return updateArraySizeImpl( getItem(arrayParent, arrayName) );
+}
+inline bool BaseModel::updateArraySize( const NifItem * arrayParent, const char * arrayName )
+{
+	return updateArraySizeImpl( getItem(arrayParent, QLatin1String(arrayName)) );
+}
+inline bool BaseModel::updateArraySize( const QModelIndex & iArray )
+{
+	return updateArraySizeImpl( getItem(iArray) );
+}
+inline bool BaseModel::updateArraySize( const QModelIndex & arrayParent, int arrayIndex )
+{
+	return updateArraySizeImpl( getItem(arrayParent, arrayIndex) );
+}
+inline bool BaseModel::updateArraySize( const QModelIndex & arrayParent, const QString & arrayName )
+{
+	return updateArraySizeImpl( getItem(arrayParent, arrayName) );
+}
+inline bool BaseModel::updateArraySize( const QModelIndex & arrayParent, const QLatin1String & arrayName )
+{
+	return updateArraySizeImpl( getItem(arrayParent, arrayName) );
+}
+inline bool BaseModel::updateArraySize( const QModelIndex & arrayParent, const char * arrayName )
+{
+	return updateArraySizeImpl( getItem(arrayParent, QLatin1String(arrayName)) );
+}
+
+
+// Array getters
+
+template <typename T> inline QVector<T> BaseModel::getArray( const NifItem * arrayRootItem ) const
+{
+	return NifItem::getArray<T>( arrayRootItem );
+}
+template <typename T> inline QVector<T> BaseModel::getArray( const NifItem * arrayParent, int arrayIndex ) const
+{
+	return NifItem::getArray<T>( getItem(arrayParent, arrayIndex) );
+}
+template <typename T> inline QVector<T> BaseModel::getArray( const NifItem * arrayParent, const QString & arrayName ) const
+{
+	return NifItem::getArray<T>( getItem(arrayParent, arrayName) );
+}
+template <typename T> inline QVector<T> BaseModel::getArray( const NifItem * arrayParent, const QLatin1String & arrayName ) const
+{
+	return NifItem::getArray<T>( getItem(arrayParent, arrayName) );
+}
+template <typename T> inline QVector<T> BaseModel::getArray( const NifItem * arrayParent, const char * arrayName ) const
+{
+	return NifItem::getArray<T>( getItem(arrayParent, QLatin1String(arrayName)) );
+}
 template <typename T> inline QVector<T> BaseModel::getArray( const QModelIndex & iArray ) const
 {
-	NifItem * item = static_cast<NifItem *>( iArray.internalPointer() );
-
-	if ( isArray( iArray ) && item && iArray.model() == this )
-		return item->getArray<T>();
-
-	return QVector<T>();
+	return NifItem::getArray<T>( getItem(iArray) );
 }
-
-template <typename T> inline QVector<T> BaseModel::getArray( const QModelIndex & iParent, const QString & name ) const
+template <typename T> inline QVector<T> BaseModel::getArray( const QModelIndex & arrayParent, int arrayIndex ) const
 {
-	return getArray<T>( getIndex( iParent, name ) );
+	return NifItem::getArray<T>( getItem(arrayParent, arrayIndex) );
+}
+template <typename T> inline QVector<T> BaseModel::getArray( const QModelIndex & arrayParent, const QString & arrayName ) const
+{
+	return NifItem::getArray<T>( getItem(arrayParent, arrayName));
+}
+template <typename T> inline QVector<T> BaseModel::getArray( const QModelIndex & arrayParent, const QLatin1String & arrayName ) const
+{
+	return NifItem::getArray<T>( getItem(arrayParent, arrayName) );
+}
+template <typename T> inline QVector<T> BaseModel::getArray( const QModelIndex & arrayParent, const char * arrayName ) const
+{
+	return NifItem::getArray<T>( getItem(arrayParent, QLatin1String(arrayName)) );
 }
 
+
+// Array setters
+
+template <typename T> inline void BaseModel::setArray( NifItem * arrayRootItem, const QVector<T> & array )
+{
+	if ( arrayRootItem ) {
+		arrayRootItem->setArray<T>( array );
+		onArrayValuesChange( arrayRootItem );
+	}
+}
+template <typename T> inline void BaseModel::setArray( const NifItem * arrayParent, int arrayIndex, const QVector<T> & array )
+{
+	setArray( getItem(arrayParent, arrayIndex, true), array );
+}
+template <typename T> inline void BaseModel::setArray( const NifItem * arrayParent, const QString & arrayName, const QVector<T> & array )
+{
+	setArray( getItem(arrayParent, arrayName, true), array );
+}
+template <typename T> inline void BaseModel::setArray( const NifItem * arrayParent, const QLatin1String & arrayName, const QVector<T> & array )
+{
+	setArray( getItem(arrayParent, arrayName, true), array );
+}
+template <typename T> inline void BaseModel::setArray( const NifItem * arrayParent, const char * arrayName, const QVector<T> & array )
+{
+	setArray( getItem(arrayParent, QLatin1String(arrayName), true), array );
+}
 template <typename T> inline void BaseModel::setArray( const QModelIndex & iArray, const QVector<T> & array )
 {
-	NifItem * item = static_cast<NifItem *>( iArray.internalPointer() );
-
-	if ( isArray( iArray ) && item && iArray.model() == this ) {
-		item->setArray<T>( array );
-		int x = item->childCount() - 1;
-
-		if ( x >= 0 )
-			emit dataChanged( createIndex( 0, ValueCol, item->child( 0 ) ), createIndex( x, ValueCol, item->child( x ) ) );
-	}
+	setArray( getItem(iArray), array );
+}
+template <typename T> inline void BaseModel::setArray( const QModelIndex & arrayParent, int arrayIndex, const QVector<T> & array )
+{
+	setArray( getItem(arrayParent, arrayIndex, true), array );
+}
+template <typename T> inline void BaseModel::setArray( const QModelIndex & arrayParent, const QString & arrayName, const QVector<T> & array )
+{
+	setArray( getItem(arrayParent, arrayName, true), array );
+}
+template <typename T> inline void BaseModel::setArray( const QModelIndex & arrayParent, const QLatin1String & arrayName, const QVector<T> & array )
+{
+	setArray( getItem(arrayParent, arrayName, true), array );
+}
+template <typename T> inline void BaseModel::setArray( const QModelIndex & arrayParent, const char * arrayName, const QVector<T> & array )
+{
+	setArray( getItem(arrayParent, QLatin1String(arrayName), true), array );
 }
 
-template <typename T> inline void BaseModel::setArray( const QModelIndex & iArray, const T & val )
+
+// Array fillers
+
+template <typename T> inline void BaseModel::fillArray( NifItem * arrayRootItem, const T & val )
 {
-	NifItem * item = static_cast<NifItem *>(iArray.internalPointer());
-
-	if ( isArray( iArray ) && item && iArray.model() == this ) {
-		item->setArray<T>( val );
-		int x = item->childCount() - 1;
-
-		if ( x >= 0 )
-			emit dataChanged( createIndex( 0, ValueCol, item->child( 0 ) ), createIndex( x, ValueCol, item->child( x ) ) );
+	if ( arrayRootItem ) {
+		arrayRootItem->fillArray<T>( val );
+		onArrayValuesChange( arrayRootItem );
 	}
 }
-
-template <typename T> inline void BaseModel::setArray( const QModelIndex & iParent, const QString & name, const QVector<T> & array )
+template <typename T> inline void BaseModel::fillArray( const NifItem * arrayParent, int arrayIndex, const T & val )
 {
-	setArray<T>( getIndex( iParent, name ), array );
+	fillArray( getItem(arrayParent, arrayIndex, true), val );
+}
+template <typename T> inline void BaseModel::fillArray( const NifItem * arrayParent, const QString & arrayName, const T & val )
+{
+	fillArray( getItem(arrayParent, arrayName, true), val );
+}
+template <typename T> inline void BaseModel::fillArray( const NifItem * arrayParent, const QLatin1String & arrayName, const T & val )
+{
+	fillArray( getItem(arrayParent, arrayName, true), val );
+}
+template <typename T> inline void BaseModel::fillArray( const NifItem * arrayParent, const char * arrayName, const T & val )
+{
+	fillArray( getItem(arrayParent, QLatin1String(arrayName), true), val );
+}
+template <typename T> inline void BaseModel::fillArray( const QModelIndex & iArray, const T & val )
+{
+	fillArray( getItem(iArray), val );
+}
+template <typename T> inline void BaseModel::fillArray( const QModelIndex & arrayParent, int arrayIndex, const T & val )
+{
+	fillArray( getItem(arrayParent, arrayIndex, true), val );
+}
+template <typename T> inline void BaseModel::fillArray( const QModelIndex & arrayParent, const QString & arrayName, const T & val )
+{
+	fillArray( getItem(arrayParent, arrayName, true), val );
+}
+template <typename T> inline void BaseModel::fillArray( const QModelIndex & arrayParent, const QLatin1String & arrayName, const T & val )
+{
+	fillArray( getItem(arrayParent, arrayName, true), val );
+}
+template <typename T> inline void BaseModel::fillArray( const QModelIndex & arrayParent, const char * arrayName, const T & val )
+{
+	fillArray( getItem(arrayParent, QLatin1String(arrayName), true), val );
 }
 
 #endif

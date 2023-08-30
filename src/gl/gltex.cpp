@@ -410,11 +410,10 @@ int TexCache::bind( const QString & fname, Game::GameMode game )
 
 int TexCache::bind( const QModelIndex & iSource, Game::GameMode game )
 {
-	const NifModel * nif = qobject_cast<const NifModel *>( iSource.model() );
-
-	if ( nif && iSource.isValid() ) {
+	auto nif = NifModel::fromValidIndex(iSource);
+	if ( nif ) {
 		if ( nif->get<quint8>( iSource, "Use External" ) == 0 ) {
-			QModelIndex iData = nif->getBlock( nif->getLink( iSource, "Pixel Data" ) );
+			QModelIndex iData = nif->getBlockIndex( nif->getLink( iSource, "Pixel Data" ) );
 
 			if ( iData.isValid() ) {
 				Tex * tx = embedTextures.value( iData );
@@ -478,11 +477,11 @@ void TexCache::setNifFolder( const QString & folder )
 QString TexCache::info( const QModelIndex & iSource )
 {
 	QString temp;
-	const NifModel * nif = qobject_cast<const NifModel *>( iSource.model() );
-
-	if ( nif && iSource.isValid() ) {
+	
+	auto nif = NifModel::fromValidIndex(iSource);
+	if ( nif ) {
 		if ( nif->get<quint8>( iSource, "Use External" ) == 0 ) {
-			QModelIndex iData = nif->getBlock( nif->getLink( iSource, "Pixel Data" ) );
+			QModelIndex iData = nif->getBlockIndex( nif->getLink( iSource, "Pixel Data" ) );
 
 			if ( iData.isValid() ) {
 				Tex * tx = embedTextures.value( iData );
@@ -524,7 +523,7 @@ bool TexCache::exportFile( const QModelIndex & iSource, QString & filepath )
 
 bool TexCache::importFile( NifModel * nif, const QModelIndex & iSource, QModelIndex & iData )
 {
-	//const NifModel * nif = qobject_cast<const NifModel *>( iSource.model() );
+	// auto nif = NifModel::fromIndex(iSource);
 	if ( nif && iSource.isValid() ) {
 		if ( nif->get<quint8>( iSource, "Use External" ) == 1 ) {
 			QString filename = nif->get<QString>( iSource, "File Name" );

@@ -152,6 +152,7 @@ HEADERS += \
 	src/gl/glparticles.h \
 	src/gl/glproperty.h \
 	src/gl/glscene.h \
+	src/gl/glshape.h \
 	src/gl/gltex.h \
 	src/gl/gltexloaders.h \
 	src/gl/gltools.h \
@@ -207,6 +208,7 @@ HEADERS += \
 	lib/half.h
 
 SOURCES += \
+	src/data/nifitem.cpp \
 	src/data/niftypes.cpp \
 	src/data/nifvalue.cpp \
 	src/gl/bsshape.cpp \
@@ -218,6 +220,7 @@ SOURCES += \
 	src/gl/glparticles.cpp \
 	src/gl/glproperty.cpp \
 	src/gl/glscene.cpp \
+	src/gl/glshape.cpp \
 	src/gl/gltex.cpp \
 	src/gl/gltexloaders.cpp \
 	src/gl/gltools.cpp \
@@ -483,7 +486,7 @@ win32:contains(QT_ARCH, i386) {
 }
 
 	XML += \
-		build/docsys/nifxml/nif.xml \
+		build/nif.xml \
 		build/docsys/kfmxml/kfm.xml
 
 	QSS += \
@@ -502,8 +505,7 @@ win32:contains(QT_ARCH, i386) {
 
 	copyDirs( $$SHADERS, shaders )
 	#copyDirs( $$LANG, lang )
-	copyFiles( $$QSS )
-	#copyFiles( $$XML )
+	copyFiles( $$XML $$QSS )
 
 	# Copy Readmes and rename to TXT
 	copyFiles( $$READMES,,,, md:txt )

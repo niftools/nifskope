@@ -413,7 +413,7 @@ QModelIndex NifProxyModel::mapTo( const QModelIndex & idx ) const
 	if ( !item )
 		return QModelIndex();
 
-	QModelIndex nifidx = nif->getBlock( item->block() );
+	QModelIndex nifidx = nif->getBlockIndex( item->block() );
 
 	if ( nifidx.isValid() )
 		nifidx = nifidx.sibling( nifidx.row(), ( idx.column() ? NifModel::ValueCol : NifModel::NameCol ) );

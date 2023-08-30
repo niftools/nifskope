@@ -103,7 +103,6 @@ public:
 	// IControllable
 
 	void clear() override;
-	void update( const NifModel * nif, const QModelIndex & block ) override;
 	void transform() override;
 
 	// end IControllable
@@ -149,6 +148,8 @@ public slots:
 
 protected:
 	void setController( const NifModel * nif, const QModelIndex & controller ) override;
+	void updateImpl( const NifModel * nif, const QModelIndex & block ) override;
+
 	// Old Options API
 	//	TODO: Move away from the GL-like naming
 	void glHighlightColor() const;
@@ -198,7 +199,6 @@ public:
 	// IControllable
 
 	void clear() override;
-	void update( const NifModel * nif, const QModelIndex & block ) override;
 	void transform() override;
 
 	// end IControllable
@@ -208,6 +208,8 @@ protected:
 	QPersistentModelIndex iData;
 
 	Vector3 center;
+
+	void updateImpl( const NifModel * nif, const QModelIndex & block ) override;
 };
 
 //! A Node that always faces the camera

@@ -25,21 +25,21 @@ public:
 
 	static QModelIndex getShapeData( const NifModel * nif, const QModelIndex & index )
 	{
-		QModelIndex iData = nif->getBlock( index );
+		QModelIndex iData = nif->getBlockIndex( index );
 
 		if ( nif->isNiBlock( index, { "NiTriShape", "BSLODTriShape", "NiTriStrips" } ) )
-			iData = nif->getBlock( nif->getLink( index, "Data" ) );
+			iData = nif->getBlockIndex( nif->getLink( index, "Data" ) );
 
 		if ( nif->isNiBlock( iData, { "NiTriShapeData", "NiTriStripsData" } ) )
 			return iData;
 
 		if ( nif->isNiBlock( index, { "BSTriShape", "BSMeshLODTriShape", "BSSubIndexTriShape", "BSDynamicTriShape" } ) ) {
 			auto vf = nif->get<BSVertexDesc>( index, "Vertex Desc" );
-			if ( (vf & VertexFlags::VF_SKINNED) && nif->getUserVersion2() == 100 ) {
+			if ( (vf & VertexFlags::VF_SKINNED) && nif->getBSVersion() == 100 ) {
 				// Skinned SSE
 				auto skinID = nif->getLink( nif->getIndex( index, "Skin" ) );
-				auto partID = nif->getLink( nif->getBlock( skinID, "NiSkinInstance" ), "Skin Partition" );
-				auto iPartBlock = nif->getBlock( partID, "NiSkinPartition" );
+				auto partID = nif->getLink( nif->getBlockIndex( skinID, "NiSkinInstance" ), "Skin Partition" );
+				auto iPartBlock = nif->getBlockIndex( partID, "NiSkinPartition" );
 				if ( iPartBlock.isValid() )
 					return nif->getIndex( iPartBlock, "Vertex Data" );
 			}
@@ -76,7 +76,7 @@ public:
 			}
 		};
 
-		if ( nif->getUserVersion2() < 100 ) {
+		if ( nif->getBSVersion() < 100 ) {
 			QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
 			QVector<Triangle> triangles;
 			QModelIndex iPoints = nif->getIndex( iData, "Points" );
@@ -98,13 +98,13 @@ public:
 			faceNormals( verts, triangles, norms );
 
 			nif->set<int>( iData, "Has Normals", 1 );
-			nif->updateArray( iData, "Normals" );
+			nif->updateArraySize( iData, "Normals" );
 			nif->setArray<Vector3>( iData, "Normals", norms );
 		} else {
 			QVector<Triangle> triangles;
 			int numVerts;
 			auto vf = nif->get<BSVertexDesc>( index, "Vertex Desc" );
-			if ( !((vf & VertexFlags::VF_SKINNED) && nif->getUserVersion2() == 100) ) {
+			if ( !((vf & VertexFlags::VF_SKINNED) && nif->getBSVersion() == 100) ) {
 				numVerts = nif->get<int>( index, "Num Vertices" );
 				triangles = nif->getArray<Triangle>( index, "Triangles" );
 			} else {
@@ -204,12 +204,12 @@ public:
 
 		int numVerts = 0;
 
-		if ( nif->getUserVersion2() < 100 ) {
+		if ( nif->getBSVersion() < 100 ) {
 			verts = nif->getArray<Vector3>( iData, "Vertices" );
 			norms = nif->getArray<Vector3>( iData, "Normals" );
 		} else {
 			auto vf = nif->get<BSVertexDesc>( index, "Vertex Desc" );
-			if ( !((vf & VertexFlags::VF_SKINNED) && nif->getUserVersion2() == 100) ) {
+			if ( !((vf & VertexFlags::VF_SKINNED) && nif->getBSVersion() == 100) ) {
 				numVerts = nif->get<int>( index, "Num Vertices" );
 			} else {
 				// Skinned SSE
@@ -304,7 +304,7 @@ public:
 		for ( int i = 0; i < verts.count(); i++ )
 			snorms[i].normalize();
 
-		if ( nif->getUserVersion2() < 100 ) {
+		if ( nif->getBSVersion() < 100 ) {
 			nif->setArray<Vector3>( iData, "Normals", snorms );
 		} else {
 			// Pause updates between model/view

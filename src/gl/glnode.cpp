@@ -202,7 +202,6 @@ Node::Node( Scene * s, const QModelIndex & index ) : IControllable( s, index ), 
 	connect( NifSkope::getOptions(), &SettingsDialog::saveSettings, this, &Node::updateSettings );
 }
 
-
 void Node::updateSettings()
 {
 	QSettings settings;
@@ -282,51 +281,39 @@ Controller * Node::findController( const QString & proptype, const QModelIndex &
 	return c;
 }
 
-void Node::update( const NifModel * nif, const QModelIndex & index )
+void Node::updateImpl( const NifModel * nif, const QModelIndex & index )
 {
-	IControllable::update( nif, index );
-
-	if ( !iBlock.isValid() ) {
-		clear();
-		return;
-	}
+	IControllable::updateImpl( nif, index );
 
 	nodeId = nif->getBlockNumber( iBlock );
 
 	if ( iBlock == index ) {
 		flags.bits = nif->get<int>( iBlock, "Flags" );
 		local = Transform( nif, iBlock );
-	}
 
-	if ( iBlock == index || !index.isValid() ) {
-		PropertyList newProps;
-		for ( const auto l : nif->getLinkArray( iBlock, "Properties" ) ) {
-			if ( Property * p = scene->getProperty( nif, nif->getBlock( l ) ) )
-				newProps.add( p );
-		}
+		// Properties
+		properties.clear();
+		for ( auto l : nif->getLinkArray(iBlock, "Properties") )
+			properties.add( scene->getProperty(nif, nif->getBlockIndex(l)) );
 
-		if ( Property * p = scene->getProperty( nif, nif->getBlock( nif->getLink( iBlock, "Shader Property" ) ) ) )
-			newProps.add( p );
+		properties.add( scene->getProperty(nif, iBlock, "Shader Property", "BSShaderProperty") );
+		properties.add( scene->getProperty(nif, iBlock, "Alpha Property", "NiAlphaProperty") );
 
-		if ( Property * p = scene->getProperty( nif, nif->getBlock( nif->getLink( iBlock, "Alpha Property" ) ) ) )
-			newProps.add( p );
-
-		properties = newProps;
-
+		// Children
 		children.clear();
 		QModelIndex iChildren = nif->getIndex( iBlock, "Children" );
-		QList<qint32> lChildren = nif->getChildLinks( nif->getBlockNumber( iBlock ) );
-
 		if ( iChildren.isValid() ) {
-			for ( int c = 0; c < nif->rowCount( iChildren ); c++ ) {
-				qint32 link = nif->getLink( iChildren.child( c, 0 ) );
+			int nChildren = nif->rowCount(iChildren);
+			if ( nChildren > 0 ) {
+				QList<qint32> lChildren = nif->getChildLinks( nodeId );
+				for ( int c = 0; c < nChildren; c++ ) {
+					qint32 link = nif->getLink( iChildren.child( c, 0 ) );
 
-				if ( lChildren.contains( link ) ) {
-					QModelIndex iChild = nif->getBlock( link );
-					Node * node = scene->getNode( nif, iChild );
-
-					if ( node ) {
-						node->makeParent( this );
+					if ( lChildren.contains( link ) ) {
+						QModelIndex iChild = nif->getBlockIndex( link );
+						Node * node = scene->getNode( nif, iChild );
+						if ( node )
+							node->makeParent( this );
 					}
 				}
 			}
@@ -351,24 +338,19 @@ void Node::setController( const NifModel * nif, const QModelIndex & iController 
 
 	if ( cname == "NiTransformController" ) {
 		Controller * ctrl = new TransformController( this, iController );
-		ctrl->update( nif, iController );
-		controllers.append( ctrl );
+		registerController(nif, ctrl);
 	} else if ( cname == "NiMultiTargetTransformController" ) {
 		Controller * ctrl = new MultiTargetTransformController( this, iController );
-		ctrl->update( nif, iController );
-		controllers.append( ctrl );
+		registerController(nif, ctrl);
 	} else if ( cname == "NiControllerManager" ) {
 		Controller * ctrl = new ControllerManager( this, iController );
-		ctrl->update( nif, iController );
-		controllers.append( ctrl );
+		registerController(nif, ctrl);
 	} else if ( cname == "NiKeyframeController" ) {
 		Controller * ctrl = new KeyframeController( this, iController );
-		ctrl->update( nif, iController );
-		controllers.append( ctrl );
+		registerController(nif, ctrl);
 	} else if ( cname == "NiVisController" ) {
 		Controller * ctrl = new VisibilityController( this, iController );
-		ctrl->update( nif, iController );
-		controllers.append( ctrl );
+		registerController(nif, ctrl);
 	}
 }
 
@@ -474,12 +456,12 @@ Node * Node::findChild( const QString & str ) const
 
 bool Node::isHidden() const
 {
-	if ( scene->options & Scene::ShowHidden )
+	if ( scene->hasOption(Scene::ShowHidden) )
 		return false;
-
-	if ( flags.node.hidden || ( parent && parent->isHidden() ) )
+	if ( flags.node.hidden )
 		return true;
-
+	if ( parent && parent->isHidden() )
+		return true;
 	return false; /*!Options::cullExpression().pattern().isEmpty() && name.contains( Options::cullExpression() );*/
 }
 
@@ -489,12 +471,11 @@ void Node::transform()
 
 	// if there's a rigid body attached, then calculate and cache the body's transform
 	// (need this later in the drawing stage for the constraints)
-	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
-
-	if ( iBlock.isValid() && nif ) {
-		QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );
-		if ( nif->getUserVersion2() > 0 && iObject.isValid() ) {
-			QModelIndex iBody = nif->getBlock( nif->getLink( iObject, "Body" ) );
+	auto nif = NifModel::fromValidIndex( iBlock );
+	if ( nif && nif->getBSVersion() > 0 ) {
+		QModelIndex iObject = nif->getBlockIndex( nif->getLink( iBlock, "Collision Object" ) );
+		if ( iObject.isValid() ) {
+			QModelIndex iBody = nif->getBlockIndex( nif->getLink( iObject, "Body" ) );
 
 			if ( iBody.isValid() ) {
 				Transform t;
@@ -528,7 +509,7 @@ void Node::draw()
 	if ( isHidden() || iBlock == scene->currentBlock )
 		return;
 
-	if ( !(scene->selMode & Scene::SelObject) )
+	if ( !scene->isSelModeObject() )
 		return;
 
 	if ( Node::SELECTING ) {
@@ -581,15 +562,15 @@ void Node::draw()
 
 void Node::drawSelection() const
 {
-	auto nif = static_cast<const NifModel *>(scene->currentIndex.model());
+	auto nif = NifModel::fromIndex( scene->currentIndex );
 	if ( !nif )
 		return;
 
-	if ( !(scene->selMode & Scene::SelObject) )
+	if ( !scene->isSelModeObject() )
 		return;
 
 	bool extraData = false;
-	auto currentBlock = nif->getBlockName( scene->currentBlock );
+	auto currentBlock = nif->itemName( scene->currentBlock );
 	if ( currentBlock == "BSConnectPoint::Parents" )
 		extraData = nif->getBlockNumber( iBlock ) == 0; // Root Node only
 
@@ -675,7 +656,7 @@ void Node::drawSelection() const
 
 	}
 
-	if ( currentBlock.endsWith( "Node" ) && scene->options & Scene::ShowNodes && scene->options & Scene::ShowAxes ) {
+	if ( currentBlock.endsWith( "Node" ) && scene->hasOption(Scene::ShowNodes) && scene->hasOption(Scene::ShowAxes) ) {
 		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
 		Transform t;
@@ -774,7 +755,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	if ( (!nif || !iShape.isValid() || stack.contains( iShape )) && !extraData )
 		return;
 
-	if ( !(scene->selMode & Scene::SelObject) )
+	if ( !scene->isSelModeObject() )
 		return;
 
 	stack.push( iShape );
@@ -787,7 +768,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		if ( iShapes.isValid() ) {
 			for ( int r = 0; r < nif->rowCount( iShapes ); r++ ) {
 				if ( !Node::SELECTING ) {
-					if ( scene->currentBlock == nif->getBlock( nif->getLink( iShapes.child( r, 0 ) ) ) ) {
+					if ( scene->currentBlock == nif->getBlockIndex( nif->getLink( iShapes.child( r, 0 ) ) ) ) {
 						// fix: add selected visual to havok meshes
 						glHighlightColor();
 						glLineWidth( 2.5 );
@@ -800,7 +781,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 					}
 				}
 
-				drawHvkShape( nif, nif->getBlock( nif->getLink( iShapes.child( r, 0 ) ) ), stack, scene, origin_color3fv );
+				drawHvkShape( nif, nif->getBlockIndex( nif->getLink( iShapes.child( r, 0 ) ) ), stack, scene, origin_color3fv );
 			}
 		}
 	} else if ( name == "bhkTransformShape" || name == "bhkConvexTransformShape" ) {
@@ -812,7 +793,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		tm.decompose( t.translation, t.rotation, s );
 		t.scale = (s[0] + s[1] + s[2]) / 3.0; // assume uniform
 		glMultMatrix( t );
-		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack, scene, origin_color3fv );
+		drawHvkShape( nif, nif->getBlockIndex( nif->getLink( iShape, "Shape" ) ), stack, scene, origin_color3fv );
 		glPopMatrix();
 	} else if ( name == "bhkSphereShape" ) {
 		if ( Node::SELECTING ) {
@@ -886,7 +867,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 
 	} else if ( name == "bhkMoppBvTreeShape" ) {
 		if ( !Node::SELECTING ) {
-			if ( scene->currentBlock == nif->getBlock( nif->getLink( iShape, "Shape" ) ) ) {
+			if ( scene->currentBlock == nif->getBlockIndex( nif->getLink( iShape, "Shape" ) ) ) {
 				// fix: add selected visual to havok meshes
 				glHighlightColor();
 				glLineWidth( 1.5f ); // taken from "DrawTriangleSelection"
@@ -896,14 +877,14 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 			}
 		}
 
-		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack, scene, origin_color3fv );
+		drawHvkShape( nif, nif->getBlockIndex( nif->getLink( iShape, "Shape" ) ), stack, scene, origin_color3fv );
 	} else if ( name == "bhkPackedNiTriStripsShape" || name == "hkPackedNiTriStripsData" ) {
 		if ( Node::SELECTING ) {
 			int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iShape ) );
 			glColor4ubv( (GLubyte *)&s_nodeId );
 		}
 
-		QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
+		QModelIndex iData = nif->getBlockIndex( nif->getLink( iShape, "Data" ) );
 
 		if ( iData.isValid() ) {
 			QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
@@ -942,11 +923,11 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 
 						//for ( int t = 0; t < nif->rowCount( iTris ); t++ )
 						//	DrawTriangleIndex( verts, nif->get<Triangle>( iTris.child( t, 0 ), "Triangle" ), t );
-					} else if ( nif->isCompound( nif->getBlockType( scene->currentIndex ) ) ) {
+					} else if ( nif->isCompound( nif->itemType( scene->currentIndex ) ) ) {
 						Triangle tri = nif->get<Triangle>( iTris.child( i, 0 ), "Triangle" );
 						DrawTriangleSelection( verts, tri );
 						//DrawTriangleIndex( verts, tri, i );
-					} else if ( nif->getBlockName( scene->currentIndex ) == "Normal" ) {
+					} else if ( nif->itemName( scene->currentIndex ) == "Normal" ) {
 						Triangle tri = nif->get<Triangle>( scene->currentIndex.parent(), "Triangle" );
 						Vector3 triCentre = ( verts.value( tri.v1() ) + verts.value( tri.v2() ) + verts.value( tri.v3() ) ) /  3.0;
 						glLineWidth( 1.5f );
@@ -966,7 +947,6 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 					int totalVerts = 0;
 					if ( num_vertices > 0 ) {
 						QModelIndex iParent = scene->currentIndex.parent();
-						int rowCount = nif->rowCount( iParent );
 						for ( int j = 0; j < i; j++ ) {
 							totalVerts += nif->get<int>( iParent.child( j, 0 ), "Num Vertices" );
 						}
@@ -1063,10 +1043,10 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 
 void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, const Scene * scene )
 {
-	if ( !( nif && iConstraint.isValid() && scene && (scene->options & Scene::ShowConstraints) ) )
+	if ( !( nif && iConstraint.isValid() && scene && scene->hasOption(Scene::ShowConstraints) ) )
 		return;
 
-	if ( !(scene->selMode & Scene::SelObject) )
+	if ( !scene->isSelModeObject() )
 		return;
 
 	Transform tBodyA;
@@ -1099,7 +1079,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		glColor4ubv( (GLubyte *)&s_nodeId );
 		glLineWidth( 5 ); // make hitting a line a litlle bit more easy
 	} else {
-		if ( scene->currentBlock == nif->getBlock( iConstraint ) ) {
+		if ( scene->currentBlock == nif->getBlockIndex( iConstraint ) ) {
 			// fix: add selected visual to havok meshes
 			glHighlightColor();
 			color_a.fromQColor( highlightColor );
@@ -1369,7 +1349,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 
 void Node::drawHavok()
 {
-	if ( !(scene->selMode & Scene::SelObject) )
+	if ( !scene->isSelModeObject() )
 		return;
 
 	// TODO: Why are all these here - "drawNodes", "drawFurn", "drawHavok"?
@@ -1378,9 +1358,8 @@ void Node::drawHavok()
 		node->drawHavok();
 	}
 
-	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
-
-	if ( !( iBlock.isValid() && nif ) )
+	auto nif = NifModel::fromValidIndex(iBlock);
+	if ( !nif )
 		return;
 
 	//Check if there's any old style collision bounding box set
@@ -1416,14 +1395,14 @@ void Node::drawHavok()
 	}
 
 	// Only Bethesda support after this
-	if ( nif->getUserVersion2() == 0 )
+	if ( nif->getBSVersion() == 0 )
 		return;
 
 	// Draw BSMultiBound
-	auto iBSMultiBound = nif->getBlock( nif->getLink( iBlock, "Multi Bound" ), "BSMultiBound" );
+	auto iBSMultiBound = nif->getBlockIndex( nif->getLink( iBlock, "Multi Bound" ), "BSMultiBound" );
 	if ( iBSMultiBound.isValid() ) {
 
-		auto iBSMultiBoundData = nif->getBlock( nif->getLink( iBSMultiBound, "Data" ), "BSMultiBoundData" );
+		auto iBSMultiBoundData = nif->getBlockIndex( nif->getLink( iBSMultiBound, "Data" ), "BSMultiBoundData" );
 		if ( iBSMultiBoundData.isValid() ) {
 
 			Vector3 a, b;
@@ -1476,7 +1455,7 @@ void Node::drawHavok()
 
 	if ( iExtraDataList.isValid() ) {
 		for ( int d = 0; d < nif->rowCount( iExtraDataList ); d++ ) {
-			QModelIndex iBound = nif->getBlock( nif->getLink( iExtraDataList.child( d, 0 ) ), "BSBound" );
+			QModelIndex iBound = nif->getBlockIndex( nif->getLink( iExtraDataList.child( d, 0 ) ), "BSBound" );
 
 			if ( !iBound.isValid() )
 				continue;
@@ -1504,11 +1483,11 @@ void Node::drawHavok()
 		}
 	}
 
-	QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );
+	QModelIndex iObject = nif->getBlockIndex( nif->getLink( iBlock, "Collision Object" ) );
 	if ( !iObject.isValid() )
 		return;
 
-	QModelIndex iBody = nif->getBlock( nif->getLink( iObject, "Body" ) );
+	QModelIndex iBody = nif->getBlockIndex( nif->getLink( iObject, "Body" ) );
 
 	glPushMatrix();
 	glLoadMatrix( scene->view );
@@ -1548,7 +1527,7 @@ void Node::drawHavok()
 	glColor3fv( colors[ color_index ] );
 
 	if ( !Node::SELECTING ) {
-		if ( scene->currentBlock == nif->getBlock( nif->getLink( iBody, "Shape" ) ) ) {
+		if ( scene->currentBlock == nif->getBlockIndex( nif->getLink( iBody, "Shape" ) ) ) {
 			// fix: add selected visual to havok meshes
 			glHighlightColor(); // TODO: idea: I do not recommend mimicking the Open GL API
 			                    // It confuses the one who reads the code. And the Open GL API is
@@ -1563,24 +1542,24 @@ void Node::drawHavok()
 	if ( Node::SELECTING )
 		glLineWidth( 5 ); // make selection click a little more easy
 
-	drawHvkShape( nif, nif->getBlock( nif->getLink( iBody, "Shape" ) ), shapeStack, scene, colors[ color_index ] );
+	drawHvkShape( nif, nif->getBlockIndex( nif->getLink( iBody, "Shape" ) ), shapeStack, scene, colors[ color_index ] );
 
-	if ( Node::SELECTING && scene->options & Scene::ShowAxes ) {
+	if ( Node::SELECTING && scene->hasOption(Scene::ShowAxes) ) {
 		int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iBody ) );
 		glColor4ubv( (GLubyte *)&s_nodeId );
 		glDepthFunc( GL_ALWAYS );
 		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ), 1.0f / bhkScaleMult( nif ), false );
 		glDepthFunc( GL_LEQUAL );
-	} else if ( scene->options & Scene::ShowAxes ) {
+	} else if ( scene->hasOption(Scene::ShowAxes) ) {
 		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ), 1.0f / bhkScaleMult( nif ) );
 	}
 
 	glPopMatrix();
 
 	for ( const auto l : nif->getLinkArray( iBody, "Constraints" ) ) {
-		QModelIndex iConstraint = nif->getBlock( l );
+		QModelIndex iConstraint = nif->getBlockIndex( l );
 
-		if ( nif->inherits( iConstraint, "bhkConstraint" ) )
+		if ( nif->blockInherits( iConstraint, "bhkConstraint" ) )
 			drawHvkConstraint( nif, iConstraint, scene );
 	}
 }
@@ -1774,12 +1753,11 @@ void Node::drawFurn()
 		node->drawFurn();
 	}
 
-	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
-
-	if ( !( iBlock.isValid() && nif ) )
+	auto nif = NifModel::fromValidIndex(iBlock);
+	if ( !nif )
 		return;
 
-	if ( !(scene->selMode & Scene::SelObject) )
+	if ( !scene->isSelModeObject() )
 		return;
 
 	QModelIndex iExtraDataList = nif->getIndex( iBlock, "Extra Data List" );
@@ -1810,7 +1788,7 @@ void Node::drawFurn()
 
 	for ( int p = 0; p < nif->rowCount( iExtraDataList ); p++ ) {
 		// DONE: never seen Furn in nifs, so there may be a need of a fix here later - saw one, fixed a bug
-		QModelIndex iFurnMark = nif->getBlock( nif->getLink( iExtraDataList.child( p, 0 ) ), "BSFurnitureMarker" );
+		QModelIndex iFurnMark = nif->getBlockIndex( nif->getLink( iExtraDataList.child( p, 0 ) ), "BSFurnitureMarker" );
 
 		if ( !iFurnMark.isValid() )
 			continue;
@@ -1840,11 +1818,11 @@ void Node::drawShapes( NodeList * secondPass, bool presort )
 	if ( isHidden() )
 		return;
 
-	const NifModel * nif = static_cast<const NifModel *>(iBlock.model());
+	auto nif = NifModel::fromIndex( iBlock );
 	
 	// BSOrderedNode support
 	//	Only set if true (|=) so that it propagates to all children
-	presort |= nif->getBlock( iBlock, "BSOrderedNode" ).isValid();
+	presort |= nif->getBlockIndex( iBlock, "BSOrderedNode" ).isValid();
 
 	presorted = presort;
 	if ( presorted )
@@ -1878,16 +1856,13 @@ BoundSphere Node::bounds() const
 {
 	BoundSphere boundsphere;
 
-	auto opts = scene->options;
-
 	// the node itself
-	if ( (opts & Scene::ShowNodes) || (opts & Scene::ShowCollision) ) {
+	if ( scene->hasOption(Scene::ShowNodes) || scene->hasOption(Scene::ShowCollision) ) {
 		boundsphere |= BoundSphere( worldTrans().translation, 0 );
 	}
 
-	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
-
-	if ( !( iBlock.isValid() && nif ) )
+	auto nif = NifModel::fromValidIndex(iBlock);
+	if ( !nif )
 		return boundsphere;
 
 	// old style collision bounding box
@@ -1898,7 +1873,7 @@ BoundSphere Node::bounds() const
 		boundsphere |= BoundSphere( trans, rad.length() );
 	}
 
-	if ( nif->getBlockType( iBlock ) == "NiMesh" )
+	if ( nif->itemType( iBlock ) == "NiMesh" )
 		boundsphere |= BoundSphere( nif, iBlock );
 
 	// BSBound collision bounding box
@@ -1906,7 +1881,7 @@ BoundSphere Node::bounds() const
 
 	if ( iExtraDataList.isValid() ) {
 		for ( int d = 0; d < nif->rowCount( iExtraDataList ); d++ ) {
-			QModelIndex iBound = nif->getBlock( nif->getLink( iExtraDataList.child( d, 0 ) ), "BSBound" );
+			QModelIndex iBound = nif->getBlockIndex( nif->getLink( iExtraDataList.child( d, 0 ) ), "BSBound" );
 
 			if ( !iBound.isValid() )
 				continue;
@@ -1932,13 +1907,13 @@ void LODNode::clear()
 	ranges.clear();
 }
 
-void LODNode::update( const NifModel * nif, const QModelIndex & index )
+void LODNode::updateImpl( const NifModel * nif, const QModelIndex & index )
 {
-	Node::update( nif, index );
+	Node::updateImpl( nif, index );
 
-	if ( ( iBlock.isValid() && index == iBlock ) || ( iData.isValid() && index == iData ) ) {
+	if ( ( index == iBlock ) || ( iData.isValid() && index == iData ) ) {
 		ranges.clear();
-		iData = nif->getBlock( nif->getLink( iBlock, "LOD Level Data" ), "NiRangeLODData" );
+		iData = nif->getBlockIndex( nif->getLink( iBlock, "LOD Level Data" ), "NiRangeLODData" );
 		QModelIndex iLevels;
 
 		if ( iData.isValid() ) {
@@ -1956,8 +1931,6 @@ void LODNode::update( const NifModel * nif, const QModelIndex & index )
 				);
 			}
 		}
-
-
 	}
 }
 

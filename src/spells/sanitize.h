@@ -35,12 +35,12 @@ public:
 	bool constant() const override { return true; }
 	bool checker() const override { return true; }
 
-	bool isApplicable(const NifModel *, const QModelIndex & index) override
+	bool isApplicable(const NifModel *, const QModelIndex &) override
 	{
 		return false;
 	}
 
-	QModelIndex cast(NifModel * nif, const QModelIndex &) override { return {};	}
+	QModelIndex cast(NifModel *, const QModelIndex &) override { return {};	}
 
 	static QString message() { return {}; }
 };

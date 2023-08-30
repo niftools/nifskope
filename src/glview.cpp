@@ -35,7 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "message.h"
 #include "nifskope.h"
 #include "gl/renderer.h"
-#include "gl/glmesh.h"
+#include "gl/glshape.h"
 #include "gl/gltex.h"
 #include "model/nifmodel.h"
 #include "ui/settingsdialog.h"
@@ -87,6 +87,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define ZOOM_MIN 1.0
 #define ZOOM_MAX 1000.0
+#define ZOOM_PAGE_KEY_MULT 1.025
+
+#define ZOOM_QE_KEY_MULT 1.025 
+#define ZOOM_MOUSE_WHEEL_MULT 0.95
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932385
@@ -296,7 +300,7 @@ void GLView::initializeGL()
 {
 	GLenum err;
 	
-	if ( scene->options & Scene::DoMultisampling ) {
+	if ( scene->hasOption(Scene::DoMultisampling) ) {
 		if ( !glContext->hasExtension( "GL_EXT_framebuffer_multisample" ) ) {
 			scene->options &= ~Scene::DoMultisampling;
 			//qDebug() << "System does not support multisampling";
@@ -341,7 +345,7 @@ void GLView::glProjection( int x, int y )
 
 	BoundSphere bs = scene->view * scene->bounds();
 
-	if ( scene->options & Scene::ShowAxes ) {
+	if ( scene->hasOption(Scene::ShowAxes) ) {
 		bs |= BoundSphere( scene->view * Vector3(), axis );
 	}
 
@@ -400,7 +404,6 @@ void GLView::paintGL()
 {
 #endif
 	
-
 	// Save GL state
 	glPushAttrib( GL_ALL_ATTRIB_BITS );
 	glMatrixMode( GL_PROJECTION );
@@ -409,7 +412,7 @@ void GLView::paintGL()
 	glPushMatrix();
 
 	// Clear Viewport
-	if ( scene->visMode & Scene::VisSilhouette ) {
+	if ( scene->hasVisMode(Scene::VisSilhouette) ) {
 		qglClearColor( QColor( 255, 255, 255, 255 ) );
 	}
 
@@ -471,7 +474,7 @@ void GLView::paintGL()
 	glLoadIdentity();
 
 	// Draw the grid
-	if ( scene->options & Scene::ShowGrid ) {
+	if ( scene->hasOption(Scene::ShowGrid) ) {
 		glDisable( GL_ALPHA_TEST );
 		glDisable( GL_BLEND );
 		glDisable( GL_LIGHTING );
@@ -515,7 +518,7 @@ void GLView::paintGL()
 
 	GLfloat mat_spec[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
-	if ( scene->options & Scene::DoLighting ) {
+	if ( scene->hasOption(Scene::DoLighting) ) {
 		// Setup light
 		Vector4 lightDir( 0.0, 0.0, 1.0, 0.0 );
 
@@ -526,7 +529,7 @@ void GLView::paintGL()
 			v = m * v;
 			lightDir = Vector4( viewTrans.rotation * v, 0.0 );
 
-			if ( scene->visMode & Scene::VisLightPos ) {
+			if ( scene->hasVisMode(Scene::VisLightPos) ) {
 				glEnable( GL_BLEND );
 				glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 				glEnable( GL_DEPTH_TEST );
@@ -553,10 +556,7 @@ void GLView::paintGL()
 		}
 
 		float amb = ambient;
-		if ( (scene->visMode & Scene::VisNormalsOnly)
-			&& (scene->options & Scene::DoTexturing)
-			&& !(scene->options & Scene::DisableShaders) )
-		{
+		if ( scene->hasVisMode(Scene::VisNormalsOnly) && scene->hasOption(Scene::DoTexturing) && !scene->hasOption(Scene::DisableShaders) ) {
 			amb = 0.1f;
 		}
 		
@@ -572,10 +572,7 @@ void GLView::paintGL()
 		glLightfv( GL_LIGHT0, GL_SPECULAR, mat_diff );
 		glLightfv( GL_LIGHT0, GL_POSITION, lightDir.data() );
 	} else {
-		float amb = 0.5f;
-		if ( scene->options & Scene::DisableShaders ) {
-			amb = 0.0f;
-		}
+		float amb = scene->hasOption(Scene::DisableShaders) ? 0.0f : 0.5f;
 
 		GLfloat mat_amb[] = { amb, amb, amb, 1.0f };
 		GLfloat mat_diff[] = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -589,7 +586,7 @@ void GLView::paintGL()
 		glLightfv( GL_LIGHT0, GL_SPECULAR, mat_spec );
 	}
 
-	if ( scene->visMode & Scene::VisSilhouette ) {
+	if ( scene->hasVisMode(Scene::VisSilhouette) ) {
 		GLfloat mat_diff[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 		GLfloat mat_amb[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
@@ -603,7 +600,7 @@ void GLView::paintGL()
 		glLightfv( GL_LIGHT0, GL_SPECULAR, mat_spec );
 	}
 
-	if ( scene->options & Scene::DoMultisampling )
+	if ( scene->hasOption(Scene::DoMultisampling) )
 		glEnable( GL_MULTISAMPLE_ARB );
 
 #ifndef QT_NO_DEBUG
@@ -630,7 +627,7 @@ void GLView::paintGL()
 	// Draw the model
 	scene->draw();
 
-	if ( scene->options & Scene::ShowAxes ) {
+	if ( scene->hasOption(Scene::ShowAxes) ) {
 		// Resize viewport to small corner of screen
 		int axesSize = std::min( width() / 10, 125 );
 		glViewport( 0, 0, axesSize, axesSize );
@@ -851,7 +848,7 @@ int indexAt( /*GLuint *buffer,*/ NifModel * model, Scene * scene, QList<DrawFunc
 
 	// Pick BSFurnitureMarker
 	if ( choose > 0 ) {
-		auto furnBlock = model->getBlock( model->index( 3, 0, model->getBlock( choose & 0x0ffff ) ), "BSFurnitureMarker" );
+		auto furnBlock = model->getBlockIndex( model->index( 3, 0, model->getBlockIndex( choose & 0x0ffff ) ), "BSFurnitureMarker" );
 
 		if ( furnBlock.isValid() ) {
 			furn = choose >> 16;
@@ -883,13 +880,13 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 
 	QList<DrawFunc> df;
 
-	if ( scene->options & Scene::ShowCollision )
+	if ( scene->hasOption(Scene::ShowCollision) )
 		df << &Scene::drawHavok;
 
-	if ( scene->options & Scene::ShowNodes )
+	if ( scene->hasOption(Scene::ShowNodes) )
 		df << &Scene::drawNodes;
 
-	if ( scene->options & Scene::ShowMarkers )
+	if ( scene->hasOption(Scene::ShowMarkers) )
 		df << &Scene::drawFurn;
 
 	df << &Scene::drawShapes;
@@ -905,7 +902,7 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 
 	QModelIndex chooseIndex;
 
-	if ( scene->selMode & Scene::SelVertex ) {
+	if ( scene->isSelModeVertex() ) {
 		// Vertex
 		int block = choose >> 16;
 		int vert = choose - (block << 16);
@@ -915,7 +912,7 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 			chooseIndex = shape->vertexAt( vert );
 	} else if ( choose != -1 ) {
 		// Block Index
-		chooseIndex = model->getBlock( choose );
+		chooseIndex = model->getBlockIndex( choose );
 
 		if ( furn != -1 ) {
 			// Furniture Row @ Block Index
@@ -943,19 +940,6 @@ void GLView::rotate( float x, float y, float z )
 {
 	Rot += Vector3( x, y, z );
 	updateViewpoint();
-	update();
-}
-
-void GLView::zoom( float z )
-{
-	Zoom *= z;
-
-	if ( Zoom < ZOOM_MIN )
-		Zoom = ZOOM_MIN;
-
-	if ( Zoom > ZOOM_MAX )
-		Zoom = ZOOM_MAX;
-
 	update();
 }
 
@@ -1021,6 +1005,13 @@ void GLView::setRotation( float x, float y, float z )
 void GLView::setZoom( float z )
 {
 	Zoom = z;
+
+	if (Zoom < ZOOM_MIN)
+		Zoom = ZOOM_MIN;
+
+	if (Zoom > ZOOM_MAX)
+		Zoom = ZOOM_MAX;
+
 	update();
 }
 
@@ -1148,7 +1139,7 @@ void GLView::setCurrentIndex( const QModelIndex & index )
 	if ( !( model && index.model() == model ) )
 		return;
 
-	scene->currentBlock = model->getBlock( index );
+	scene->currentBlock = model->getBlockIndex( index );
 	scene->currentIndex = index.sibling( index.row(), 0 );
 
 	update();
@@ -1337,12 +1328,12 @@ void GLView::advanceGears()
 	//if ( kbd[ Qt::Key_R ] ) move( 0, -MOV_SPD * dT, 0 );
 
 	// Zoom
-	if ( kbd[ Qt::Key_Q ] ) setDistance( Dist * 1.0 / 1.1 );
-	if ( kbd[ Qt::Key_E ] ) setDistance( Dist * 1.1 );
+	if ( kbd[ Qt::Key_Q ] ) setDistance( Dist / ZOOM_QE_KEY_MULT );
+	if ( kbd[ Qt::Key_E ] ) setDistance( Dist * ZOOM_QE_KEY_MULT );
 
 	// Focal Length
-	if ( kbd[ Qt::Key_PageUp ] )   zoom( 1.1f );
-	if ( kbd[ Qt::Key_PageDown ] ) zoom( 1 / 1.1f );
+	if ( kbd[ Qt::Key_PageUp ] )   setZoom( Zoom * ZOOM_PAGE_KEY_MULT );
+	if ( kbd[ Qt::Key_PageDown ] ) setZoom( Zoom / ZOOM_PAGE_KEY_MULT );
 
 	if ( mouseMov[0] != 0 || mouseMov[1] != 0 || mouseMov[2] != 0 ) {
 		move( mouseMov[0], mouseMov[1], mouseMov[2] );
@@ -1616,14 +1607,14 @@ void GLView::dragMoveEvent( QDragMoveEvent * e )
 		fnDragTexOrg = QString();
 	}
 
-	QModelIndex iObj = model->getBlock( indexAt( e->pos() ), "NiAVObject" );
+	QModelIndex iObj = model->getBlockIndex( indexAt( e->pos() ), "NiAVObject" );
 
 	if ( iObj.isValid() ) {
 		for ( const auto l : model->getChildLinks( model->getBlockNumber( iObj ) ) ) {
-			QModelIndex iTxt = model->getBlock( l, "NiTexturingProperty" );
+			QModelIndex iTxt = model->getBlockIndex( l, "NiTexturingProperty" );
 
 			if ( iTxt.isValid() ) {
-				QModelIndex iSrc = model->getBlock( model->getLink( iTxt, "Base Texture/Source" ), "NiSourceTexture" );
+				QModelIndex iSrc = model->getBlockIndex( model->getLink( iTxt, "Base Texture/Source" ), "NiSourceTexture" );
 
 				if ( iSrc.isValid() ) {
 					iDragTarget = model->getIndex( iSrc, "File Name" );
@@ -1772,7 +1763,7 @@ void GLView::mouseReleaseEvent( QMouseEvent * event )
 
 	if ( !(mods & Qt::AltModifier) ) {
 		QModelIndex idx = indexAt( event->pos(), cycleSelect );
-		scene->currentBlock = model->getBlock( idx );
+		scene->currentBlock = model->getBlockIndex( idx );
 		scene->currentIndex = idx.sibling( idx.row(), 0 );
 
 		if ( idx.isValid() ) {
@@ -1812,9 +1803,14 @@ void GLView::mouseReleaseEvent( QMouseEvent * event )
 void GLView::wheelEvent( QWheelEvent * event )
 {
 	if ( view == ViewWalk )
-		mouseMov += Vector3( 0, 0, event->delta() );
+		mouseMov += Vector3( 0, 0, ((double) event->delta()) / 4.0 );
 	else
-		setDistance( Dist * (event->delta() < 0 ? 1.0 / 0.8 : 0.8) );
+	{
+		if (event->delta() < 0)
+			setDistance( Dist / ZOOM_MOUSE_WHEEL_MULT );
+		else
+			setDistance( Dist * ZOOM_MOUSE_WHEEL_MULT );
+	}
 }
 
 

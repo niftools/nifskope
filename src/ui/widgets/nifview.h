@@ -38,6 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <memory>
 
+class NifItem;
 
 //! Widget for showing a nif file as tree, list, or block details.
 class NifTreeView final : public QTreeView
@@ -59,7 +60,10 @@ public:
 	bool evalConditions() const { return doRowHiding; }
 	//! Is a row hidden?
 	bool isRowHidden( int row, const QModelIndex & parent ) const;
+protected:
+	bool isRowHidden( const NifItem * rowItem ) const;
 
+public:
 	//! Minimum size
 	QSize minimumSizeHint() const override final { return { 50, 50 }; }
 	//! Default size

@@ -76,19 +76,19 @@ void NifSkope::sltImportExport( QAction * a )
 		}
 	}
 
-	if ( nif && nif->getVersionNumber() >= 0x14050000 ) {
+	if ( !nif || nif->getVersionNumber() >= 0x14050000 ) {
 		mExport->setDisabled( true );
 		mImport->setDisabled( true );
 		return;
-	} else {
-		mImport->setDisabled( false );
-		mExport->setDisabled( false );
-
-		if ( nif->getUserVersion2() >= 100 )
-			mImport->actions().at(0)->setDisabled( true );
-		else if ( nif->getUserVersion2() == 0 )
-			mImport->actions().at(1)->setDisabled( true );
 	}
+
+	mImport->setDisabled( false );
+	mExport->setDisabled( false );
+
+	if ( nif->getBSVersion() >= 100 )
+		mImport->actions().at(0)->setDisabled( true );
+	else if ( nif->getBSVersion() == 0 )
+		mImport->actions().at(1)->setDisabled( true );
 
 	if ( a->text() == tr( "Export .OBJ" ) )
 		exportObj( nif, index );

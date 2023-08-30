@@ -148,23 +148,19 @@ public:
 	Type type() const override final { return Alpha; }
 	QString typeId() const override final { return "NiAlphaProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & block ) override final;
+	bool hasAlphaBlend() const { return alphaBlend; }
+	bool hasAlphaTest() const { return alphaTest; }
 
-	bool blend() const { return alphaBlend; }
-	bool test() const { return alphaTest; }
-	bool sort() const { return alphaSort; }
-	float threshold() const { return alphaThreshold; }
-
-	void setThreshold( float );
+	GLfloat alphaThreshold = 0;
 
 	friend void glProperty( AlphaProperty * );
 
 protected:
 	void setController( const NifModel * nif, const QModelIndex & controller ) override final;
+	void updateImpl( const NifModel * nif, const QModelIndex & block ) override final;
 
 	bool alphaBlend = false, alphaTest = false, alphaSort = false;
 	GLenum alphaSrc = 0, alphaDst = 0, alphaFunc = 0;
-	GLfloat alphaThreshold = 0;
 };
 
 REGISTER_PROPERTY( AlphaProperty, Alpha )
@@ -178,8 +174,6 @@ public:
 	Type type() const override final { return ZBuffer; }
 	QString typeId() const override final { return "NiZBufferProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & block ) override final;
-
 	bool test() const { return depthTest; }
 	bool mask() const { return depthMask; }
 
@@ -189,6 +183,8 @@ protected:
 	bool depthTest = false;
 	bool depthMask = false;
 	GLenum depthFunc = 0;
+
+	void updateImpl( const NifModel * nif, const QModelIndex & block ) override final;
 };
 
 REGISTER_PROPERTY( ZBufferProperty, ZBuffer )
@@ -225,8 +221,6 @@ public:
 	Type type() const override final { return Texturing; }
 	QString typeId() const override final { return "NiTexturingProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & block ) override final;
-
 	friend void glProperty( TexturingProperty * );
 
 	bool bind( int id, const QString & fname = QString() );
@@ -243,6 +237,7 @@ protected:
 	TexDesc textures[numTextures];
 
 	void setController( const NifModel * nif, const QModelIndex & controller ) override final;
+	void updateImpl( const NifModel * nif, const QModelIndex & block ) override final;
 };
 
 REGISTER_PROPERTY( TexturingProperty, Texturing )
@@ -258,8 +253,6 @@ public:
 	Type type() const override final { return Texture; }
 	QString typeId() const override final { return "NiTextureProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & block ) override final;
-
 	friend void glProperty( TextureProperty * );
 
 	bool bind();
@@ -271,6 +264,7 @@ protected:
 	QPersistentModelIndex iImage;
 
 	void setController( const NifModel * nif, const QModelIndex & controller ) override final;
+	void updateImpl( const NifModel * nif, const QModelIndex & block ) override final;
 };
 
 REGISTER_PROPERTY( TextureProperty, Texture )
@@ -287,8 +281,6 @@ public:
 	Type type() const override final { return MaterialProp; }
 	QString typeId() const override final { return "NiMaterialProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & block ) override final;
-
 	friend void glProperty( class MaterialProperty *, class SpecularProperty * );
 
 	GLfloat alphaValue() const { return alpha; }
@@ -296,9 +288,9 @@ public:
 protected:
 	Color4 ambient, diffuse, specular, emissive;
 	GLfloat shininess = 0, alpha = 0;
-	bool overridden = false;
 
 	void setController( const NifModel * nif, const QModelIndex & controller ) override final;
+	void updateImpl( const NifModel * nif, const QModelIndex & block ) override final;
 };
 
 REGISTER_PROPERTY( MaterialProperty, MaterialProp )
@@ -312,12 +304,12 @@ public:
 	Type type() const override final { return Specular; }
 	QString typeId() const override final { return "NiSpecularProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & index ) override final;
-
 	friend void glProperty( class MaterialProperty *, class SpecularProperty * );
 
 protected:
 	bool spec = false;
+
+	void updateImpl( const NifModel * nif, const QModelIndex & index ) override final;
 };
 
 REGISTER_PROPERTY( SpecularProperty, Specular )
@@ -331,12 +323,12 @@ public:
 	Type type() const override final { return Wireframe; }
 	QString typeId() const override final { return "NiWireframeProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & index ) override final;
-
 	friend void glProperty( WireframeProperty * );
 
 protected:
 	bool wire = false;
+
+	void updateImpl( const NifModel * nif, const QModelIndex & index ) override final;
 };
 
 REGISTER_PROPERTY( WireframeProperty, Wireframe )
@@ -350,13 +342,13 @@ public:
 	Type type() const override final { return VertexColor; }
 	QString typeId() const override final { return "NiVertexColorProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & index ) override final;
-
 	friend void glProperty( VertexColorProperty *, bool vertexcolors );
 
 protected:
 	int lightmode = 0;
 	int vertexmode = 0;
+
+	void updateImpl( const NifModel * nif, const QModelIndex & index ) override final;
 };
 
 REGISTER_PROPERTY( VertexColorProperty, VertexColor )
@@ -406,8 +398,6 @@ public:
 	Type type() const override final { return Stencil; }
 	QString typeId() const override final { return "NiStencilProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & index ) override final;
-
 	friend void glProperty( StencilProperty * );
 
 protected:
@@ -438,6 +428,8 @@ protected:
 
 	bool cullEnable = false;
 	GLenum cullMode = 0;
+
+	void updateImpl( const NifModel * nif, const QModelIndex & index ) override final;
 };
 
 REGISTER_PROPERTY( StencilProperty, Stencil )
@@ -634,14 +626,24 @@ enum TexClampMode : unsigned int
 
 struct UVScale
 {
-	float x = 1.0f;
-	float y = 1.0f;
+	float x;
+	float y;
+
+	UVScale() { reset(); }	
+	void reset() { x = y = 1.0f; }
+	void set( float _x, float _y ) { x = _x; y = _y; }
+	void set( const Vector2 & v) { x = v[0]; y = v[1]; }
 };
 
 struct UVOffset
 {
-	float x = 0.0f;
-	float y = 0.0f;
+	float x;
+	float y;
+
+	UVOffset() { reset(); }
+	void reset() { x = y = 0.0f; }
+	void set(float _x, float _y) { x = _x; y = _y; }
+	void set(const Vector2 & v) { x = v[0]; y = v[1]; }
 };
 
 
@@ -649,56 +651,50 @@ struct UVOffset
 class BSShaderLightingProperty : public Property
 {
 public:
-	BSShaderLightingProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
+	BSShaderLightingProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) { }
+	~BSShaderLightingProperty();
 
 	Type type() const override final { return ShaderLighting; }
 	QString typeId() const override { return "BSShaderLightingProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & block ) override;
-
 	friend void glProperty( BSShaderLightingProperty * );
+
+	void clear() override;
 
 	bool bind( int id, const QString & fname = QString(), TexClampMode mode = TexClampMode::WRAP_S_WRAP_T );
 	bool bind( int id, const QVector<QVector<Vector2> > & texcoords );
-	bool bind( int id, const QVector<QVector<Vector2> > & texcoords, int stage );
 
 	bool bindCube( int id, const QString & fname = QString() );
+
+	//! Checks if the params of the shader depend on data from block
+	bool isParamBlock( const QModelIndex & block ) { return ( block == iBlock || block == iTextureSet ); }
 
 	QString fileName( int id ) const;
 	//int coordSet( int id ) const;
 
 	static int getId( const QString & id );
 
-	QPersistentModelIndex getTextureSet() const;
+	//! Has Shader Flag 1
+	bool hasSF1( ShaderFlags::SF1 flag ) { return flags1 & flag; };
+	//! Has Shader Flag 2
+	bool hasSF2( ShaderFlags::SF2 flag ) { return flags2 & flag; };
 
-	bool hasSF1( ShaderFlags::SF1 flag ) { return getFlags1() & flag; };
-	bool hasSF2( ShaderFlags::SF2 flag ) { return getFlags2() & flag; };
-
-	unsigned int getFlags1() const;
-	unsigned int getFlags2() const;
-
-	void setFlags1( const NifModel * nif, const QModelIndex & prop );
-	void setFlags2( const NifModel * nif, const QModelIndex & prop );
-
-	UVScale getUvScale() const;
-	UVOffset getUvOffset() const;
-
-	void setUvScale( float, float );
-	void setUvOffset( float, float );
-
-	TexClampMode getClampMode() const;
-
-	void setClampMode( uint mode );
-
-	bool getDepthTest() { return depthTest; }
-	bool getDepthWrite() { return depthWrite; }
-	bool getIsDoubleSided() { return isDoubleSided; }
-	bool getIsTranslucent() { return isTranslucent; }
+	void setFlags1( const NifModel * nif );
+	void setFlags2( const NifModel * nif );
 
 	bool hasVertexColors = false;
-	bool hasVertexAlpha = false;
+	bool hasVertexAlpha = false; // TODO Gavrant: it's unused
 
-	Material * mat() const;
+	bool depthTest = false;
+	bool depthWrite = false;
+	bool isDoubleSided = false;
+	bool isVertexAlphaAnimation = false;
+
+	UVScale uvScale;
+	UVOffset uvOffset;
+	TexClampMode clampMode = CLAMP_S_CLAMP_T;
+
+	Material * getMaterial() const { return material; }
 
 protected:
 	ShaderFlags::SF1 flags1 = ShaderFlags::SLSF1_ZBuffer_Test;
@@ -706,129 +702,55 @@ protected:
 
 	//QVector<QString> textures;
 	QPersistentModelIndex iTextureSet;
-	QPersistentModelIndex iSourceTexture;
 	QPersistentModelIndex iWetMaterial;
 
 	Material * material = nullptr;
+	void setMaterial( Material * newMaterial );
 
-	UVScale uvScale;
-	UVOffset uvOffset;
-
-	TexClampMode clampMode = CLAMP_S_CLAMP_T;
-
-	bool depthTest = false;
-	bool depthWrite = false;
-	bool isDoubleSided = false;
-	bool isTranslucent = false;
-
-	quint32 stream = 83;
+	void updateImpl( const NifModel * nif, const QModelIndex & block ) override;
+	virtual void resetParams();
 };
 
 REGISTER_PROPERTY( BSShaderLightingProperty, ShaderLighting )
 
 
-//! A Property that inherits BSShaderLightingProperty (Skyrim-specific)
+//! A Property that inherits BSLightingShaderProperty (Skyrim-specific)
 class BSLightingShaderProperty final : public BSShaderLightingProperty
 {
 public:
-	BSLightingShaderProperty( Scene * scene, const QModelIndex & index ) : BSShaderLightingProperty( scene, index )
-	{
-		emissiveMult = 1.0f;
-		emissiveColor = Color3( 0, 0, 0 );
-		
-		specularStrength = 1.0f;
-		specularColor = Color3( 1.0f, 1.0f, 1.0f );
-	}
+	BSLightingShaderProperty( Scene * scene, const QModelIndex & index ) : BSShaderLightingProperty( scene, index ) { }
 
 	QString typeId() const override final { return "BSLightingShaderProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & block ) override;
-	void updateParams( const NifModel * nif, const QModelIndex & prop );
-
-	bool isST( ShaderFlags::ShaderType st ) { return getShaderType() == st; };
-
-	Color3 getEmissiveColor() const;
-	Color3 getSpecularColor() const;
-
-	float getEmissiveMult() const;
-
-	float getSpecularGloss() const;
-	float getSpecularStrength() const;
-
-	float getLightingEffect1() const;
-	float getLightingEffect2() const;
-
-	float getInnerThickness() const;
-	UVScale getInnerTextureScale() const;
-	float getOuterRefractionStrength() const;
-	float getOuterReflectionStrength() const;
-
-	float getEnvironmentReflection() const;
-
-	float getAlpha() const;
-
-	void setShaderType( unsigned int );
-
-	void setEmissive( const Color3 & color, float mult = 1.0f );
-	void setSpecular( const Color3 & color, float glossiness = 80.0f, float strength = 1.0f );
-
-	void setLightingEffect1( float );
-	void setLightingEffect2( float );
-
-	void setInnerThickness( float );
-	void setInnerTextureScale( float, float );
-	void setOuterRefractionStrength( float );
-	void setOuterReflectionStrength( float );
-
-	void setEnvironmentReflection( float );
-
-	void setAlpha( float );
-
-	Color3 getTintColor() const;
-	void setTintColor( const Color3 & );
+	//! Is Shader Type
+	bool isST( ShaderFlags::ShaderType st ) { return shaderType == st; };
 
 	bool hasGlowMap = false;
 	bool hasEmittance = false;
 	bool hasSoftlight = false;
 	bool hasBacklight = false;
 	bool hasRimlight = false;
-	bool hasModelSpaceNormals = false;
 	bool hasSpecularMap = false;
 	bool hasMultiLayerParallax = false;
-	bool hasCubeMap = false;
 	bool hasEnvironmentMap = false;
 	bool useEnvironmentMask = false;
 	bool hasHeightMap = false;
 	bool hasRefraction = false;
-	bool hasFireRefraction = false;
 	bool hasDetailMask = false;
 	bool hasTintMask = false;
 	bool hasTintColor = false;
 	bool greyscaleColor = false;
 
-	ShaderFlags::ShaderType getShaderType();
-
-	float fresnelPower = 5.0;
-	float paletteScale = 1.0;
-	float rimPower = 2.0;
-	float backlightPower = 0.0;
-
-protected:
-	void setController( const NifModel * nif, const QModelIndex & controller ) override final;
-
-	ShaderFlags::ShaderType shaderType = ShaderFlags::ST_Default;
-
 	Color3 emissiveColor;
-	Color3 specularColor;
-	Color3 tintColor;
-	Color3 subsurfaceColor;
-
-	float alpha = 1.0;
-
 	float emissiveMult = 1.0;
 
+	Color3 specularColor;
 	float specularGloss = 80.0;
 	float specularStrength = 1.0;
+
+	Color3 tintColor;
+
+	float alpha = 1.0;
 
 	float lightingEffect1 = 0.0;
 	float lightingEffect2 = 1.0;
@@ -840,43 +762,40 @@ protected:
 	UVScale innerTextureScale;
 	float outerRefractionStrength = 0.0;
 	float outerReflectionStrength = 1.0;
+
+	float fresnelPower = 5.0;
+	float paletteScale = 1.0;
+	float rimPower = 2.0;
+	float backlightPower = 0.0;
+
+protected:
+	void setController( const NifModel * nif, const QModelIndex & controller ) override final;
+	void updateImpl( const NifModel * nif, const QModelIndex & block ) override;
+	void resetParams() override;
+	void updateParams( const NifModel * nif );
+	void setTintColor( const NifModel* nif, const QString & itemName );
+
+	ShaderFlags::ShaderType shaderType = ShaderFlags::ST_Default;
 };
 
 REGISTER_PROPERTY( BSLightingShaderProperty, ShaderLighting )
 
 
-//! A Property that inherits BSShaderLightingProperty (Skyrim-specific)
+//! A Property that inherits BSEffectShaderProperty (Skyrim-specific)
 class BSEffectShaderProperty final : public BSShaderLightingProperty
 {
 public:
-	BSEffectShaderProperty( Scene * scene, const QModelIndex & index ) : BSShaderLightingProperty( scene, index )
-	{
-	}
+	BSEffectShaderProperty( Scene * scene, const QModelIndex & index ) : BSShaderLightingProperty( scene, index ) { }
 
 	QString typeId() const override final { return "BSEffectShaderProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & block ) override;
-	void updateParams( const NifModel * nif, const QModelIndex & prop );
-
-	Color4 getEmissiveColor() const;
-	float getEmissiveMult() const;
-
-	float getAlpha() const;
-
-	void setEmissive( const Color4 & color, float mult = 1.0f );
-	void setFalloff( float, float, float, float, float );
-
-	float getEnvironmentReflection() const;
-	void setEnvironmentReflection( float );
-
-	float getLightingInfluence() const;
-	void setLightingInfluence( float );
+	float getAlpha() const { return emissiveColor.alpha(); }
 
 	bool hasSourceTexture = false;
 	bool hasGreyscaleMap = false;
-	bool hasEnvMap = false;
+	bool hasEnvironmentMap = false;
 	bool hasNormalMap = false;
-	bool hasEnvMask = false;
+	bool hasEnvironmentMask = false;
 	bool useFalloff = false;
 	bool hasRGBFalloff = false;
 
@@ -894,21 +813,22 @@ public:
 		float stopOpacity = 0.0f;
 
 		float softDepth = 1.0f;
-
 	};
-
 	Falloff falloff;
 
 	float lumEmittance = 0.0;
-
-protected:
-	void setController( const NifModel * nif, const QModelIndex & controller ) override final;
 
 	Color4 emissiveColor;
 	float emissiveMult = 1.0;
 
 	float lightingInfluence = 0.0;
 	float environmentReflection = 0.0;
+
+protected:
+	void setController( const NifModel * nif, const QModelIndex & controller ) override final;
+	void updateImpl( const NifModel * nif, const QModelIndex & block ) override;
+	void resetParams() override;
+	void updateParams( const NifModel * nif );
 };
 
 REGISTER_PROPERTY( BSEffectShaderProperty, ShaderLighting )
@@ -929,13 +849,11 @@ namespace WaterShaderFlags
 	};
 }
 
-//! A Property that inherits BSShaderLightingProperty (Skyrim-specific)
+//! A Property that inherits BSWaterShaderProperty (Skyrim-specific)
 class BSWaterShaderProperty final : public BSShaderLightingProperty
 {
 public:
-	BSWaterShaderProperty( Scene * scene, const QModelIndex & index ) : BSShaderLightingProperty( scene, index )
-	{
-	}
+	BSWaterShaderProperty( Scene * scene, const QModelIndex & index ) : BSShaderLightingProperty( scene, index ) { }
 
 	QString typeId() const override final { return "BSWaterShaderProperty"; }
 

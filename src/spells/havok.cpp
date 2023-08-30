@@ -36,11 +36,11 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		if ( !(nif->inherits( index, "NiTriBasedGeom" ) || nif->inherits( index, "BSTriShape" ))
-			 || !nif->getUserVersion2() )
+		if ( !(nif->blockInherits( index, "NiTriBasedGeom" ) || nif->blockInherits( index, "BSTriShape" ))
+			 || !nif->getBSVersion() )
 			return false;
 
-		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
+		QModelIndex iData = nif->getBlockIndex( nif->getLink( index, "Data" ) );
 		if ( !iData.isValid() && nif->getIndex( index, "Vertex Data" ).isValid() )
 			iData = index;
 
@@ -49,7 +49,7 @@ public:
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
-		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
+		QModelIndex iData = nif->getBlockIndex( nif->getLink( index, "Data" ) );
 		if ( !iData.isValid() )
 			iData = nif->getIndex( index, "Vertex Data" );
 
@@ -67,7 +67,7 @@ public:
 		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
 		QVector<Vector3> vertsTrans;
 
-		if ( nif->getUserVersion2() < 100 ) {
+		if ( nif->getBSVersion() < 100 ) {
 			verts = nif->getArray<Vector3>( iData, "Vertices" );
 		} else {
 			int numVerts = nif->get<int>( index, "Num Vertices" );
@@ -176,21 +176,21 @@ public:
 
 		/* set CVS verts */
 		nif->set<uint>( iCVS, "Num Vertices", convex_verts.count() );
-		nif->updateArray( iCVS, "Vertices" );
+		nif->updateArraySize( iCVS, "Vertices" );
 		nif->setArray<Vector4>( iCVS, "Vertices", convex_verts );
 
 		/* set CVS norms */
 		nif->set<uint>( iCVS, "Num Normals", convex_norms.count() );
-		nif->updateArray( iCVS, "Normals" );
+		nif->updateArraySize( iCVS, "Normals" );
 		nif->setArray<Vector4>( iCVS, "Normals", convex_norms );
 
 		// radius is always 0.1?
 		// TODO: Figure out if radius is not arbitrarily set in vanilla NIFs
 		nif->set<float>( iCVS, "Radius", spnRadius->value() );
 
-		QModelIndex iParent = nif->getBlock( nif->getParent( nif->getBlockNumber( index ) ) );
+		QModelIndex iParent = nif->getBlockIndex( nif->getParent( nif->getBlockNumber( index ) ) );
 		QModelIndex collisionLink = nif->getIndex( iParent, "Collision Object" );
-		QModelIndex collisionObject = nif->getBlock( nif->getLink( collisionLink ) );
+		QModelIndex collisionObject = nif->getBlockIndex( nif->getLink( collisionLink ) );
 
 		// create bhkCollisionObject
 		if ( !collisionObject.isValid() ) {
@@ -201,7 +201,7 @@ public:
 		}
 
 		QModelIndex rigidBodyLink = nif->getIndex( collisionObject, "Body" );
-		QModelIndex rigidBody = nif->getBlock( nif->getLink( rigidBodyLink ) );
+		QModelIndex rigidBody = nif->getBlockIndex( nif->getLink( rigidBodyLink ) );
 
 		// create bhkRigidBody
 		if ( !rigidBody.isValid() ) {
@@ -211,7 +211,7 @@ public:
 		}
 
 		QPersistentModelIndex shapeLink = nif->getIndex( rigidBody, "Shape" );
-		QPersistentModelIndex shape = nif->getBlock( nif->getLink( shapeLink ) );
+		QPersistentModelIndex shape = nif->getBlockIndex( nif->getLink( shapeLink ) );
 
 		QVector<qint32> shapeLinks;
 		bool replace = true;
@@ -222,7 +222,7 @@ public:
 			QString questionBody = tr( "This collision object already has a shape. Combine into a list shape? 'No' will replace the shape." );
 
 			bool isListShape = false;
-			if ( nif->inherits( shape, "bhkListShape" ) ) {
+			if ( nif->blockInherits( shape, "bhkListShape" ) ) {
 				isListShape = true;
 				questionTitle = tr( "Add to List Shape" );
 				questionBody = tr( "This collision object already has a list shape. Add to list shape? 'No' will replace the list shape." );
@@ -239,10 +239,10 @@ public:
 
 				shapeLinks << nif->getBlockNumber( iCVS );
 				nif->set<uint>( iListShape, "Num Sub Shapes", shapeLinks.size() );
-				nif->updateArray( iListShape, "Sub Shapes" );
+				nif->updateArraySize( iListShape, "Sub Shapes" );
 				nif->setLinkArray( iListShape, "Sub Shapes", shapeLinks );
 				nif->set<uint>( iListShape, "Num Unknown Ints", shapeLinks.size() );
-				nif->updateArray( iListShape, "Unknown Ints" );
+				nif->updateArraySize( iListShape, "Unknown Ints" );
 				replace = false;
 			}
 		} 
@@ -276,20 +276,20 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		return nif && 
-			nif->isNiBlock( nif->getBlock( index ),
-				{ "bhkMalleableConstraint",
+		static QStringList blockNames = {
+				  "bhkMalleableConstraint",
 				  "bhkBreakableConstraint",
 				  "bhkRagdollConstraint",
 				  "bhkLimitedHingeConstraint",
 				  "bhkHingeConstraint",
-				  "bhkPrismaticConstraint" }
-			);
+				  "bhkPrismaticConstraint" 
+		};
+		return nif && nif->isNiBlock( nif->getBlockIndex( index ), blockNames );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
-		QModelIndex iConstraint = nif->getBlock( index );
+		QModelIndex iConstraint = nif->getBlockIndex( index );
 		QString name = nif->itemName( iConstraint );
 
 		if ( name == "bhkMalleableConstraint" || name == "bhkBreakableConstraint" ) {
@@ -302,8 +302,8 @@ public:
 			}
 		}
 
-		QModelIndex iBodyA = nif->getBlock( nif->getLink( bhkGetEntity( nif, iConstraint, "Entity A" ) ), "bhkRigidBody" );
-		QModelIndex iBodyB = nif->getBlock( nif->getLink( bhkGetEntity( nif, iConstraint, "Entity B" ) ), "bhkRigidBody" );
+		QModelIndex iBodyA = nif->getBlockIndex( nif->getLink( bhkGetEntity( nif, iConstraint, "Entity A" ) ), "bhkRigidBody" );
+		QModelIndex iBodyB = nif->getBlockIndex( nif->getLink( bhkGetEntity( nif, iConstraint, "Entity B" ) ), "bhkRigidBody" );
 
 		if ( !iBodyA.isValid() || !iBodyB.isValid() ) {
 			Message::warning( nullptr, Spell::tr( "Couldn't find the bodies for this constraint." ) );
@@ -386,18 +386,18 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & idx ) override final
 	{
-		return nif && nif->isNiBlock( nif->getBlock( idx ), "bhkStiffSpringConstraint" );
+		return nif && nif->isNiBlock( nif->getBlockIndex( idx ), "bhkStiffSpringConstraint" );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & idx ) override final
 	{
-		QModelIndex iConstraint = nif->getBlock( idx );
+		QModelIndex iConstraint = nif->getBlockIndex( idx );
 		QModelIndex iSpring = nif->getIndex( iConstraint, "Stiff Spring" );
 		if ( !iSpring.isValid() )
 			iSpring = iConstraint;
 
-		QModelIndex iBodyA = nif->getBlock( nif->getLink( bhkGetEntity( nif, iConstraint, "Entity A" ) ), "bhkRigidBody" );
-		QModelIndex iBodyB = nif->getBlock( nif->getLink( bhkGetEntity( nif, iConstraint, "Entity B" ) ), "bhkRigidBody" );
+		QModelIndex iBodyA = nif->getBlockIndex( nif->getLink( bhkGetEntity( nif, iConstraint, "Entity A" ) ), "bhkRigidBody" );
+		QModelIndex iBodyB = nif->getBlockIndex( nif->getLink( bhkGetEntity( nif, iConstraint, "Entity B" ) ), "bhkRigidBody" );
 
 		if ( !iBodyA.isValid() || !iBodyB.isValid() ) {
 			Message::warning( nullptr, Spell::tr( "Couldn't find the bodies for this constraint" ) );
@@ -441,7 +441,7 @@ public:
 		QVector<Vector3> normals;
 
 		for ( const auto lData : nif->getLinkArray( iShape, "Strips Data" ) ) {
-			QModelIndex iData = nif->getBlock( lData, "NiTriStripsData" );
+			QModelIndex iData = nif->getBlockIndex( lData, "NiTriStripsData" );
 
 			if ( iData.isValid() ) {
 				QVector<Vector3> vrts = nif->getArray<Vector3>( iData, "Vertices" );
@@ -487,7 +487,7 @@ public:
 
 		nif->set<int>( iPackedShape, "Num Sub Shapes", 1 );
 		QModelIndex iSubShapes = nif->getIndex( iPackedShape, "Sub Shapes" );
-		nif->updateArray( iSubShapes );
+		nif->updateArraySize( iSubShapes );
 		nif->set<int>( iSubShapes.child( 0, 0 ), "Layer", 1 );
 		nif->set<int>( iSubShapes.child( 0, 0 ), "Num Vertices", vertices.count() );
 		nif->set<int>( iSubShapes.child( 0, 0 ), "Material", nif->get<int>( iShape, "Material" ) );
@@ -500,7 +500,7 @@ public:
 
 		nif->set<int>( iPackedData, "Num Triangles", triangles.count() );
 		QModelIndex iTriangles = nif->getIndex( iPackedData, "Triangles" );
-		nif->updateArray( iTriangles );
+		nif->updateArraySize( iTriangles );
 
 		for ( int t = 0; t < triangles.size(); t++ ) {
 			nif->set<Triangle>( iTriangles.child( t, 0 ), "Triangle", triangles[ t ] );
@@ -509,7 +509,7 @@ public:
 
 		nif->set<int>( iPackedData, "Num Vertices", vertices.count() );
 		QModelIndex iVertices = nif->getIndex( iPackedData, "Vertices" );
-		nif->updateArray( iVertices );
+		nif->updateArraySize( iVertices );
 		nif->setArray<Vector3>( iVertices, vertices );
 
 		QMap<qint32, qint32> lnkmap;
@@ -543,7 +543,7 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock ) override final
 	{
 		QPersistentModelIndex iShape( iBlock );
-		QPersistentModelIndex iRigidBody = nif->getBlock( nif->getParent( iShape ) );
+		QPersistentModelIndex iRigidBody = nif->getBlockIndex( nif->getParent( iShape ) );
 		if ( !iRigidBody.isValid() )
 			return {};
 
@@ -551,7 +551,7 @@ public:
 
 		nif->set<uint>( iCLS, "Num Sub Shapes", nif->get<uint>( iShape, "Num Sub Shapes" ) );
 		nif->set<uint>( iCLS, "Material", nif->get<uint>( iShape, "Material" ) );
-		nif->updateArray( iCLS, "Sub Shapes" );
+		nif->updateArraySize( iCLS, "Sub Shapes" );
 
 		nif->setLinkArray( iCLS, "Sub Shapes", nif->getLinkArray( iShape, "Sub Shapes" ) );
 		nif->setLinkArray( iShape, "Sub Shapes", {} );
@@ -580,7 +580,7 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock ) override final
 	{
 		QPersistentModelIndex iShape( iBlock );
-		QPersistentModelIndex iRigidBody = nif->getBlock( nif->getParent( iShape ) );
+		QPersistentModelIndex iRigidBody = nif->getBlockIndex( nif->getParent( iShape ) );
 		if ( !iRigidBody.isValid() )
 			return {};
 
@@ -589,8 +589,8 @@ public:
 		nif->set<uint>( iLS, "Num Sub Shapes", nif->get<uint>( iShape, "Num Sub Shapes" ) );
 		nif->set<uint>( iLS, "Num Unknown Ints", nif->get<uint>( iShape, "Num Sub Shapes" ) );
 		nif->set<uint>( iLS, "Material", nif->get<uint>( iShape, "Material" ) );
-		nif->updateArray( iLS, "Sub Shapes" );
-		nif->updateArray( iLS, "Unknown Ints" );
+		nif->updateArraySize( iLS, "Sub Shapes" );
+		nif->updateArraySize( iLS, "Unknown Ints" );
 
 		nif->setLinkArray( iLS, "Sub Shapes", nif->getLinkArray( iShape, "Sub Shapes" ) );
 		nif->setLinkArray( iShape, "Sub Shapes", {} );
