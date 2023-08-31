@@ -1128,7 +1128,7 @@ int BSShaderLightingProperty::getId( const QString & id )
 
 void BSShaderLightingProperty::setFlags1( const NifModel * nif )
 {
-	if ( nif->getBSVersion() == 155 ) {
+	if ( nif->getBSVersion() >= 151 ) {
 		auto sf1 = nif->getArray<quint32>( iBlock, "SF1" );
 		auto sf2 = nif->getArray<quint32>( iBlock, "SF2" );
 		sf1.append( sf2 );
@@ -1145,7 +1145,7 @@ void BSShaderLightingProperty::setFlags1( const NifModel * nif )
 
 void BSShaderLightingProperty::setFlags2( const NifModel * nif )
 {
-	if ( nif->getBSVersion() == 155 ) {
+	if ( nif->getBSVersion() >= 151 ) {
 		auto sf1 = nif->getArray<quint32>( iBlock, "SF1" );
 		auto sf2 = nif->getArray<quint32>( iBlock, "SF2" );
 		sf1.append( sf2 );
@@ -1232,7 +1232,7 @@ void BSLightingShaderProperty::updateParams( const NifModel * nif )
 	setFlags1( nif );
 	setFlags2( nif );
 
-	if ( nif->getBSVersion() == 155 ) {
+	if ( nif->getBSVersion() >= 151 ) {
 		shaderType = ShaderFlags::ShaderType::ST_EnvironmentMap;
 		hasVertexAlpha = true;
 		hasVertexColors = true;
@@ -1271,7 +1271,7 @@ void BSLightingShaderProperty::updateParams( const NifModel * nif )
 		paletteScale = m->fGrayscaleToPaletteScale;
 
 		hasSpecularMap = m->bSpecularEnabled && (!m->textureList[2].isEmpty()
-			|| (nif->getBSVersion() == 155 && !m->textureList[7].isEmpty()));
+			|| (nif->getBSVersion() >= 151 && !m->textureList[7].isEmpty()));
 		hasGlowMap = m->bGlowmap;
 		hasEmittance = m->bEmitEnabled;
 		hasBacklight = m->bBackLighting;

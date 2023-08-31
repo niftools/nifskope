@@ -568,7 +568,8 @@ QModelIndex NifModel::insertNiBlock( const QString & identifier, int at )
 
 		branch->prepareInsert( block->types.count() );
 
-		if ( getBSVersion() == 155 && identifier.startsWith( "BSLighting" ) ) {
+		if ( getBSVersion() >= 151 && identifier.startsWith( "BSLighting" ) ) {
+			// TODO: This appears to be incomplete
 			for ( const NifData& data : block->types ) {
 				insertType( branch, data );
 			}
