@@ -780,12 +780,11 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 	if ( nif && nif->getVersionNumber() >= 0x14050000 ) {
 		mExport->setDisabled( true );
 		mImport->setDisabled( true );
-	} else {
+	} else if ( nif ) {
 		mExport->setDisabled( false );
 		mImport->setDisabled( false );
-		if ( nif->getBSVersion() >= 100 )
-			mImport->actions().at(0)->setDisabled(true);
-		else if ( nif->getBSVersion() == 0 )
+		// Import OBJ as Collision disabled for non-Bethesda
+		if ( nif->getBSVersion() == 0 )
 			mImport->actions().at(1)->setDisabled(true);
 	}
 

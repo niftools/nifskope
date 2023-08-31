@@ -2043,6 +2043,9 @@ int NifModel::blockSize( const NifItem * item, NifSStream & stream ) const
 	if ( !item )
 		return 0;
 
+	auto testSkip = testSkipIO(item);
+	QString name;
+
 	int size = 0;
 	for ( auto child : item->childIter() ) {
 		if ( child->isAbstract() ) {
@@ -2069,6 +2072,16 @@ int NifModel::blockSize( const NifItem * item, NifSStream & stream ) const
 				size += stream.size( child->value() );
 			}
 		}
+
+		// Get material path if current item is the Name field of a shader property
+		if ( testSkip && child->hasName("Name") ) {
+			auto iStr = child->get<int>();
+			if ( iStr >= 0 )
+				name = get<QString>(getItem(getHeaderItem(), "Strings"), iStr);
+		}
+		// Short circuit I/O after Controller if shader property Name is a material path
+		if ( testSkip && child->hasName("Controller") && !name.isEmpty() )
+			break;
 	}
 
 	return size;
@@ -2079,14 +2092,7 @@ bool NifModel::loadItem( NifItem * parent, NifIStream & stream )
 	if ( !parent )
 		return false;
 
-	bool stopRead = false;
-	// Be advised, getBSVersion returns 0 if it's the file's header that is being loaded.
-	// Though for shader properties loadItem happens after the header is fully processed, so the check below should work w/o issues.
-	if ( getBSVersion() == 155 && parent->parent() == root ) {
-		if ( parent->hasName("BSLightingShaderProperty") || parent->hasName("BSEffectShaderProperty") )
-			stopRead = true;
-	}
-
+	bool testSkip = testSkipIO(parent);
 	QString name;
 
 	for ( auto child : parent->childIter() ) {
@@ -2112,13 +2118,14 @@ bool NifModel::loadItem( NifItem * parent, NifIStream & stream )
 			}
 		}
 
-		if ( stopRead && child->hasName("Name") ) {
+		// Get material path if current item is the Name field of a shader property
+		if ( testSkip && child->hasName("Name") ) {
 			auto iStr = child->get<int>();
 			if ( iStr >= 0 )
-				name = get<QString>( getItem( getHeaderItem(), "Strings" ), iStr );
+				name = get<QString>(getItem(getHeaderItem(), "Strings"), iStr);
 		}
-
-		if ( stopRead && child->hasName("Controller") && !name.isEmpty() )
+		// Short circuit I/O after Controller if shader property Name is a material path
+		if ( testSkip && child->hasName("Controller") && !name.isEmpty() )
 			break;
 	}
 
@@ -2152,6 +2159,9 @@ bool NifModel::saveItem( const NifItem * parent, NifOStream & stream ) const
 	if ( !parent )
 		return false;
 
+	auto testSkip = testSkipIO(parent);
+	QString name;
+
 	for ( auto child : parent->childIter() ) {
 		if ( child->isAbstract() ) {
 			qDebug() << "Not saving abstract item " << child->name();
@@ -2175,6 +2185,16 @@ bool NifModel::saveItem( const NifItem * parent, NifOStream & stream ) const
 					return false;
 			}
 		}
+		
+		// Get material path if current item is the Name field of a shader property
+		if ( testSkip && child->hasName("Name") ) {
+			auto iStr = child->get<int>();
+			if ( iStr >= 0 )
+				name = get<QString>(getItem(getHeaderItem(), "Strings"), iStr);
+		}
+		// Short circuit I/O after Controller if shader property Name is a material path
+		if ( testSkip && child->hasName("Controller") && !name.isEmpty() )
+			break;
 	}
 
 	return true;
@@ -2589,7 +2609,8 @@ bool NifModel::assignString( NifItem * item, const QString & string, bool replac
 				itemIndex = item;
 				iOldStrIndex = -1;
 				break;
-			} // fall through
+			}
+			[[fallthrough]];
 		default:
 			return BaseModel::set<QString>( item, string );
 		}
@@ -2764,6 +2785,18 @@ void NifModel::updateModel( UpdateType value )
 
 	if ( value & utLinks )
 		emit linksChanged();
+}
+
+bool NifModel::testSkipIO( const NifItem * item ) const
+{
+	bool testSkip = false;
+	// Be advised, getBSVersion returns 0 if it's the file's header that is being loaded.
+	// Though for shader properties loadItem happens after the header is fully processed, so the check below should work w/o issues.
+	if ( getBSVersion() >= 151 && item->parent() == root ) {
+		if (item->hasName("BSLightingShaderProperty") || item->hasName("BSEffectShaderProperty") )
+			testSkip = true;
+	}
+	return testSkip;
 }
 
 void NifModel::cacheBSVersion( const NifItem * headerItem )

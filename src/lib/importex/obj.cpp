@@ -1089,6 +1089,8 @@ void importObj( NifModel * nif, const QModelIndex & index, bool collision )
 
 				// For some reason need to update all the fixed arrays...
 				nif->updateArraySize( iStripsShape, "Unused" );
+				nif->set<int>( iStripsShape, "Num Strips Data", 0 );
+				nif->updateArraySize( iStripsShape, "Strips Data" );
 
 				QPersistentModelIndex iBody = nif->insertNiBlock( "bhkRigidBody" );
 				nif->setLink( iBody, "Shape", nif->getBlockNumber( iStripsShape ) );
@@ -1101,7 +1103,7 @@ void importObj( NifModel * nif, const QModelIndex & index, bool collision )
 				QPersistentModelIndex iObject = nif->insertNiBlock( "bhkCollisionObject" );
 
 				QPersistentModelIndex iParent = (iShape.isValid()) ? iShape : iNode;
-				nif->setLink( iObject, "Parent", nif->getBlockNumber( iParent ) );
+				nif->setLink( iObject, "Target", nif->getBlockNumber( iParent ) );
 				nif->setLink( iObject, "Body", nif->getBlockNumber( iBody ) );
 
 				nif->setLink( iParent, "Collision Object", nif->getBlockNumber( iObject ) );

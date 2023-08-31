@@ -160,6 +160,11 @@ public:
 	//! Set delayed updating of model links
 	bool holdUpdates( bool value );
 
+	/*! Item may stop I/O depending on certain children values
+	 * @return	Whether or not to test for early I/O skip
+	 */
+	bool testSkipIO( const NifItem * parent ) const;
+
 	QList<int> getRootLinks() const;
 	QList<int> getChildLinks( int block ) const;
 	QList<int> getParentLinks( int block ) const;

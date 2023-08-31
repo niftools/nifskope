@@ -85,9 +85,8 @@ void NifSkope::sltImportExport( QAction * a )
 	mImport->setDisabled( false );
 	mExport->setDisabled( false );
 
-	if ( nif->getBSVersion() >= 100 )
-		mImport->actions().at(0)->setDisabled( true );
-	else if ( nif->getBSVersion() == 0 )
+	// Import OBJ as Collision disabled for non-Bethesda
+	if ( nif->getBSVersion() == 0 )
 		mImport->actions().at(1)->setDisabled( true );
 
 	if ( a->text() == tr( "Export .OBJ" ) )
