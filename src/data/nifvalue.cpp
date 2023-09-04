@@ -74,6 +74,8 @@ void NifValue::initialize()
 
 	typeMap.insert( "bool",   NifValue::tBool );
 	typeMap.insert( "byte",   NifValue::tByte );
+	typeMap.insert( "sbyte",   NifValue::tByte );
+	typeMap.insert( "normbyte", NifValue::tNormbyte );
 	typeMap.insert( "char",   NifValue::tByte );
 	typeMap.insert( "word",   NifValue::tWord );
 	typeMap.insert( "short",  NifValue::tShort );
@@ -119,6 +121,7 @@ void NifValue::initialize()
 	typeMap.insert( "blob",     NifValue::tBlob );
 	typeMap.insert( "hfloat",   NifValue::tHfloat );
 	typeMap.insert( "HalfVector3", NifValue::tHalfVector3 );
+	typeMap.insert( "UshortVector3",  NifValue::tUshortVector3 );
 	typeMap.insert( "ByteVector3", NifValue::tByteVector3 );
 	typeMap.insert( "HalfVector2", NifValue::tHalfVector2 );
 	typeMap.insert( "HalfTexCoord", NifValue::tHalfVector2 );
@@ -361,6 +364,7 @@ void NifValue::clear()
 		break;
 	case tVector3:
 	case tHalfVector3:
+	case tUshortVector3:
 	case tByteVector3:
 		delete static_cast<Vector3 *>( val.data );
 		break;
@@ -433,6 +437,7 @@ void NifValue::changeType( Type t )
 		return;
 	case tVector3:
 	case tHalfVector3:
+	case tUshortVector3:
 	case tByteVector3:
 		val.data = new Vector3();
 		break;
@@ -503,6 +508,7 @@ void NifValue::operator=( const NifValue & other )
 	switch ( typ ) {
 	case tVector3:
 	case tHalfVector3:
+	case tUshortVector3:
 	case tByteVector3:
 		*static_cast<Vector3 *>( val.data ) = *static_cast<Vector3 *>( other.val.data );
 		return;
@@ -591,6 +597,7 @@ bool NifValue::operator==( const NifValue & other ) const
 	case tUInt64:
 		return val.u64 == other.val.u64;
 
+	case tNormbyte:
 	case tFloat:
 	case tHfloat:
 		return val.f32 == other.val.f32;
@@ -649,6 +656,7 @@ bool NifValue::operator==( const NifValue & other ) const
 
 	case tVector3:
 	case tHalfVector3:
+	case tUshortVector3:
 	case tByteVector3:
 	{
 		Vector3 * vec1 = static_cast<Vector3 *>(val.data);
@@ -831,6 +839,7 @@ bool NifValue::setFromString( const QString & s, const BaseModel * model, const 
 		val.f32 = s.toDouble( &ok );
 		break;
 	case tHfloat:
+	case tNormbyte:
 		val.u64 = 0;
 		val.f32 = s.toDouble( &ok );
 		break;
@@ -913,6 +922,7 @@ QString NifValue::toString() const
 			return QString("0.0");
 		return NumOrMinMax( val.f32, 'G', 6 );
 	case tHfloat:
+	case tNormbyte:
 		return QString::number( val.f32, 'f', 4 );
 	case tString:
 	case tSizedString:
@@ -966,6 +976,7 @@ QString NifValue::toString() const
 		}
 	case tVector3:
 	case tHalfVector3:
+	case tUshortVector3:
 	case tByteVector3:
 		{
 			Vector3 * v = static_cast<Vector3 *>( val.data );
@@ -1143,6 +1154,7 @@ QString NifValue::getTypeDebugStr( NifValue::Type t )
 	case tBlob:             typeStr = "Blob"; break;
 	case tHfloat:           typeStr = "Hfloat"; break;
 	case tHalfVector3:      typeStr = "HalfVector3"; break;
+	case tUshortVector3:    typeStr = "UshortVector3"; break;
 	case tByteVector3:      typeStr = "ByteVector3"; break;
 	case tHalfVector2:      typeStr = "HalfVector2"; break;
 	case tByteColor4:       typeStr = "ByteColor4"; break;

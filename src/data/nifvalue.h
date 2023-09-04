@@ -126,10 +126,12 @@ public:
 		tBlob,
 		tHfloat,
 		tHalfVector3,
+		tUshortVector3,
 		tByteVector3,
 		tHalfVector2,
 		tByteColor4,
 		tBSVertexDesc,
+		tNormbyte,
 		tNone= 0xff
 	};
 
@@ -253,7 +255,7 @@ public:
 	//! Check if the type of the data is a flag type (Flags in xml).
 	bool isFlags() const { return typ == tFlags; }
 	//! Check if the type of the data is a float type (Float in xml).
-	bool isFloat() const { return (typ == tFloat) || (typ == tHfloat); }
+	bool isFloat() const { return (typ == tFloat) || (typ == tHfloat) || (typ == tNormbyte); }
 	//! Check if the type of the data is of a link type (Ref or Ptr in xml).
 	bool isLink() const { return typ == tLink || typ == tUpLink; }
 	//! Check if the type of the data is a 3x3 matrix type (Matrix33 in xml).
@@ -592,6 +594,10 @@ template <> inline HalfVector3 NifValue::get( const BaseModel * model, const Nif
 {
 	return getType<HalfVector3>( tHalfVector3, model, item );
 }
+template <> inline UshortVector3 NifValue::get( const BaseModel * model, const NifItem * item ) const
+{
+	return getType<UshortVector3>( tUshortVector3, model, item );
+}
 template <> inline ByteVector3 NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
 	return getType<ByteVector3>( tByteVector3, model, item );
@@ -739,6 +745,11 @@ template <> inline bool NifValue::set( const Vector3 & x, const BaseModel * mode
 template <> inline bool NifValue::set( const HalfVector3 & x, const BaseModel * model, const NifItem * item )
 {
 	return setType( tHalfVector3, x, model, item );
+}
+//! Set the data from a UshortVector3. Return true if successful.
+template <> inline bool NifValue::set( const UshortVector3 & x, const BaseModel * model, const NifItem * item )
+{
+	return setType( tUshortVector3, x, model, item );
 }
 //! Set the data from a ByteVector3. Return true if successful.
 template <> inline bool NifValue::set( const ByteVector3 & x, const BaseModel * model, const NifItem * item )

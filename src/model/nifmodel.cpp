@@ -1268,6 +1268,7 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 						}
 					case NifValue::tFloat:
 					case NifValue::tHfloat:
+					case NifValue::tNormbyte:
 						{
 							return tr( "float: %1\nhex: 0x%2" )
 							       .arg( NumOrMinMax( item->valueToFloat(), 'g', 8 ) )
@@ -1291,6 +1292,8 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 						return item->get<Vector3>().toHtml();
 					case NifValue::tHalfVector3:
 						return item->get<HalfVector3>().toHtml();
+					case NifValue::tUshortVector3:
+						return item->get<UshortVector3>().toHtml();
 					case NifValue::tByteVector3:
 						return item->get<ByteVector3>().toHtml();
 					case NifValue::tMatrix:

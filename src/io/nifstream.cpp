@@ -143,6 +143,17 @@ bool NifIStream::read( NifValue & val )
 			val.val.u32 = half_to_float( half );
 			return (dataStream->status() == QDataStream::Ok);
 		}
+	case NifValue::tNormbyte:
+	{
+		quint8 v;
+		float fv;
+		*dataStream >> v;
+		fv = (double(v) / 255.0) * 2.0 - 1.0;
+		val.val.u64 = 0;
+		val.val.f32 = fv;
+
+		return (dataStream->status() == QDataStream::Ok);
+	}
 	case NifValue::tByteVector3:
 		{
 			quint8 x, y, z;
@@ -155,6 +166,24 @@ bool NifIStream::read( NifValue & val )
 			xf = (double( x ) / 255.0) * 2.0 - 1.0;
 			yf = (double( y ) / 255.0) * 2.0 - 1.0;
 			zf = (double( z ) / 255.0) * 2.0 - 1.0;
+
+			Vector3 * v = static_cast<Vector3 *>(val.val.data);
+			v->xyz[0] = xf; v->xyz[1] = yf; v->xyz[2] = zf;
+
+			return (dataStream->status() == QDataStream::Ok);
+		}
+	case NifValue::tUshortVector3:
+		{
+			uint16_t x, y, z;
+			float xf, yf, zf;
+
+			*dataStream >> x;
+			*dataStream >> y;
+			*dataStream >> z;
+
+			xf = (float) x;
+			yf = (float) y;
+			zf = (float) z;
 
 			Vector3 * v = static_cast<Vector3 *>(val.val.data);
 			v->xyz[0] = xf; v->xyz[1] = yf; v->xyz[2] = zf;
@@ -578,6 +607,12 @@ bool NifOStream::write( const NifValue & val )
 			uint16_t half = half_from_float( val.val.u32 );
 			return device->write( (char *)&half, 2 ) == 2;
 		}
+	case NifValue::tNormbyte:
+		{
+			uint8_t v = round( ((val.val.f32 + 1.0) / 2.0) * 255.0 );
+
+			return device->write( (char*)&v, 1 ) == 1;
+		}
 	case NifValue::tByteVector3:
 		{
 			Vector3 * vec = static_cast<Vector3 *>(val.val.data);
@@ -590,6 +625,19 @@ bool NifOStream::write( const NifValue & val )
 			v[2] = round( ((vec->xyz[2] + 1.0) / 2.0) * 255.0 );
 
 			return device->write( (char*)v, 3 ) == 3;
+		}
+	case NifValue::tUshortVector3:
+		{
+			Vector3 * vec = static_cast<Vector3 *>(val.val.data);
+			if ( !vec )
+				return false;
+
+			uint16_t v[3];
+			v[0] = (uint16_t) round(vec->xyz[0]);
+			v[1] = (uint16_t) round(vec->xyz[1]);
+			v[2] = (uint16_t) round(vec->xyz[2]);
+
+			return device->write( (char*)v, 6 ) == 3;
 		}
 	case NifValue::tHalfVector3:
 		{
@@ -840,6 +888,7 @@ int NifSStream::size( const NifValue & val )
 			return 1;
 
 	case NifValue::tByte:
+	case NifValue::tNormbyte:
 		return 1;
 	case NifValue::tWord:
 	case NifValue::tShort:

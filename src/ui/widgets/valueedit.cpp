@@ -65,7 +65,7 @@ bool ValueEdit::canEdit( NifValue::Type t )
 		|| t == NifValue::tMatrix || t == NifValue::tQuat || t == NifValue::tQuatXYZW
 		|| t == NifValue::tTriangle || t == NifValue::tShort || t == NifValue::tUInt || t == NifValue::tULittle32
 		|| t == NifValue::tHfloat || t == NifValue::tHalfVector3 || t == NifValue::tByteVector3
-		|| t == NifValue::tHalfVector2;
+		|| t == NifValue::tHalfVector2 || t == NifValue::tNormbyte;
 }
 
 class CenterLabel final : public QLabel
@@ -220,6 +220,7 @@ void ValueEdit::setValue( const NifValue & v )
 		break;
 	case NifValue::tFloat:
 	case NifValue::tHfloat:
+	case NifValue::tNormbyte:
 		{
 			FloatEdit * fe = new FloatEdit( this );
 			/*
@@ -407,6 +408,7 @@ NifValue ValueEdit::getValue() const
 			break;
 		case NifValue::tFloat:
 		case NifValue::tHfloat:
+		case NifValue::tNormbyte:
 			val.setFloat( qobject_cast<FloatEdit *>( edit )->value(), nullptr, nullptr );
 			break;
 		case NifValue::tLineString:

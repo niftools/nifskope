@@ -88,7 +88,8 @@ const QList<QPair<QString, QString>> NifSkope::filetypes = {
 	// KF types
 	{ "Keyframe", "kf" }, { "Keyframe Animation", "kfa" }, { "Keyframe Motion", "kfm" },
 	// Miscellaneous NIF types
-	{ "NIFCache", "nifcache" }, { "TEXCache", "texcache" }, { "PCPatch", "pcpatch" }, { "JMI", "jmi" }
+	{ "NIFCache", "nifcache" }, { "TEXCache", "texcache" }, { "PCPatch", "pcpatch" }, { "JMI", "jmi" },
+	{ "Divinity 2 Character Template", "cat" }
 };
 
 QStringList NifSkope::fileExtensions()

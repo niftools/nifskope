@@ -1012,23 +1012,24 @@ void drawCMS( const NifModel * nif, const QModelIndex & iShape, bool solid )
 		glPolygonMode( GL_FRONT_AND_BACK, solid ? GL_LINE : GL_FILL );
 		glEnable( GL_CULL_FACE );
 
-		QModelIndex iChunks = nif->getIndex( iData, "Chunks" );
-		for ( int r = 0; r < nif->rowCount( iChunks ); r++ ) {
-			Vector4 chunkOrigin = nif->get<Vector4>( iChunks.child( r, 0 ), "Translation" );
+		QModelIndex iChunkArr = nif->getIndex( iData, "Chunks" );
+		for ( int r = 0; r < nif->rowCount( iChunkArr ); r++ ) {
+			auto iChunk = nif->index(r, 0, iChunkArr);
+			Vector4 chunkOrigin = nif->get<Vector4>( iChunk, "Translation" );
 
-			quint32 transformIndex = nif->get<quint32>( iChunks.child( r, 0 ), "Transform Index" );
+			quint32 transformIndex = nif->get<quint32>( iChunk, "Transform Index" );
 			QModelIndex chunkTransform = iChunkTrans.child( transformIndex, 0 );
 			Vector4 chunkTranslation = nif->get<Vector4>( chunkTransform.child( 0, 0 ) );
 			Quat chunkRotation = nif->get<Quat>( chunkTransform.child( 1, 0 ) );
 
-			quint32 numOffsets = nif->get<quint32>( iChunks.child( r, 0 ), "Num Vertices" );
-			quint32 numIndices = nif->get<quint32>( iChunks.child( r, 0 ), "Num Indices" );
-			quint32 numStrips = nif->get<quint32>( iChunks.child( r, 0 ), "Num Strips" );
-			QVector<quint16> offsets = nif->getArray<quint16>( iChunks.child( r, 0 ), "Vertices" );
-			QVector<quint16> indices = nif->getArray<quint16>( iChunks.child( r, 0 ), "Indices" );
-			QVector<quint16> strips = nif->getArray<quint16>( iChunks.child( r, 0 ), "Strips" );
+			quint32 numOffsets = nif->get<quint32>( iChunk, "Num Vertices" ) / 3;
+			quint32 numIndices = nif->get<quint32>( iChunk, "Num Indices" );
+			quint32 numStrips = nif->get<quint32>( iChunk, "Num Strips" );
+			QVector<UshortVector3> offsets = nif->getArray<UshortVector3>( iChunk, "Vertices" );
+			QVector<quint16> indices = nif->getArray<quint16>( iChunk, "Indices" );
+			QVector<quint16> strips = nif->getArray<quint16>( iChunk, "Strips" );
 
-			QVector<Vector4> vertices( numOffsets / 3 );
+			QVector<Vector4> vertices( numOffsets );
 
 			int numStripVerts = 0;
 			int offset = 0;
@@ -1038,7 +1039,7 @@ void drawCMS( const NifModel * nif, const QModelIndex & iShape, bool solid )
 			}
 
 			for ( int n = 0; n < ((int)numOffsets / 3); n++ ) {
-				vertices[n] = chunkOrigin + chunkTranslation + Vector4( offsets[3 * n], offsets[3 * n + 1], offsets[3 * n + 2], 0 ) / 1000.0f;
+				vertices[n] = chunkOrigin + chunkTranslation + Vector4( offsets[n], 0.0f ) / 1000.0f;
 			}
 
 			glPolygonMode( GL_FRONT_AND_BACK, solid ? GL_FILL : GL_LINE );

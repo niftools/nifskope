@@ -389,6 +389,7 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 						}
 					case NifValue::tFloat:
 					case NifValue::tHfloat:
+					case NifValue::tNormbyte:
 						{
 							float f = item->valueToFloat();
 							quint32 i = item->valueToCount();
@@ -401,6 +402,8 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 						}
 					case NifValue::tVector3:
 						return item->get<Vector3>().toHtml();
+					case NifValue::tUshortVector3:
+						return item->get<UshortVector3>().toHtml();
 					case NifValue::tHalfVector3:
 						return item->get<HalfVector3>().toHtml();
 					case NifValue::tByteVector3:

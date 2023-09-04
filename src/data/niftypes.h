@@ -466,6 +466,24 @@ public:
 	}
 };
 
+class UshortVector3 : public Vector3
+{
+public:
+	//! Default constructor
+	UshortVector3()
+	{
+		xyz[0] = xyz[1] = xyz[2] = 0.0;
+	}
+	//! Constructor
+	UshortVector3( float x, float y, float z ) : Vector3( x, y, z )
+	{
+	}
+
+	UshortVector3( Vector3 v ) : Vector3( v )
+	{
+	}
+};
+
 class ByteVector3 : public Vector3
 {
 public:
@@ -1899,6 +1917,7 @@ inline QDataStream & operator>>( QDataStream & ds, BSVertexDesc & d )
 Q_DECLARE_TYPEINFO( Vector2,     Q_MOVABLE_TYPE );
 Q_DECLARE_TYPEINFO( Vector3,     Q_MOVABLE_TYPE );
 Q_DECLARE_TYPEINFO( HalfVector3, Q_MOVABLE_TYPE );
+Q_DECLARE_TYPEINFO( UshortVector3, Q_MOVABLE_TYPE );
 Q_DECLARE_TYPEINFO( ByteVector3, Q_MOVABLE_TYPE );
 Q_DECLARE_TYPEINFO( Vector4,     Q_MOVABLE_TYPE );
 Q_DECLARE_TYPEINFO( Color3,      Q_MOVABLE_TYPE );

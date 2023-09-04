@@ -82,7 +82,8 @@ public:
 		tagMember,
 		tagToken,
 		tagTokenTag,
-		tagModule
+		tagModule,
+		tagVerAttr
 	};
 
 	//! i18n wrapper for various strings
@@ -110,6 +111,7 @@ public:
 		tags.insert( "token", tagToken );
 		tags.insert( "bitfield", tagBitfield );
 		tags.insert( "member", tagMember );
+		tags.insert( "verattr", tagVerAttr );
 
 		tokens.clear();
 	}
@@ -308,6 +310,7 @@ public:
 				}
 				break;
 			case tagModule:
+			case tagVerAttr: // Unused Metadata
 				break;
 			default:
 				err( tr( "expected basic, enum, struct, niobject or version got %1 instead" ).arg( tagid ) );
@@ -507,6 +510,9 @@ public:
 				err( tr( "only token tags allowed in token declaration" ) );;
 			}
 			break;
+		case tagVerAttr:
+			// Unused Metadata
+			break;
 		default:
 			err( tr( "error unhandled tag %1" ).arg( tagid ) );
 			break;
@@ -625,8 +631,8 @@ public:
 	bool checkType( const NifData & d )
 	{
 		return ( NifModel::compounds.contains( d.type() )
-		        || NifValue::type( d.type() ) != NifValue::tNone
-		        || d.type() == XMLTMPL
+				|| NifValue::type( d.type() ) != NifValue::tNone
+				|| d.type() == XMLTMPL
 		);
 	}
 
@@ -634,10 +640,10 @@ public:
 	bool checkTemp( const NifData & d )
 	{
 		return ( d.temp().isEmpty()
-		        || NifValue::type( d.temp() ) != NifValue::tNone
-		        || d.temp() == XMLTMPL
-		        || NifModel::blocks.contains( d.temp() )
-		        || NifModel::compounds.contains( d.temp() )
+				|| NifValue::type( d.temp() ) != NifValue::tNone
+				|| d.temp() == XMLTMPL
+				|| NifModel::blocks.contains( d.temp() )
+				|| NifModel::compounds.contains( d.temp() )
 		);
 	}
 
@@ -702,9 +708,9 @@ bool NifModel::loadXML()
 	QDir        dir( QCoreApplication::applicationDirPath() );
 	QString     fname;
 	QStringList xmlList( QStringList()
-	                     << "nif.xml"
+						 << "nif.xml"
 #ifdef Q_OS_LINUX
-	                     << "/usr/share/nifskope/nif.xml"
+						 << "/usr/share/nifskope/nif.xml"
 #endif
 #ifdef Q_OS_MACX
 						 << "../../../nif.xml"
