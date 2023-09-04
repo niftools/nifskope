@@ -164,8 +164,11 @@ public:
 	{
 		QString str = list.value(attr);
 		if ( tokens.contains( attr ) ) {
-			for ( const auto & p : tokens[attr] )
-				str.replace( p.first, p.second );
+			for ( const auto& p : tokens[attr] )
+				if ( p.second == "INFINITY" )
+					str.replace(p.first, "0x7F800000");
+				else
+					str.replace( p.first, p.second );
 		}
 		return str;
 	}
