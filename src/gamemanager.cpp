@@ -256,8 +256,15 @@ QList<FSArchiveFile*> GameManager::opened_archives( const GameMode game )
 		return {};
 
 	QList<FSArchiveFile *> archives;
-	for ( const auto an : get()->handles.value(game) ) {
-		archives.append(an->getArchive());
+	if ( game == FALLOUT_3NV ) {
+		for ( const auto& an : get()->handles.value(FALLOUT_3) )
+			archives.append(an->getArchive());
+		for ( const auto& an : get()->handles.value(FALLOUT_NV) )
+			archives.append(an->getArchive());
+	}
+	else {
+		for ( const auto& an : get()->handles.value(game) )
+			archives.append(an->getArchive());
 	}
 	return archives;
 }
