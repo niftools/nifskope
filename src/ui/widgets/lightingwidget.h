@@ -2,11 +2,11 @@
 #define LIGHTINGWIDGET_H
 
 #include <QWidget>
+#include <QAction>
 
 #include <memory>
 
 class GLView;
-class QAction;
 
 namespace Ui {
 class LightingWidget;
@@ -14,11 +14,11 @@ class LightingWidget;
 
 class LightingWidget : public QWidget
 {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
-    LightingWidget( GLView * ogl, QWidget * parent = nullptr);
-    ~LightingWidget();
+	LightingWidget( GLView * ogl, QWidget * parent = nullptr);
+	~LightingWidget();
 
 	void setDefaults();
 	void setActions( QVector<QAction *> actions );
