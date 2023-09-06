@@ -2,7 +2,7 @@
 ## BUILD OPTIONS
 ###############################
 
-TEMPLATE = app
+TEMPLATE = vcapp
 TARGET   = NifSkope
 
 QT += xml opengl network widgets
@@ -13,8 +13,8 @@ contains(QT_VERSION, ^5\\.[0-6]\\..*) {
 	error("Minimum required version is Qt 5.7")
 }
 
-# C++11/14 Support
-CONFIG += c++14
+# C++ Standard Support
+CONFIG += c++20
 
 # Dependencies
 CONFIG += nvtristrip qhull zlib lz4 fsengine gli
@@ -413,7 +413,7 @@ win32 {
 
 	# Standards conformance to match GCC and clang
 	!isEmpty(_MSC_VER):greaterThan(_MSC_VER, 1900) {
-		QMAKE_CXXFLAGS += /permissive- /std:c++latest
+		QMAKE_CXXFLAGS += /permissive- /std:c++20
 	}
 
 	# LINKER FLAGS
@@ -437,8 +437,8 @@ win32 {
 	QMAKE_CXXFLAGS_DEBUG *= -Og -g3
 	QMAKE_CXXFLAGS_RELEASE *= -O3 -mfpmath=sse
 
-	# C++11 Support
-	QMAKE_CXXFLAGS_RELEASE *= -std=c++14
+	# C++ Standard Support
+	QMAKE_CXXFLAGS_RELEASE *= -std=c++20
 
 	#  Extension flags
 	QMAKE_CXXFLAGS_RELEASE *= -msse2 -msse
