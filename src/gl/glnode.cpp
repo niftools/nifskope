@@ -51,11 +51,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! @file glnode.cpp Scene management for visible NiNodes and their children.
 
-#ifndef M_PI
-#define M_PI 3.1415926535897932385
-#endif
-
-
 int Node::SELECTING = 0;
 
 static QColor highlightColor;
@@ -1310,7 +1305,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		float angle = atan2f( slidingAxis[1], slidingAxis[0] );
 
 		if ( slidingAxis[0] < 0.0001f && slidingAxis[1] < 0.0001f ) {
-			angle = (float)PI / 2.0f;
+			angle = float(HALF_PI);
 		}
 
 		t.translation = d1;
@@ -1840,7 +1835,7 @@ QString trans2string( Transform t )
 	float xr, yr, zr;
 	t.rotation.toEuler( xr, yr, zr );
 	return QString( "translation  X %1, Y %2, Z %3\n" ).Farg( t.translation[0] ).Farg( t.translation[1] ).Farg( t.translation[2] )
-	       +   QString( "rotation     Y %1, P %2, R %3  " ).Farg( xr * 180 / PI ).Farg( yr * 180 / PI ).Farg( zr * 180 / PI )
+	       +   QString( "rotation     Y %1, P %2, R %3  " ).Farg( rad2deg(xr) ).Farg( rad2deg(yr) ).Farg( rad2deg(zr) )
 	       +   QString( "( (%1, %2, %3), " ).Farg( t.rotation( 0, 0 ) ).Farg( t.rotation( 0, 1 ) ).Farg( t.rotation( 0, 2 ) )
 	       +   QString( "(%1, %2, %3), " ).Farg( t.rotation( 1, 0 ) ).Farg( t.rotation( 1, 1 ) ).Farg( t.rotation( 1, 2 ) )
 	       +   QString( "(%1, %2, %3) )\n" ).Farg( t.rotation( 2, 0 ) ).Farg( t.rotation( 2, 1 ) ).Farg( t.rotation( 2, 2 ) )

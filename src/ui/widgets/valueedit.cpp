@@ -796,16 +796,16 @@ void RotationEdit::setMatrix( const Matrix & m )
 		{
 			float Y, P, R;
 			m.toEuler( Y, P, R );
-			v[0]->setValue( Y / PI * 180 );
-			v[1]->setValue( P / PI * 180 );
-			v[2]->setValue( R / PI * 180 );
+			v[0]->setValue( rad2deg(Y) );
+			v[1]->setValue( rad2deg(P) );
+			v[2]->setValue( rad2deg(R) );
 		}
 		break;
 	case mAxis:
 		{
 			Vector3 axis; float angle;
 			m.toQuat().toAxisAngle( axis, angle );
-			v[0]->setValue( angle / PI * 180 );
+			v[0]->setValue( rad2deg(angle) );
 
 			for ( int x = 0; x < 3; x++ )
 				v[x + 1]->setValue( axis[x] );
@@ -837,13 +837,13 @@ Matrix RotationEdit::getMatrix() const
 	case mAuto:
 	case mEuler:
 		{
-			Matrix m; m.fromEuler( v[0]->value() / 180 * PI, v[1]->value() / 180 * PI, v[2]->value() / 180 * PI );
+			Matrix m; m.fromEuler( deg2rad(v[0]->value()), deg2rad(v[1]->value()), deg2rad(v[2]->value()) );
 			return m;
 		};
 	case mAxis:
 		{
 			Quat q;
-			q.fromAxisAngle( Vector3( v[1]->value(), v[2]->value(), v[3]->value() ), v[0]->value() / 180 * PI );
+			q.fromAxisAngle( Vector3( v[1]->value(), v[2]->value(), v[3]->value() ), deg2rad(v[0]->value()) );
 			Matrix m;
 			m.fromQuat( q );
 			return m;
@@ -859,13 +859,13 @@ Quat RotationEdit::getQuat() const
 	case mAuto:
 	case mEuler:
 		{
-			Matrix m; m.fromEuler( v[0]->value() / 180 * PI, v[1]->value() / 180 * PI, v[2]->value() / 180 * PI );
+			Matrix m; m.fromEuler( deg2rad(v[0]->value()), deg2rad(v[1]->value()), deg2rad(v[2]->value()) );
 			return m.toQuat();
 		}
 	case mAxis:
 		{
 			Quat q;
-			q.fromAxisAngle( Vector3( v[1]->value(), v[2]->value(), v[3]->value() ), v[0]->value() / 180 * PI );
+			q.fromAxisAngle( Vector3( v[1]->value(), v[2]->value(), v[3]->value() ), deg2rad(v[0]->value()) );
 			return q;
 		}
 	}
