@@ -141,16 +141,20 @@ class DetailsMessageBox : public QMessageBox
 {
 public:
 	explicit DetailsMessageBox( QWidget * parent, const QString & txt )
-	: QMessageBox( parent ), m_key( txt ) { }
+		: QMessageBox( parent ), m_key( txt ) { }
 
 	~DetailsMessageBox();
 
 	const QString & key() const { return m_key; }
 
+	int detailsCount() const { return m_nDetails; }
+	void updateDetailsCount() { m_nDetails++; }
+
 protected:
 	void closeEvent( QCloseEvent * event ) override;
 
 	QString m_key;
+	int m_nDetails = 0;
 };
 
 static QVector<DetailsMessageBox *> messageBoxes;
@@ -175,11 +179,18 @@ void Message::append( QWidget * parent, const QString & str, const QString & err
 	}
 
 	if ( msgBox ) {
-		// Append strings to existing message box's Detailed Text
-		// Show box if it has been closed before
-		msgBox->show();
-		if ( !err.isEmpty() )
-			msgBox->setDetailedText( msgBox->detailedText().append( err + "\n" ) );
+		// Limit the number of detail lines to MAX_DETAILS_COUNTER
+		// because when errors are spammed at hundreds or thousands in a row, this makes NifSkope unresponsive.
+		const int MAX_DETAILS_COUNTER = 50;
+
+		if ( !err.isEmpty() && msgBox->detailsCount() <= MAX_DETAILS_COUNTER ) {
+			// Append strings to existing message box's Detailed Text
+			// Show box if it has been closed before
+			msgBox->show();
+			QString newLine = ( msgBox->detailsCount() < MAX_DETAILS_COUNTER ) ? (err + "\n") : QString("...\n");
+			msgBox->setDetailedText( msgBox->detailedText().append( newLine ) );
+			msgBox->updateDetailsCount();
+		}
 
 	} else {
 		// Create new message box
@@ -205,11 +216,12 @@ void Message::append( QWidget * parent, const QString & str, const QString & err
 
 		if ( !err.isEmpty() ) {
 			msgBox->setDetailedText( err + "\n" );
+			msgBox->updateDetailsCount();
 
 			// Auto-show detailed text on first show.
 			// https://stackoverflow.com/questions/36083551/qmessagebox-show-details
 			for ( auto btn : msgBox->buttons() ) {
-				if ( msgBox->buttonRole( btn ) == QMessageBox::ActionRole) {
+				if ( msgBox->buttonRole( btn ) == QMessageBox::ActionRole ) {
 					btn->click(); // "Click" it to expand the detailed text
 					break;
 				}
@@ -237,9 +249,9 @@ DetailsMessageBox::~DetailsMessageBox()
 	unregisterMessageBox( this ); // Just in case if buttonClicked or closeEvent fail
 }
 
-void DetailsMessageBox::closeEvent( QCloseEvent * event ) {
-	
-	QMessageBox::closeEvent(event);
+void DetailsMessageBox::closeEvent( QCloseEvent * event )
+{	
+	QMessageBox::closeEvent( event );
 	if ( event->isAccepted() )
 		unregisterMessageBox( this );
 }
