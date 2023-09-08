@@ -214,6 +214,15 @@ void Message::append( QWidget * parent, const QString & str, const QString & err
 		msgBox->setText( str );
 		msgBox->setIcon( icon );
 
+		connect( msgBox, &QMessageBox::buttonClicked, [msgBox]( QAbstractButton * button ) { 
+			Q_UNUSED( button );
+			unregisterMessageBox( msgBox );
+			} );
+
+		msgBox->show();
+
+		// setDetailedText(...) has to be after show(),
+		// otherwise a "QWindowsWindow::setGeometry: Unable to set geometry ..." warning from Qt appears in Debug build.
 		if ( !err.isEmpty() ) {
 			msgBox->setDetailedText( err + "\n" );
 			msgBox->updateDetailsCount();
@@ -228,14 +237,7 @@ void Message::append( QWidget * parent, const QString & str, const QString & err
 			}
 		}
 
-		msgBox->show();
 		msgBox->activateWindow();
-
-		// Clear Detailed Text with each confirmation
-		connect( msgBox, &QMessageBox::buttonClicked, [msgBox]( QAbstractButton * button ) { 
-			Q_UNUSED( button );
-			unregisterMessageBox( msgBox );
-		} );
 	}
 }
 
