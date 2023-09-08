@@ -655,9 +655,7 @@ void Node::drawSelection() const
 		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
 		Transform t;
-		Matrix m;
-		m.fromQuat( nif->get<Quat>( scene->currentIndex, "Rotation" ) );
-		t.rotation = m;
+		t.rotation = nif->get<Matrix>( scene->currentIndex, "Rotation" );
 
 		glPushMatrix();
 		glMultMatrix( t );
