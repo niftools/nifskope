@@ -94,7 +94,7 @@ static char const * transform_xpm[] = {
 
 bool spApplyTransformation::isApplicable( const NifModel * nif, const QModelIndex & index )
 {
-	return nif->itemType( index ) == "NiBlock" &&
+	return nif->itemStrType( index ) == "NiBlock" &&
 		( nif->inherits( nif->itemName( index ), "NiNode" )
 	      || nif->inherits( nif->itemName( index ), "NiTriBasedGeom" )
 		  || nif->inherits( nif->itemName( index ), "BSTriShape" ));

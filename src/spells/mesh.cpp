@@ -245,14 +245,14 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		return nif->itemType( index ).toLower() == "texcoord" || nif->blockInherits( index, "NiTriBasedGeomData" );
+		return nif->itemStrType( index ).toLower() == "texcoord" || nif->blockInherits( index, "NiTriBasedGeomData" );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex idx = index;
 
-		if ( nif->itemType( index ).toLower() != "texcoord" ) {
+		if ( nif->itemStrType( index ).toLower() != "texcoord" ) {
 			idx = nif->getIndex( nif->getBlockIndex( index ), "UV Sets" );
 		}
 

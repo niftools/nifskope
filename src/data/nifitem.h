@@ -72,7 +72,7 @@ private:
 
 	NifSharedData( const QString & n, const QString & t, const QString & tt, const QString & a, const QString & a1,
 				   const QString & a2, const QString & c, quint32 v1, quint32 v2, NifSharedData::DataFlags f )
-		: QSharedData(), name( n ), type( t ), temp( tt ), arg( a ), argexpr( a ), arr1( a1 ), arr2( a2 ),
+		: QSharedData(), name( n ), type( t ), templ( tt ), arg( a ), argexpr( a ), arr1( a1 ), arr2( a2 ),
 		cond( c ), ver1( v1 ), ver2( v2 ), condexpr( c ), arr1expr( a1 ), flags( f )
 	{
 	}
@@ -91,7 +91,7 @@ private:
 	//! Type.
 	QString type;
 	//! Template type.
-	QString temp;
+	QString templ;
 	//! Argument.
 	QString arg;
 	//! Arg as an expression.
@@ -143,7 +143,7 @@ public:
 	//! Get the type of the data.
 	inline const QString & type() const { return d->type; }
 	//! Get the template type of the data.
-	inline const QString & temp() const { return d->temp; }
+	inline const QString & templ() const { return d->templ; }
 	//! Get the argument of the data.
 	inline const QString & arg() const { return d->arg; }
 	//! Get the first array length of the data.
@@ -190,7 +190,7 @@ public:
 	//! Sets the type of the data.
 	void setType( const QString & type ) { d->type = type; }
 	//! Sets the template type of the data.
-	void setTemp( const QString & temp ) { d->temp = temp; }
+	void setTempl( const QString & templ ) { d->templ = templ; }
 	//! Sets the argument of the data.
 	void setArg( const QString & arg )
 	{
@@ -314,6 +314,8 @@ struct NifBlock
 class NifItem
 {
 public:
+	NifItem() = delete;
+
 	NifItem( BaseModel * model, NifItem * parent )
 		: parentModel( model ), parentItem( parent ) {}
 
@@ -388,11 +390,10 @@ public:
 
 	ChildIterator<const NifItem *> childIter() const { return ChildIterator<const NifItem *>(childItems); }
 
-
-	//! Get child items
+	//! Get QVector of child items.
 	const QVector<NifItem *> & children() { return childItems; }
 
-	//! Return a count of the number of child items
+	//! Return the number of child items.
 	int childCount() const { return childItems.count(); }
 
 private:
@@ -424,7 +425,7 @@ public:
 	NifItem * insertChild( const NifData & data, NifValue::Type forceVType, int at = -1 )
 	{
 		NifItem * item = new NifItem( parentModel, data, this );
-		item->valueChangeType( forceVType );
+		item->changeValueType( forceVType );
 		registerChild( item, at );
 		return item;
 	}
@@ -586,10 +587,10 @@ public:
 
 	//! Return the name of the data
 	inline const QString & name() const { return itemData.name(); }
-	//! Return the type of the data
-	inline const QString & type() const { return itemData.type(); }
+	//! Return the type of the data (the "type" attribute in the XML file).
+	inline const QString & strType() const { return itemData.type(); }
 	//! Return the template type of the data
-	inline const QString & temp() const { return itemData.temp(); }
+	inline const QString & templ() const { return itemData.templ(); }
 	//! Return the argument attribute of the data
 	inline const QString & arg()  const { return itemData.arg();  }
 	//! Return the first array length of the data
@@ -612,10 +613,11 @@ public:
 	//! Return the arr1 attribute of the data, as an expression
 	inline const NifExpr & arr1expr() const { return itemData.arr1expr(); }
 	//! Return the version condition attribute of the data
-	inline QString vercond() const { return itemData.vercond(); }
+	inline const QString & vercond() const { return itemData.vercond(); }
 	//! Return the version condition attribute of the data, as an expression
 	inline const NifExpr & verexpr() const { return itemData.verexpr(); }
-	//! Return the abstract attribute of the data
+
+	//! Return the abstract attribute of the data.
 	inline bool isAbstract() const { return itemData.isAbstract(); }
 	//! Is the item data binary. Binary means the data is being treated as one blob.
 	inline bool isBinary() const { return itemData.isBinary(); }
@@ -627,31 +629,33 @@ public:
 	inline bool isArray() const { return itemData.isArray(); }
 	//! Is the item data a multi-array. Multi-array means the item's children are also arrays.
 	inline bool isMultiArray() const { return itemData.isMultiArray(); }
+	//! Is the item data an array or is its parent a multi-array.
+	inline bool isArrayEx() const { return isArray() || ( parentItem && parentItem->isMultiArray() ); }
 	//! Is the item data conditionless. Conditionless means no expression evaluation is necessary.
 	inline bool isConditionless() const { return itemData.isConditionless(); }
 
-	//! Does the item's name matches testName?
+	//! Does the item's name match testName?
 	inline bool hasName( const QString & testName ) const { return itemData.name() == testName; }
-	//! Does the item's name matches testName?
+	//! Does the item's name match testName?
 	inline bool hasName( const QLatin1String & testName ) const { return itemData.name() == testName; }
-	//! Does the item's name matches testName?
+	//! Does the item's name match testName?
 	// item->hasName("Foo") is much faster than item->name() == "Foo"
 	inline bool hasName( const char * testName ) const { return itemData.name() == QLatin1String(testName); }
 
-	//! Does the item's name matches testName?
-	inline bool hasType( const QString & testName ) const { return itemData.type() == testName; }
-	//! Does the item's name matches testName?
-	inline bool hasType( const QLatin1String & testName ) const { return itemData.type() == testName; }
-	//! Does the item's name matches testName?
+	//! Does the item's string type match testType?
+	inline bool hasStrType( const QString & testType ) const { return itemData.type() == testType; }
+	//! Does the item's string type match testType?
+	inline bool hasStrType( const QLatin1String & testType) const { return itemData.type() == testType; }
+	//! Does the item's string type match testType?
 	// item->hasType("Foo") is much faster than item->type() == "Foo"
-	inline bool hasType( const char * testName ) const { return itemData.type() == QLatin1String(testName); }
+	inline bool hasStrType( const char * testType ) const { return itemData.type() == QLatin1String(testType); }
 
 	//! Set the name
 	inline void setName( const QString & name ) {   itemData.setName( name );   }
-	//! Set the type
-	inline void setType( const QString & type ) {   itemData.setType( type );   }
+	//! Set the string type
+	inline void setStrType( const QString & type ) { itemData.setType( type ); }
 	//! Set the template type
-	inline void setTemp( const QString & temp ) {   itemData.setTemp( temp );   }
+	inline void setTempl( const QString & temp ) { itemData.setTempl( temp ); }
 	//! Set the argument attribute
 	inline void setArg( const QString & arg )   {   itemData.setArg( arg );     }
 	//! Set the first array length
@@ -681,86 +685,69 @@ public:
 
 	//! Gets the item's value type (NifValue::Type).
 	inline NifValue::Type valueType() const { return itemData.valueType(); }
+	//! Check if the item's value is of testType.
+	inline bool hasValueType( NifValue::Type testType ) const { return valueType() == testType; }
 	//! Check if the type of the item's value is a color type (Color3 or Color4 in xml).
-	inline bool valueIsColor() const { return itemData.valueIsColor(); }
+	inline bool isColor() const { return itemData.valueIsColor(); }
 	//! Check if the type of the item's value is a count.
-	inline bool valueIsCount() const { return itemData.valueIsCount(); }
+	inline bool isCount() const { return itemData.valueIsCount(); }
 	//! Check if the type of the item's value is a flag type (Flags in xml).
-	inline bool valueIsFlags() const { return itemData.valueIsFlags(); }
+	inline bool isFlags() const { return itemData.valueIsFlags(); }
 	//! Check if the type of the item's value is a float type (Float in xml).
-	inline bool valueIsFloat() const { return itemData.valueIsFloat(); }
+	inline bool isFloat() const { return itemData.valueIsFloat(); }
 	//! Check if the type of the item's value is of a link type (Ref or Ptr in xml).
-	inline bool valueIsLink() const { return itemData.valueIsLink(); }
+	inline bool isLink() const { return itemData.valueIsLink(); }
 	//! Check if the type of the item's value is a 3x3 matrix type (Matrix33 in xml).
-	inline bool valueIsMatrix() const { return itemData.valueIsMatrix(); }
+	inline bool isMatrix() const { return itemData.valueIsMatrix(); }
 	//! Check if the type of the item's value is a 4x4 matrix type (Matrix44 in xml).
-	inline bool valueIsMatrix4() const { return itemData.valueIsMatrix4(); }
-	//! Check if the type of the item's value is a quaternion type.
-	inline bool valueIsQuat() const { return itemData.valueIsQuat(); }
-	//! Check if the type of the item's value is a string type.
-	inline bool valueIsString() const { return itemData.valueIsString(); }
-	//! Check if the type of the item's value is a Vector 4.
-	inline bool valueIsVector4() const { return itemData.valueIsVector4(); }
-	//! Check if the type of the item's value is a Vector 3.
-	inline bool valueIsVector3() const { return itemData.valueIsVector3(); }
-	//! Check if the type of the item's value is a Half Vector3.
-	inline bool valueIsHalfVector3() const { return itemData.valueIsHalfVector3(); }
-	//! Check if the type of the item's value is a Byte Vector3.
-	inline bool valueIsByteVector3() const { return itemData.valueIsByteVector3(); }
-	//! Check if the type of the item's value is a HalfVector2.
-	inline bool valueIsHalfVector2() const { return itemData.valueIsHalfVector2(); }
-	//! Check if the type of the item's value is a Vector 2.
-	inline bool valueIsVector2() const { return itemData.valueIsVector2(); }
-	//! Check if the type of the item's value is a triangle type.
-	inline bool valueIsTriangle() const { return itemData.valueIsTriangle(); }
-	//! Check if the type of the item's value is a byte array.
-	inline bool valueIsByteArray() const { return itemData.valueIsByteArray(); }
-	//! Check if the type of the item's value is a File Version.
-	inline bool valueIsFileVersion() const { return itemData.valueIsFileVersion(); }
+	inline bool isMatrix4() const { return itemData.valueIsMatrix4(); }
 	//! Check if the type of the item's value is a byte matrix.
-	inline bool valueIsByteMatrix() const { return itemData.valueIsByteMatrix(); }
+	inline bool isByteMatrix() const { return itemData.valueIsByteMatrix(); }
+	//! Check if the type of the item's value is a quaternion type.
+	inline bool isQuat() const { return itemData.valueIsQuat(); }
+	//! Check if the type of the item's value is a string type.
+	inline bool isString() const { return itemData.valueIsString(); }
+	//! Check if the type of the item's value is a Vector 2.
+	inline bool isVector2() const { return itemData.valueIsVector2(); }
+	//! Check if the type of the item's value is a HalfVector2.
+	inline bool isHalfVector2() const { return itemData.valueIsHalfVector2(); }
+	//! Check if the type of the item's value is a Vector 3.
+	inline bool isVector3() const { return itemData.valueIsVector3(); }
+	//! Check if the type of the item's value is a Half Vector3.
+	inline bool isHalfVector3() const { return itemData.valueIsHalfVector3(); }
+	//! Check if the type of the item's value is a Byte Vector3.
+	inline bool isByteVector3() const { return itemData.valueIsByteVector3(); }
+	//! Check if the type of the item's value is a Vector 4.
+	inline bool isVector4() const { return itemData.valueIsVector4(); }
+	//! Check if the type of the item's value is a triangle type.
+	inline bool isTriangle() const { return itemData.valueIsTriangle(); }
+	//! Check if the type of the item's value is a byte array.
+	inline bool isByteArray() const { return itemData.valueIsByteArray(); }
+	//! Check if the type of the item's value is a File Version.
+	inline bool isFileVersion() const { return itemData.valueIsFileVersion(); }
 
-	//! Return the item's value as a count, if applicable.
-	inline quint64 valueToCount() const { return itemData.value.toCount( parentModel, this ); }
-	//! Return the value of an item as a count if the item is not null and if it's applicable.
-	static inline quint64 valueToCount( const NifItem * item ) { return item ? item->valueToCount() : 0; }
-
-	//! Return the item's value as a float, if applicable.
-	inline float valueToFloat() const { return itemData.value.toFloat( parentModel, this ); }
-	//! Return the value of an item as a float if the item is not null and if it's applicable.
-	static inline float valueToFloat( const NifItem * item ) { return item ? item->valueToFloat() : 0.0f; }
-
-	//! Return the item's value as a link, if applicable.
-	inline qint32 valueToLink() const { return itemData.value.toLink( parentModel, this ); }
-	//! Return the value of an item as a link if the item is not null and if it's applicable.
-	static inline qint32 valueToLink( const NifItem * item ) { return item ? item->valueToLink() : -1; }
-
-	//! Return the item's value as a QColor, if applicable.
-	inline QColor valueToColor() const { return itemData.value.toColor( parentModel, this ); }
-	//! Return the value of an item as a QColor if the item is not null and if it's applicable.
-	static inline QColor valueToColor( const NifItem * item ) { return item ? item->valueToColor() : QColor(); }
-
-	//! Return the item's value as a file version, if applicable.
-	inline quint32 valueToFileVersion() const { return itemData.value.toFileVersion( parentModel, this ); }
-	//! Return the value of an item as a file version if the item is not null and if it's applicable.
-	static inline quint32 valueToFileVersion( const NifItem * item ) { return item ? item->valueToFileVersion() : 0; }
+	//! Return the item's value as a count if applicable.
+	inline quint64 getCountValue() const { return itemData.value.toCount( parentModel, this ); }
+	//! Return the item's value as a float if applicable.
+	inline float getFloatValue() const { return itemData.value.toFloat( parentModel, this ); }
+	//! Return the item's value as a link if applicable.
+	inline qint32 getLinkValue() const { return itemData.value.toLink( parentModel, this ); }
+	//! Return the item's value as a QColor if applicable.
+	inline QColor getColorValue() const { return itemData.value.toColor( parentModel, this ); }
+	//! Return the item's value as a file version if applicable.
+	inline quint32 getFileVersionValue() const { return itemData.value.toFileVersion( parentModel, this ); }
 
 	//! Return a string which represents the item's value.
-	inline QString valueToString() const { return itemData.value.toString(); }
-	//! Return a string which represents the value of an item if the the is the item is not null.
-	static inline QString valueToString( const NifItem * item ) { return item ? item->valueToString() : QString(); }
-
+	inline QString getValueAsString() const { return itemData.value.toString(); }
 	//! Return the item's value as a QVariant.
-	inline QVariant valueToVariant() const { return itemData.value.toVariant(); }
-	//! Return the value of an item as a QVariant if the item is not null.
-	static inline QVariant valueToVariant( const NifItem * item ) { return item ? item->valueToVariant() : QVariant(); }
+	inline QVariant getValueAsVariant() const { return itemData.value.toVariant(); }
 
 	//! Get the value of the item
 	template <typename T> inline T get() const { return itemData.value.get<T>( parentModel, this ); }
 	//! Get the value of an item if it's not nullptr
 	template <typename T> static inline T get( const NifItem * item ) { return item ? item->get<T>() : T(); }
 
-	//! Get the child items as an array
+	//! Get the child items' values as an array.
 	template <typename T> QVector<T> getArray() const
 	{
 		QVector<T> array;
@@ -772,7 +759,7 @@ public:
 		}
 		return array;
 	}
-	//! Get the child items of arrayRoot as an array if arrayRoot is not nullptr
+	//! Get the values of the child items of arrayRoot as an array if arrayRoot is not nullptr.
 	template <typename T> static inline QVector<T> getArray( const NifItem * arrayRoot )
 	{ 
 		return arrayRoot ? arrayRoot->getArray<T>() : QVector<T>();
@@ -783,13 +770,13 @@ public:
 	//! Set the value of an item if it's not nullptr.
 	template <typename T> static inline bool set( NifItem * item, const T & v ) { return item ? item->set<T>(v) : false; }
 
-	//! Set the child items from an array
+	//! Set the child items' values from an array.
 	template <typename T> bool setArray( const QVector<T> & array )
 	{
 		int nSize = childItems.count();
 		if ( nSize != array.count() ) {
 			reportError( 
-				"setArray",
+				__func__,
 				QString( "The input QVector's size (%1) does not match the array's size (%2)." ).arg( array.count() ).arg( nSize ) 
 			);
 			return false;
@@ -802,7 +789,7 @@ public:
 		return true;
 	}
 
-	//! Set the child items from a single value
+	//! Set the child items' values from a single value.
 	template <typename T> bool fillArray( const T & val )
 	{
 		for ( NifItem * child : childItems ) {
@@ -814,37 +801,24 @@ public:
 	}
 
 	//! Set the item's value to a count.
-	inline bool valueFromCount( quint64 c ) { return itemData.value.setCount( c, parentModel, this ); }
-	//! Set the value of an item to a count if the item is not null.
-	static inline bool valueFromCount( NifItem * item, quint64 c ) { return item ? item->valueFromCount( c ) : false; }
-
+	inline bool setCountValue( quint64 c ) { return itemData.value.setCount( c, parentModel, this ); }
 	//! Set the item's value to a float.
-	inline bool valueFromFloat( float f ) { return itemData.value.setFloat( f, parentModel, this ); }
-	//! Set the value of an item to a float if the item is not null.
-	static inline bool valueFromFloat( NifItem * item, float f ) { return item ? item->valueFromFloat( f ) : false; }
-
+	inline bool setFloatValue( float f ) { return itemData.value.setFloat( f, parentModel, this ); }
 	//! Set the item's value to a link (block number).
-	inline bool valueFromLink( qint32 link ) { return itemData.value.setLink( link, parentModel, this ); }
-	//! Set the value of an item to a link (block number) if the item is not null.
-	static inline bool valueFromLink( NifItem * item, qint32 link ) { return item ? item->valueFromLink( link ) : false; }
-
+	inline bool setLinkValue( qint32 link ) { return itemData.value.setLink( link, parentModel, this ); }
 	//! Set the item's value to a file version.
-	inline bool valueFromFileVersion( quint32 v ) { return itemData.value.setFileVersion( v, parentModel, this ); }
-	//! Set the value of an item to a file version if the item is not null.
-	static inline bool valueFromFileVersion( NifItem * item,  quint32 v ) { return item ? item->valueFromFileVersion( v ) : false; }
+	inline bool setFileVersionValue( quint32 v ) { return itemData.value.setFileVersion( v, parentModel, this ); }
 
 	//! Set the item's value from a string.
-	inline bool valueFromString( const QString & str ) { return itemData.value.setFromString( str, parentModel, this ); }
-	//! Set the value of an item from a string if the item is not null.
-	static inline bool valueFromString( NifItem * item, const QString & str ) { return item ? item->valueFromString( str ) : false; }
-
+	inline bool setValueFromString( const QString & str ) { return itemData.value.setFromString( str, parentModel, this ); }
 	//! Set the item's value from a QVariant.
-	inline bool valueFromVariant( const QVariant & v ) { return itemData.value.setFromVariant( v ); }
-	//! Set the value of an item from a QVariant if the item is not null.
-	static inline bool valueFromVariant( NifItem * item, const QVariant & v ) { return item ? item->valueFromVariant( v ) : false; }
+	inline bool setValueFromVariant( const QVariant & v ) { return itemData.value.setFromVariant( v ); }
 
 	//! Change the type of value stored.
-	inline void valueChangeType( NifValue::Type t ) { itemData.value.changeType( t ); }
+	inline void changeValueType( NifValue::Type t ) { itemData.value.changeType( t ); }
+
+	//! Return string representation ("path") of an item within its model (e.g., "NiTriShape [0]\Vertex Data [3]\Vertex colors").
+	QString repr() const;
 
 	void reportError( const QString & msg ) const;
 	void reportError( const QString & funcName, const QString & msg ) const;

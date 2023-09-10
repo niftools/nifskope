@@ -838,7 +838,7 @@ void importObj( NifModel * nif, const QModelIndex & index, bool collision )
 					nif->updateArraySize( iTextures );
 				} else if ( nif->getVersionNumber() >= 0x0303000D ) {
 					//Newer versions use NiTexturingProperty and NiSourceTexture
-					if ( iTexProp.isValid() == false || first_tri_shape == false || nif->itemType( iTexProp ) != "NiTexturingProperty" ) {
+					if ( iTexProp.isValid() == false || first_tri_shape == false || nif->itemStrType( iTexProp ) != "NiTexturingProperty" ) {
 						if ( !cBSShaderPPLightingProperty ) // no need of NiTexturingProperty when BSShaderPPLightingProperty is present
 							iTexProp = nif->insertNiBlock( "NiTexturingProperty" );
 					}
@@ -855,7 +855,7 @@ void importObj( NifModel * nif, const QModelIndex & index, bool collision )
 						nif->set<int>( iBaseMap, "Filter Mode", 2 );
 					}
 
-					if ( iTexSource.isValid() == false || first_tri_shape == false || nif->itemType( iTexSource ) != "NiSourceTexture" ) {
+					if ( iTexSource.isValid() == false || first_tri_shape == false || nif->itemStrType( iTexSource ) != "NiSourceTexture" ) {
 						if ( !cBSShaderPPLightingProperty )
 							iTexSource = nif->insertNiBlock( "NiSourceTexture" );
 					}
@@ -874,13 +874,13 @@ void importObj( NifModel * nif, const QModelIndex & index, bool collision )
 					}
 				} else {
 					//Older versions use NiTextureProperty and NiImage
-					if ( iTexProp.isValid() == false || first_tri_shape == false || nif->itemType( iTexProp ) != "NiTextureProperty" ) {
+					if ( iTexProp.isValid() == false || first_tri_shape == false || nif->itemStrType( iTexProp ) != "NiTextureProperty" ) {
 						iTexProp = nif->insertNiBlock( "NiTextureProperty" );
 					}
 
 					addLink( nif, iShape, "Properties", nif->getBlockNumber( iTexProp ) );
 
-					if ( iTexSource.isValid() == false || first_tri_shape == false || nif->itemType( iTexSource ) != "NiImage" ) {
+					if ( iTexSource.isValid() == false || first_tri_shape == false || nif->itemStrType( iTexSource ) != "NiImage" ) {
 						iTexSource = nif->insertNiBlock( "NiImage" );
 					}
 

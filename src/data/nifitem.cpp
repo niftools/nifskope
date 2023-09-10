@@ -113,7 +113,7 @@ void NifItem::updateLinkCache( int iStartChild, bool bDoCleanup )
 	// Add new links
 	for ( int i = iStartChild; i < childItems.count(); i++ ) {
 		const NifItem * c = childItems.at( i );
-		if ( c->valueIsLink() )
+		if ( c->isLink() )
 			linkRows.append( i );
 		if ( c->hasChildLinks() )
 			linkAncestorRows.append( i );
@@ -137,6 +137,11 @@ void NifItem::onParentItemChange()
 
 	for ( NifItem * c : childItems )
 		c->onParentItemChange();
+}
+
+QString NifItem::repr() const
+{
+	return parentModel->itemRepr( this );
 }
 
 void NifItem::reportError( const QString & msg ) const

@@ -132,7 +132,7 @@ bool KfmModel::updateArraySizeImpl( NifItem * array )
 {
 	if ( !array->isArray() ) {
 		if ( array )
-			reportError( array, "updateArraySize", "The input item is not an array." );
+			reportError( array, __func__, "The input item is not an array." );
 		return false;
 	}
 
@@ -140,10 +140,10 @@ bool KfmModel::updateArraySizeImpl( NifItem * array )
 	int nNewSize = evalArraySize( array );
 
 	if ( nNewSize > 1024 * 1024 * 8 ) {
-		reportError( array, "updateArraySize", tr( "Array size %1 is much too large." ).arg( nNewSize ) );
+		reportError( array, __func__, tr( "Array size %1 is much too large." ).arg( nNewSize ) );
 		return false;
 	} else if ( nNewSize < 0 ) {
-		reportError( array, "updateArraySize", tr( "Array size %1 is invalid." ).arg( nNewSize ) );
+		reportError( array, __func__, tr( "Array size %1 is invalid." ).arg( nNewSize ) );
 		return false;
 	}
 
@@ -151,9 +151,9 @@ bool KfmModel::updateArraySizeImpl( NifItem * array )
 
 	if ( nNewSize > nOldSize ) { // Add missing items
 		NifData data( array->name(),
-					  array->type(),
-					  array->temp(),
-					  NifValue( NifValue::type( array->type() ) ),
+					  array->strType(),
+					  array->templ(),
+					  NifValue( NifValue::type( array->strType() ) ),
 					  addConditionParentPrefix( array->arg() ),
 			          addConditionParentPrefix( array->arr2() ) // arr1 in children is parent arr2
 		);
@@ -198,16 +198,16 @@ void KfmModel::insertType( NifItem * parent, const NifData & data, int at )
 		NifItem * branch = insertBranch( parent, data, at );
 		branch->prepareInsert( compound->types.count() );
 
-		if ( !data.arg().isEmpty() || !data.temp().isEmpty() ) {
+		if ( !data.arg().isEmpty() || !data.templ().isEmpty() ) {
 			QString arg = addConditionParentPrefix( data.arg() );
-			QString tmp = data.temp();
+			QString tmp = data.templ();
 
 			if ( tmp == XMLTMPL ) {
 				NifItem * tItem = branch;
 
 				while ( tmp == XMLTMPL && tItem->parent() ) {
 					tItem = tItem->parent();
-					tmp = tItem->temp();
+					tmp = tItem->templ();
 				}
 			}
 

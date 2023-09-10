@@ -164,14 +164,14 @@ bool Renderer::ConditionSingle::eval( const NifModel * nif, const QVector<QModel
 	if ( !item )
 		return false;
 
-	if ( item->valueIsString() )
-		return compare( item->valueToString(), right ) ^ invert;
-	else if ( item->valueIsCount() )
-		return compare( item->valueToCount(), right.toULongLong( nullptr, 0 ) ) ^ invert;
-	else if ( item->valueIsFloat() )
-		return compare( item->valueToFloat(), (float)right.toDouble() ) ^ invert;
-	else if ( item->valueIsFileVersion() )
-		return compare( item->valueToFileVersion(), right.toUInt( nullptr, 0 ) ) ^ invert;
+	if ( item->isString() )
+		return compare( item->getValueAsString(), right ) ^ invert;
+	else if ( item->isCount() )
+		return compare( item->getCountValue(), right.toULongLong( nullptr, 0 ) ) ^ invert;
+	else if ( item->isFloat() )
+		return compare( item->getFloatValue(), (float)right.toDouble() ) ^ invert;
+	else if ( item->isFileVersion() )
+		return compare( item->getFileVersionValue(), right.toUInt( nullptr, 0 ) ) ^ invert;
 	else if ( item->valueType() == NifValue::tBSVertexDesc )
 		return compare( (uint) item->get<BSVertexDesc>().GetFlags(), right.toUInt( nullptr, 0 ) ) ^ invert;
 

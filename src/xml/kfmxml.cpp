@@ -223,7 +223,7 @@ public:
 
 	bool checkTemp( const NifData & data )
 	{
-		return data.temp().isEmpty() || NifValue::type( data.temp() ) != NifValue::tNone || data.temp() == XMLTMPL;
+		return data.templ().isEmpty() || NifValue::type( data.templ() ) != NifValue::tNone || data.templ() == XMLTMPL;
 	}
 
 	bool endDocument() override final
@@ -236,7 +236,7 @@ public:
 					err( tr( "compound type %1 referes to unknown type %2" ).arg( key, data.type() ) );
 
 				if ( !checkTemp( data ) )
-					err( tr( "compound type %1 refers to unknown template type %2" ).arg( key, data.temp() ) );
+					err( tr( "compound type %1 refers to unknown template type %2" ).arg( key, data.templ() ) );
 
 				if ( data.type() == key )
 					err( tr( "compound type %1 contains itself" ).arg( key ) );

@@ -217,6 +217,7 @@ public:
 protected:
 	constexpr int firstBlockRow() const;
 	int lastBlockRow() const;
+	bool isBlockRow( int row ) const;
 
 public:
 	//! Get the number of NiBlocks
@@ -228,6 +229,9 @@ public:
 	//! Get the numerical index (or link) of the block an item belongs to.
 	// Return -1 if the item is the root or header or footer or null.
 	int getBlockNumber( const QModelIndex & index ) const;
+	
+	// Checks if blockNum is a valid block number.
+	bool isValidBlockNumber( qint32 blockNum ) const;
 
 	//! Insert or append ( row == -1 ) a new NiBlock
 	QModelIndex insertNiBlock( const QString & identifier, int row = -1 );
@@ -835,7 +839,7 @@ inline QList<int> NifModel::getParentLinks( int block ) const
 
 inline bool NifModel::isLink( const NifItem * item ) const
 {
-	return item ? item->valueIsLink() : false;
+	return item && item->isLink();
 }
 
 inline bool NifModel::isLink( const QModelIndex & index ) const
@@ -858,6 +862,11 @@ inline int NifModel::lastBlockRow() const
 	return root->childCount() - 2; // The last root's child is always the footer.
 }
 
+inline bool NifModel::isBlockRow( int row ) const
+{
+	return ( row >= firstBlockRow() && row <= lastBlockRow() );
+}
+
 inline int NifModel::getBlockCount() const
 {
 	return std::max( lastBlockRow() - firstBlockRow() + 1, 0 );
@@ -866,6 +875,11 @@ inline int NifModel::getBlockCount() const
 inline int NifModel::getBlockNumber( const QModelIndex & index ) const
 {
 	return getBlockNumber( getItem(index) );
+}
+
+inline bool NifModel::isValidBlockNumber( qint32 blockNum ) const
+{
+	return blockNum >= 0 && blockNum < getBlockCount();
 }
 
 
@@ -1100,6 +1114,10 @@ inline QModelIndex NifModel::getBlockIndex( const QModelIndex & index, const QSt
 
 // isNiBlock
 
+inline bool NifModel::isNiBlock( const NifItem * item ) const
+{
+	return item && item->parent() == root && isBlockRow( item->row() );
+}
 inline bool NifModel::isNiBlock( const NifItem * item, const QString & testType ) const
 {
 	return isNiBlock(item) && item->hasName(testType);
@@ -1350,7 +1368,7 @@ inline bool NifModel::assignString( const QModelIndex & itemParent, const char *
 
 inline qint32 NifModel::getLink( const NifItem * item ) const
 {
-	return NifItem::valueToLink( item );
+	return item ? item->getLinkValue() : -1;
 }
 inline qint32 NifModel::getLink( const NifItem * itemParent, int itemIndex ) const
 {
@@ -1394,19 +1412,19 @@ inline qint32 NifModel::getLink( const QModelIndex & itemParent, const char * it
 
 inline bool NifModel::setLink( const NifItem * itemParent, int itemIndex, qint32 link )
 {
-	return setLink( getItem(itemParent, itemIndex), link );
+	return setLink( getItem(itemParent, itemIndex, true), link );
 }
 inline bool NifModel::setLink( const NifItem * itemParent, const QString & itemName, qint32 link )
 {
-	return setLink( getItem(itemParent, itemName), link );
+	return setLink( getItem(itemParent, itemName, true), link );
 }
 inline bool NifModel::setLink( const NifItem * itemParent, const QLatin1String & itemName, qint32 link )
 {
-	return setLink( getItem(itemParent, itemName), link );
+	return setLink( getItem(itemParent, itemName, true), link );
 }
 inline bool NifModel::setLink( const NifItem * itemParent, const char * itemName, qint32 link )
 {
-	return setLink( getItem(itemParent, QLatin1String(itemName)), link );
+	return setLink( getItem(itemParent, QLatin1String(itemName), true), link );
 }
 inline bool NifModel::setLink( const QModelIndex & index, qint32 link )
 {
@@ -1414,19 +1432,19 @@ inline bool NifModel::setLink( const QModelIndex & index, qint32 link )
 }
 inline bool NifModel::setLink( const QModelIndex & itemParent, int itemIndex, qint32 link )
 {
-	return setLink( getItem(itemParent, itemIndex), link );
+	return setLink( getItem(itemParent, itemIndex, true), link );
 }
 inline bool NifModel::setLink( const QModelIndex & itemParent, const QString & itemName, qint32 link )
 {
-	return setLink( getItem(itemParent, itemName), link );
+	return setLink( getItem(itemParent, itemName, true), link );
 }
 inline bool NifModel::setLink( const QModelIndex & itemParent, const QLatin1String & itemName, qint32 link )
 {
-	return setLink( getItem(itemParent, itemName), link );
+	return setLink( getItem(itemParent, itemName, true), link );
 }
 inline bool NifModel::setLink( const QModelIndex & itemParent, const char * itemName, qint32 link )
 {
-	return setLink( getItem(itemParent, QLatin1String(itemName)), link );
+	return setLink( getItem(itemParent, QLatin1String(itemName), true), link );
 }
 
 
@@ -1474,19 +1492,19 @@ inline QVector<qint32> NifModel::getLinkArray( const QModelIndex & arrayParent, 
 
 inline bool NifModel::setLinkArray( const NifItem * arrayParent, int arrayIndex, const QVector<qint32> & links )
 {
-	return setLinkArray( getItem(arrayParent, arrayIndex), links );
+	return setLinkArray( getItem(arrayParent, arrayIndex, true), links );
 }
 inline bool NifModel::setLinkArray( const NifItem * arrayParent, const QString & arrayName, const QVector<qint32> & links )
 {
-	return setLinkArray( getItem(arrayParent, arrayName), links );
+	return setLinkArray( getItem(arrayParent, arrayName, true), links );
 }
 inline bool NifModel::setLinkArray( const NifItem * arrayParent, const QLatin1String & arrayName, const QVector<qint32> & links )
 {
-	return setLinkArray( getItem(arrayParent, arrayName), links );
+	return setLinkArray( getItem(arrayParent, arrayName, true), links );
 }
 inline bool NifModel::setLinkArray( const NifItem * arrayParent, const char * arrayName, const QVector<qint32> & links )
 {
-	return setLinkArray( getItem(arrayParent, QLatin1String(arrayName)), links );
+	return setLinkArray( getItem(arrayParent, QLatin1String(arrayName), true), links );
 }
 inline bool NifModel::setLinkArray( const QModelIndex & iArray, const QVector<qint32> & links )
 {
@@ -1494,19 +1512,19 @@ inline bool NifModel::setLinkArray( const QModelIndex & iArray, const QVector<qi
 }
 inline bool NifModel::setLinkArray( const QModelIndex & arrayParent, int arrayIndex, const QVector<qint32> & links )
 {
-	return setLinkArray( getItem(arrayParent, arrayIndex), links );
+	return setLinkArray( getItem(arrayParent, arrayIndex, true), links );
 }
 inline bool NifModel::setLinkArray( const QModelIndex & arrayParent, const QString & arrayName, const QVector<qint32> & links )
 {
-	return setLinkArray( getItem(arrayParent, arrayName), links );
+	return setLinkArray( getItem(arrayParent, arrayName, true), links );
 }
 inline bool NifModel::setLinkArray( const QModelIndex & arrayParent, const QLatin1String & arrayName, const QVector<qint32> & links )
 {
-	return setLinkArray( getItem(arrayParent, arrayName), links );
+	return setLinkArray( getItem(arrayParent, arrayName, true), links );
 }
 inline bool NifModel::setLinkArray( const QModelIndex & arrayParent, const char * arrayName, const QVector<qint32> & links )
 {
-	return setLinkArray( getItem(arrayParent, QLatin1String(arrayName)), links );
+	return setLinkArray( getItem(arrayParent, QLatin1String(arrayName), true), links );
 }
 
 #endif

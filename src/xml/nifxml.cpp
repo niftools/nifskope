@@ -642,11 +642,11 @@ public:
 	//! Checks that a template type is valid
 	bool checkTemp( const NifData & d )
 	{
-		return ( d.temp().isEmpty()
-				|| NifValue::type( d.temp() ) != NifValue::tNone
-				|| d.temp() == XMLTMPL
-				|| NifModel::blocks.contains( d.temp() )
-				|| NifModel::compounds.contains( d.temp() )
+		return ( d.templ().isEmpty()
+				|| NifValue::type( d.templ() ) != NifValue::tNone
+				|| d.templ() == XMLTMPL
+				|| NifModel::blocks.contains( d.templ() )
+				|| NifModel::compounds.contains( d.templ() )
 		);
 	}
 
@@ -661,7 +661,7 @@ public:
 					err( tr( "struct type %1 refers to unknown type %2" ).arg( key, data.type() ) );
 
 				if ( !checkTemp( data ) )
-					err( tr( "struct type %1 refers to unknown template type %2" ).arg( key, data.temp() ) );
+					err( tr( "struct type %1 refers to unknown template type %2" ).arg( key, data.templ() ) );
 
 				if ( data.type() == key )
 					err( tr( "struct type %1 contains itself" ).arg( key ) );
@@ -682,7 +682,7 @@ public:
 					err( tr( "niobject %1 refers to unknown type %2" ).arg( key, data.type() ) );
 
 				if ( !checkTemp( data ) )
-					err( tr( "niobject %1 refers to unknown template type %2" ).arg( key, data.temp() ) );
+					err( tr( "niobject %1 refers to unknown template type %2" ).arg( key, data.templ() ) );
 			}
 		}
 

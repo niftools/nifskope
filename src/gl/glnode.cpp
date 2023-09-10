@@ -916,7 +916,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 
 						//for ( int t = 0; t < nif->rowCount( iTris ); t++ )
 						//	DrawTriangleIndex( verts, nif->get<Triangle>( iTris.child( t, 0 ), "Triangle" ), t );
-					} else if ( nif->isCompound( nif->itemType( scene->currentIndex ) ) ) {
+					} else if ( nif->isCompound( nif->itemStrType( scene->currentIndex ) ) ) {
 						Triangle tri = nif->get<Triangle>( iTris.child( i, 0 ), "Triangle" );
 						DrawTriangleSelection( verts, tri );
 						//DrawTriangleIndex( verts, tri, i );
@@ -1866,7 +1866,7 @@ BoundSphere Node::bounds() const
 		boundsphere |= BoundSphere( trans, rad.length() );
 	}
 
-	if ( nif->itemType( iBlock ) == "NiMesh" )
+	if ( nif->itemStrType( iBlock ) == "NiMesh" )
 		boundsphere |= BoundSphere( nif, iBlock );
 
 	// BSBound collision bounding box
