@@ -2459,7 +2459,7 @@ void NifModel::adjustLinks( NifItem * parent, int block, int delta )
 	if ( parent->childCount() > 0 ) {
 		for ( auto child : parent->children() )
 			adjustLinks( child, block, delta );
-	} else {
+	} else if ( parent->isLink() ) {
 		int l = parent->getLinkValue();
 
 		if ( l >= 0 && ( ( delta != 0 && l >= block ) || l == block ) ) {
@@ -2479,7 +2479,7 @@ void NifModel::mapLinks( NifItem * parent, const QMap<qint32, qint32> & map )
 	if ( parent->childCount() > 0 ) {
 		for ( auto child : parent->children() )
 			mapLinks( child, map );
-	} else {
+	} else if ( parent->isLink() ) {
 		int l = parent->getLinkValue();
 
 		if ( l >= 0 ) {
