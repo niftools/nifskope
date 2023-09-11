@@ -71,6 +71,14 @@ void BoneWeights::setTransform( const NifModel * nif, const QModelIndex & index 
 	radius = sph.radius;
 }
 
+BoneWeightsUNorm::BoneWeightsUNorm(QVector<quint32> unorms, int v)
+{
+	weights.resize(unorms.size());
+	for ( int i = 0; i < unorms.size(); i++ ) {
+		weights[i] = VertexWeight(v, unorms[i] / (float)UINT_MAX);
+	}
+}
+
 
 SkinPartition::SkinPartition( const NifModel * nif, const QModelIndex & index )
 {
