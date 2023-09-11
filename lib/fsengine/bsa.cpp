@@ -166,7 +166,7 @@ bool BSA::canOpen( const QString & fn )
 		if ( magic == F4_BSAHEADER_FILEID ) {
 			if ( f.read( (char *) & version, sizeof( version ) ) != 4 )
 				return false;
-			return version == F4_BSAHEADER_VERSION;
+			return version == F4_BSAHEADER_VERSION || version == SF_BSAHEADER_VERSION2 || version == SF_BSAHEADER_VERSION3;
 		} else if ( magic == OB_BSAHEADER_FILEID ) {
 			if ( f.read( (char *)&version, sizeof( version ) ) != 4 )
 				return false;
@@ -198,12 +198,21 @@ bool BSA::open()
 		if ( magic == F4_BSAHEADER_FILEID ) {
 			bsa.read( (char*)&version, sizeof( version ) );
 
-			if ( version != F4_BSAHEADER_VERSION )
-				throw QString( "file version" );
+			//if ( version != F4_BSAHEADER_VERSION )
+			//	throw QString( "file version" );
 
 			F4BSAHeader header;
 			if ( bsa.read( (char *)&header, sizeof( header ) ) != sizeof( header ) )
 				throw QString( "header size" );
+
+			quint32 unk1 = 0;
+			quint32 unk2 = 0;
+			if ( version == SF_BSAHEADER_VERSION2 || version == SF_BSAHEADER_VERSION3 ) {
+				bsa.read((char*)&unk1, sizeof(quint32));
+				bsa.read((char*)&unk2, sizeof(quint32));
+			}
+			if ( version == SF_BSAHEADER_VERSION3 )
+				bsa.read((char*)&version3flag, sizeof(quint32));
 
 			numFiles = header.numFiles;
 
@@ -222,10 +231,14 @@ bool BSA::open()
 				}
 			}
 
+			// Two new ints for Starfield
+			quint32 OFFSET = (version == F4_BSAHEADER_VERSION) ? 8 : 16;
+			OFFSET = (version >= SF_BSAHEADER_VERSION3) ? 20 : OFFSET;
+
 			QString h = QString::fromLatin1( header.type, 4 );
 			if ( h == "GNRL" ) {
 				// General BA2 Format
-				if ( bsa.seek( sizeof( header ) + 8 ) ) {
+				if ( bsa.seek( sizeof( header ) + OFFSET ) ) {
 					for ( quint32 i = 0; i < numFiles; i++ ) {
 						F4GeneralInfo finfo;
 						bsa.read( (char*)&finfo, sizeof( F4GeneralInfo ) );
@@ -241,7 +254,7 @@ bool BSA::open()
 				}
 			} else if ( h == "DX10" ) {
 				// Texture BA2 Format
-				if ( bsa.seek( sizeof( header ) + 8 ) ) {
+				if ( bsa.seek( sizeof( header ) + OFFSET ) ) {
 					for ( quint32 i = 0; i < numFiles; i++ ) {
 						F4Tex tex;
 						bsa.read( (char*)&tex.header, 24 );
@@ -339,7 +352,7 @@ bool BSA::open()
 				folderInfos << info;
 			}
 
-			for ( const BSAFolderInfo folderInfo : folderInfos ) {
+			for ( const BSAFolderInfo& folderInfo : folderInfos ) {
 				QString folderName;
 				if ( ! BSAReadSizedString( bsa, folderName ) || folderName.isEmpty() )
 				{
