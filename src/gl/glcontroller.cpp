@@ -42,7 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *  IControllable
  */
 
-IControllable::IControllable( Scene * s, const QModelIndex & i ) : scene( s ), iBlock( i )
+IControllable::IControllable( Scene * s, const QModelIndex & iBlock) : scene( s ), iBlock( iBlock )
 {
 }
 
