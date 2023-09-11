@@ -38,7 +38,6 @@
       <font>
        <family>Segoe UI Semibold</family>
        <pointsize>12</pointsize>
-       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
@@ -89,7 +88,7 @@
             <x>0</x>
             <y>0</y>
             <width>792</width>
-            <height>545</height>
+            <height>541</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -726,6 +725,85 @@
             </widget>
            </item>
            <item>
+            <widget class="QFrame" name="frameGame9">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::NoFrame</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Plain</enum>
+             </property>
+             <layout class="QHBoxLayout" name="horizontalLayout_12">
+              <property name="topMargin">
+               <number>4</number>
+              </property>
+              <property name="bottomMargin">
+               <number>4</number>
+              </property>
+              <item>
+               <widget class="QLabel" name="lblGame9">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="text">
+                 <string>GAME_9</string>
+                </property>
+                <property name="buddy">
+                 <cstring>edtGame9</cstring>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="edtGame9">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="readOnly">
+                 <bool>true</bool>
+                </property>
+                <property name="placeholderText">
+                 <string>Game Not Found</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="btnBrowse9">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="text">
+                 <string>Browse...</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="chkGame9">
+                <property name="text">
+                 <string>Enabled</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
             <widget class="QFrame" name="frameGame0">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
@@ -920,6 +998,11 @@
             </item>
             <item>
              <property name="text">
+              <string>GAME_9</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
               <string>GAME_0</string>
              </property>
             </item>
@@ -1066,6 +1149,11 @@ Game Paths</string>
             <item>
              <property name="text">
               <string>GAME_8</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>GAME_9</string>
              </property>
             </item>
             <item>

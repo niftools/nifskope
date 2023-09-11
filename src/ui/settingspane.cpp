@@ -468,7 +468,7 @@ void SettingsRender::setDefault()
 
 #ifdef Q_OS_WIN32
 bool regFolderPath( QStringList & gamePaths, const QString & regPath, const QString & regValue, const QString & gameFolder,
-                     QStringList gameSubDirs = QStringList(), QStringList gameArchiveFilters = QStringList() )
+					 QStringList gameSubDirs = QStringList(), QStringList gameArchiveFilters = QStringList() )
 {
 	QSettings reg( regPath, QSettings::Registry32Format );
 
@@ -503,7 +503,7 @@ bool regFolderPath( QStringList & gamePaths, const QString & regPath, const QStr
 }
 
 bool regFolderPaths( QStringList & gamePaths, const QStringList & regPaths, const QString & regValue, const QString & gameFolder,
-                     QStringList gameSubDirs = QStringList(), QStringList gameArchiveFilters = QStringList() )
+					 QStringList gameSubDirs = QStringList(), QStringList gameArchiveFilters = QStringList() )
 {
 	bool result = false;
 	for ( const QString & path : regPaths ) {
@@ -885,6 +885,12 @@ void SettingsResources::on_btnArchiveAutoDetect_clicked()
 	}
 
 	for ( const auto& a : GameManager::filter_archives(data_archives, "textures") ) {
+		if ( archives_list.contains(a, Qt::CaseInsensitive) )
+			continue;
+		archives_list << a;
+	}
+
+	for ( const auto& a : GameManager::filter_archives(data_archives, "geometries") ) {
 		if ( archives_list.contains(a, Qt::CaseInsensitive) )
 			continue;
 		archives_list << a;
