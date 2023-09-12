@@ -393,6 +393,14 @@ void NifSkope::initDockWidgets()
 	dInsp->setVisible( false );
 	dKfm->setVisible( false );
 
+	ui->menuShow->addAction(dList->toggleViewAction());
+	ui->menuShow->addAction(dTree->toggleViewAction());
+	ui->menuShow->addAction(dBrowser->toggleViewAction());
+	ui->menuShow->addAction(dHeader->toggleViewAction());
+	ui->menuShow->addAction(dInsp->toggleViewAction());
+	ui->menuShow->addAction(dKfm->toggleViewAction());
+	ui->menuShow->addAction(dRefr->toggleViewAction());
+
 	// Set Inspect widget
 	dInsp->setWidget( inspect );
 
