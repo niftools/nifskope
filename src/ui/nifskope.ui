@@ -175,12 +175,6 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="aToggleBlockList"/>
-   <addaction name="aToggleBlockDetails"/>
-   <addaction name="aToggleHeader"/>
-   <addaction name="aToggleInspect"/>
-   <addaction name="aToggleKfm"/>
-   <addaction name="aToggleHelp"/>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
