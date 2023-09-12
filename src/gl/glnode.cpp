@@ -187,7 +187,7 @@ void NodeList::alphaSort()
  */
 
 
-Node::Node( Scene * s, const QModelIndex & index ) : IControllable( s, index ), parent( 0 ), ref( 0 )
+Node::Node( Scene * s, const QModelIndex & iBlock) : IControllable( s, iBlock ), parent( 0 ), ref( 0 )
 {
 	nodeId = 0;
 	flags.bits = 0;

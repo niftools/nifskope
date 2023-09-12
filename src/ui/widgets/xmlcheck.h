@@ -99,6 +99,7 @@ public:
 signals:
 	void sigStart( const QString & file );
 	void sigReady( const QString & result );
+	void incrementError();
 
 protected:
 	void run() override final;
@@ -129,6 +130,8 @@ protected slots:
 	void threadStarted();
 	void threadFinished();
 
+	void onIncrementError();
+
 	void renumberThreads( int );
 
 protected:
@@ -154,6 +157,9 @@ protected:
 	QList<TestThread *> threads;
 
 	QDateTime time;
+
+	QMutex mutex;
+	uint32_t errorCount = 0;
 };
 
 #endif

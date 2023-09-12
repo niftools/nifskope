@@ -826,7 +826,10 @@ QString BaseModel::topItemRepr( const NifItem * item ) const
 
 void BaseModel::reportError( const QString & err ) const
 {
-	Message::append( getWindow(), "Parsing warnings:", err );
+	if ( msgMode == MSG_USER )
+		Message::append(getWindow(), "Parsing warnings:", err);
+	else
+		testMsg(err);
 }
 
 void BaseModel::reportError( const NifItem * item, const QString & err ) const

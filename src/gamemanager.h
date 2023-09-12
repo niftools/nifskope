@@ -49,6 +49,7 @@ enum GameMode : int
 	SKYRIM_SE,
 	FALLOUT_4,
 	FALLOUT_76,
+	STARFIELD,
 
 	NUM_GAMES,
 
@@ -76,6 +77,7 @@ static const GameMap STRING = {
 	{SKYRIM_SE, "Skyrim SE"},
 	{FALLOUT_4, "Fallout 4"},
 	{FALLOUT_76, "Fallout 76"},
+	{STARFIELD, "Starfield"},
 	{OTHER, "Other Games"}
 };
 
@@ -100,6 +102,7 @@ static const GameMap DATA = {
 	{SKYRIM_SE, "Data"},
 	{FALLOUT_4, "Data"},
 	{FALLOUT_76, "Data"},
+	{STARFIELD, "Data"},
 	{OTHER, ""}
 };
 
@@ -112,6 +115,7 @@ static const ResourceListMap FOLDERS = {
 	{SKYRIM_SE, {"."}},
 	{FALLOUT_4, {".", "Textures"}},
 	{FALLOUT_76, {".", "Textures"}},
+	{STARFIELD, {".", "Textures"}},
 	{OTHER, {}}
 };
 
@@ -154,6 +158,7 @@ enum GameVersion : uint64_t
 	V20_2_0_7_SSE = VersionDef(20, 2, 0, 7, 11, 100),
 	V20_2_0_7_FO4 = VersionDef(20, 2, 0, 7, 11, 130),
 	V20_2_0_7_F76 = VersionDef(20, 2, 0, 7, 11, 155),
+	V20_2_0_7_STF = VersionDef(20, 2, 0, 7, 11, 172),
 	V20_2_0_8 = VersionDef(20, 2, 0, 8),
 	V20_3_0_1 = VersionDef(20, 3, 0, 1),
 	V20_3_0_2 = VersionDef(20, 3, 0, 2),
@@ -198,6 +203,7 @@ enum BSVersion
 	BSSTREAM_100 = 100,
 	BSSTREAM_130 = 130,
 	BSSTREAM_155 = 155,
+	BSSTREAM_172 = 172,
 };
 
 QString StringForMode(GameMode game);

@@ -178,6 +178,8 @@ GameMode GameManager::get_game( uint32_t version, uint32_t user, uint32_t bsver 
 		return FALLOUT_4;
 	case BSSTREAM_155:
 		return FALLOUT_76;
+	case BSSTREAM_172:
+		return STARFIELD;
 	default:
 		break;
 	};
@@ -211,6 +213,8 @@ void GameManager::init_settings( int& manager_version, QProgressDialog* dlg ) co
 		QStringList filtered;
 		if ( game.id == FALLOUT_4 || game.id == FALLOUT_76 )
 			filtered.append(archives_list(game.path, DATA.value(game.id, {}), "materials"));
+		if ( game.id == STARFIELD )
+			filtered.append(archives_list(game.path, DATA.value(game.id, {}), "geometries"));
 		filtered.append(archives_list(game.path, DATA.value(game.id, {}), "textures"));
 		filtered.removeDuplicates();
 

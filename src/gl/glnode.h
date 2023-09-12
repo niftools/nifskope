@@ -94,7 +94,7 @@ class Node : public IControllable
 	} NodeFlags;
 
 public:
-	Node( Scene * scene, const QModelIndex & block );
+	Node( Scene * scene, const QModelIndex & iBlock );
 
 	static int SELECTING;
 

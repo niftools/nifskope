@@ -87,7 +87,7 @@ TestShredder::TestShredder()
 	hdrOnly = new QCheckBox( tr( "Header Only" ), this );
 	hdrOnly->setChecked( settings.value( "Header Only", false ).toBool() );
 
-	repErr = new QCheckBox( tr( "List Matches Only" ), this );
+	repErr = new QCheckBox( tr( "Show only Matches/Errors" ), this );
 	repErr->setChecked( settings.value( "List Matches Only", true ).toBool() );
 
 	count = new QSpinBox();
@@ -203,6 +203,7 @@ void TestShredder::renumberThreads( int num )
 		connect( thread, &TestThread::sigStart, this, &TestShredder::threadStarted );
 		connect( thread, &TestThread::sigReady, text, &QTextBrowser::append );
 		connect( thread, &TestThread::finished, this, &TestShredder::threadFinished );
+		connect( thread, &TestThread::incrementError, this, &TestShredder::onIncrementError );
 		threads.append( thread );
 
 		thread->blockMatch = blockMatch->text();
@@ -228,6 +229,7 @@ void TestShredder::renumberThreads( int num )
 
 void TestShredder::run()
 {
+	errorCount = 0;
 	progress->setMaximum( progress->maximum() - queue.count() );
 	queue.clear();
 
@@ -278,6 +280,7 @@ void TestShredder::threadStarted()
 
 void TestShredder::threadFinished()
 {
+	uint32_t finishedThreads = 0;
 	if ( queue.isEmpty() ) {
 		for ( TestThread * thread : threads ) {
 			if ( thread->isRunning() )
@@ -288,7 +291,20 @@ void TestShredder::threadFinished()
 
 		label->setText( tr( "%1 files in %2 seconds" ).arg( progress->maximum() ).arg( time.secsTo( QDateTime::currentDateTime() ) ) );
 		label->setVisible( true );
+
+		for ( TestThread* thread : threads ) {
+			if ( thread->isFinished() )
+				finishedThreads++;
+		}
+		if ( finishedThreads == threads.count() )
+			text->append(tr("Completed with %1 errors.").arg(errorCount));
 	}
+}
+
+void TestShredder::onIncrementError()
+{
+	QMutexLocker lock(&mutex);
+	errorCount += 1;
 }
 
 void TestShredder::chooseBlock()
@@ -548,6 +564,7 @@ void TestThread::run()
 						if ( msg.type() != QtDebugMsg ) {
 							result += "<br>" + msg;
 							rep |= true;
+							emit incrementError();
 						}
 					}
 
