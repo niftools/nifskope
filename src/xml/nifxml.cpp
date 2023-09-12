@@ -347,11 +347,16 @@ public:
 					QString vercond = get( "vercond" );
 					QString defval = get( "default" );
 
+					bool hasTypeCondition = false;
+
 					QString onlyT = list.value( "onlyT" );
 					QString excludeT = list.value( "excludeT" );
 					if ( !onlyT.isEmpty() || !excludeT.isEmpty() ) {
 						Q_ASSERT( cond.isEmpty() );
 						Q_ASSERT( onlyT.isEmpty() != excludeT.isEmpty() );
+						// hasTypeCondition flag here relies on that cond is always either "cond" attribute or "onlyT/excludeT", not a combination of both at the same time.
+						// If it ever changes, hasTypeCondition logic will have to be rewritten.
+						hasTypeCondition = true;
 						if ( !onlyT.isEmpty() )
 							cond = onlyT;
 						else
@@ -417,6 +422,7 @@ public:
 					data.setIsArray( isArray );
 					data.setIsMultiArray( isMultiArray );
 					data.setIsMixin( isMixin );
+					data.setHasTypeCondition( hasTypeCondition );
 
 
 					if ( !defval.isEmpty() ) {

@@ -110,7 +110,7 @@ protected:
 	void copy();
 	//! Row Paste
 	void paste();
-	void pasteTo( QModelIndex idx, const NifValue & srcValue );
+	void pasteTo( const QModelIndex idx, const NifValue & srcValue );
 
 	//! Array/Compound Paste
 	void pasteArray();

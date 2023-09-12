@@ -66,9 +66,8 @@ void NifTreeView::setModel( QAbstractItemModel * model )
 
 	QTreeView::setModel( model );
 
-	if ( nif && doRowHiding ) {
+	if ( nif )
 		connect( nif, &BaseModel::dataChanged, this, &NifTreeView::updateConditions );
-	}
 }
 
 void NifTreeView::setRootIndex( const QModelIndex & index )
@@ -93,11 +92,8 @@ void NifTreeView::setRowHiding( bool show )
 
 	doRowHiding = !show;
 
-	if ( nif && doRowHiding ) {
+	if ( nif )
 		connect( nif, &BaseModel::dataChanged, this, &NifTreeView::updateConditions );
-	} else if ( nif ) {
-		disconnect( nif, &BaseModel::dataChanged, this, &NifTreeView::updateConditions );
-	}
 
 	// refresh
 	updateConditionRecurse( rootIndex() );
@@ -114,13 +110,13 @@ bool NifTreeView::isRowHidden( int r, const QModelIndex & index ) const
 bool NifTreeView::isRowHidden( const NifItem * rowItem ) const
 {
 	if ( rowItem && nif ) {
-		if ( doRowHiding ) {
-			if ( !nif->evalCondition( rowItem ))
+		if ( doRowHiding || rowItem->hasTypeCondition() ) {
+			if ( !nif->evalCondition( rowItem ) )
 				return true;
-		} /* else {
+		} else {
 			if ( !nif->evalVersion( rowItem ) )
 				return true;
-		} */
+		}
 	}
 
 	return false;
@@ -167,7 +163,7 @@ void NifTreeView::copy()
 	}
 }
 
-void NifTreeView::pasteTo( QModelIndex iDest, const NifValue & srcValue )
+void NifTreeView::pasteTo( const QModelIndex iDest, const NifValue & srcValue )
 {	
 	// Only run once per row for the correct column
 	if ( iDest.column() != NifModel::ValueCol )
@@ -254,7 +250,7 @@ void NifTreeView::pasteTo( QModelIndex iDest, const NifValue & srcValue )
 void NifTreeView::paste()
 {
 	ChangeValueCommand::createTransaction();
-	for ( const auto i : valueIndexList( selectionModel()->selectedIndexes() ) )
+	for ( const auto & i : valueIndexList( selectionModel()->selectedIndexes() ) )
 		pasteTo( i, valueClipboard->getValue() );
 }
 
@@ -490,9 +486,8 @@ void NifTreeView::currentChanged( const QModelIndex & current, const QModelIndex
 {
 	QTreeView::currentChanged( current, last );
 
-	if ( nif && doRowHiding ) {
+	if ( nif )
 		updateConditionRecurse( current );
-	}
 
 	autoExpanded = false;
 	auto mdl = static_cast<NifModel *>( nif );

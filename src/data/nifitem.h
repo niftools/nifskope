@@ -63,7 +63,8 @@ public:
 		Array = 0x10,
 		MultiArray = 0x20,
 		Conditionless = 0x40,
-		Mixin = 0x80
+		Mixin = 0x80,
+		TypeCondition = 0x100
 	};
 
 	typedef QFlags<DataFlag> DataFlags;
@@ -168,6 +169,7 @@ public:
 	inline const QString & vercond() const { return d->vercond; }
 	//! Get the version condition attribute of the data, as an expression.
 	inline const NifExpr & verexpr() const { return d->verexpr; }
+
 	//! Get the abstract attribute of the data.
 	inline bool isAbstract() const { return d->flags & NifSharedData::Abstract; }
 	//! Is the data binary. Binary means the data is being treated as one blob.
@@ -182,6 +184,8 @@ public:
 	inline bool isMultiArray() const { return d->flags & NifSharedData::MultiArray; }
 	//! Is the data conditionless. Conditionless means no expression evaluation is necessary.
 	inline bool isConditionless() const { return d->flags & NifSharedData::Conditionless; }
+	//! Does the data's condition checks only the type of the parent block.
+	inline bool hasTypeCondition() const { return d->flags & NifSharedData::TypeCondition; }
 	//! Is the data a mixin. Mixin is a specialized compound which creates no nesting.
 	inline bool isMixin() const { return d->flags & NifSharedData::Mixin; }
 
@@ -244,6 +248,8 @@ public:
 	inline void setIsConditionless( bool flag ) { setFlag( NifSharedData::Conditionless, flag ); }
 	//! Sets the mixin data flag. Mixin is a specialized compound which creates no nesting.
 	inline void setIsMixin( bool flag ) { setFlag( NifSharedData::Mixin, flag ); }
+	//! Sets the type condition data flag (does the data's condition checks only the type of the parent block).
+	inline void setHasTypeCondition( bool flag ) { setFlag( NifSharedData::TypeCondition, flag ); }
 
 	//! Gets the data's value type (NifValue::Type).
 	inline NifValue::Type valueType() const { return value.type(); }
@@ -633,6 +639,8 @@ public:
 	inline bool isArrayEx() const { return isArray() || ( parentItem && parentItem->isMultiArray() ); }
 	//! Is the item data conditionless. Conditionless means no expression evaluation is necessary.
 	inline bool isConditionless() const { return itemData.isConditionless(); }
+	//! Does the items data's condition checks only the type of the parent block.
+	inline bool hasTypeCondition() const { return itemData.hasTypeCondition(); }
 
 	//! Does the item's name match testName?
 	inline bool hasName( const QString & testName ) const { return itemData.name() == testName; }
