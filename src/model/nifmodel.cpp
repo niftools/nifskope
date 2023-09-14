@@ -44,56 +44,217 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QFile>
 #include <QSettings>
 
-QHash<QString, QString> NifModel::arrayPseudonyms;
+QHash<QString, QString> arrayPseudonyms;
+QHash<QString, QString> multiArrayPseudonyms1;
+QHash<QString, QString> multiArrayPseudonyms2;
 
-void NifModel::setupArrayPseudonyms()
+void setupArrayPseudonyms()
 {
-	if (!arrayPseudonyms.isEmpty())
+	if ( !arrayPseudonyms.isEmpty() )
 		return;
 
 	#define registerPseudonym(plural, singular)		arrayPseudonyms.insert(plural, singular)
 
+	registerPseudonym("Active Keys", "Active Key");
+	registerPseudonym("Actors", "Actor");
+	registerPseudonym("Affected Node Pointers", "Affected Node Pointer");
+	registerPseudonym("Affected Nodes", "Affected Node");
+	registerPseudonym("Anim Note Arrays", "Anim Note Array");
+	registerPseudonym("Anim Notes", "Anim Note");
+	registerPseudonym("Attachments", "Attachment");
 	registerPseudonym("Big Tris", "Big Tri");
 	registerPseudonym("Big Verts", "Big Vert");
 	registerPseudonym("Bitangents", "Bitangent");
+	registerPseudonym("Block Infos", "Block Info");
+	registerPseudonym("Block Offsets", "Block Offset");
+	registerPseudonym("Block Type Hashes", "Block Type Hash");
 	registerPseudonym("Block Types", "Block Type");
+	registerPseudonym("Blocks", "Block");
+	registerPseudonym("Bone Bounds", "Bone Bound");
 	registerPseudonym("Bone Indices", "Bone Index");
 	registerPseudonym("Bone List", "Bone");
+	registerPseudonym("Bone Transforms", "Bone Transform");
 	registerPseudonym("Bone Weights", "Bone Weight");
 	registerPseudonym("Bones", "Bone");
+	registerPseudonym("Bounding Volumes", "Bounding Volume");
+	registerPseudonym("Buttons", "Button");
+	registerPseudonym("Chained Entities", "Chained Entity");
+	registerPseudonym("Channel Types", "Channel Type");
+	registerPseudonym("Channels", "Channel");
 	registerPseudonym("Children", "Child");
 	registerPseudonym("Chunk Materials", "Chunk Material");
 	registerPseudonym("Chunk Transforms", "Chunk Transform");
 	registerPseudonym("Chunks", "Chunk");
+	registerPseudonym("Clothes", "Cloth");
+	registerPseudonym("Colliders", "Collider");
+	registerPseudonym("Color Keys", "Color Key");
+	registerPseudonym("Colors", "Color");
+	registerPseudonym("Compact Control Points", "Compact Control Point");
+	registerPseudonym("Compartments", "Compartment");
+	registerPseudonym("Complete Points", "Complete Point");
 	registerPseudonym("Component Formats", "Component Format");
+	registerPseudonym("Compressed Vertices", "Compressed Vertex");
 	registerPseudonym("Connect Points", "Connect Point");
+	registerPseudonym("Constraints", "Constraint");
+	registerPseudonym("Control Points", "Control Point");
+	registerPseudonym("Controlled Blocks", "Controlled Block");
+	registerPseudonym("Controller Seq List", "Controller Seq");
+	registerPseudonym("Controller Sequences", "Controller Sequence");
+	registerPseudonym("Corners", "Corner");
 	registerPseudonym("Cut Offsets", "Cut Offset");
+	registerPseudonym("Data Sizes", "Data Size");
+	registerPseudonym("Datastreams", "Datastream");
+	registerPseudonym("Dests", "Dest");
+	registerPseudonym("DIV2 Floats", "DIV2 Float");
+	registerPseudonym("DIV2 Ints", "DIV2 Int");
 	registerPseudonym("Effects", "Effect");
+	registerPseudonym("Elements", "Element");
+	registerPseudonym("Emitter Meshes", "Emitter Mesh");
+	registerPseudonym("Emitters", "Emitter");
+	registerPseudonym("Evaluators", "Evaluator");
 	registerPseudonym("Extra Data List", "Extra Data");
+	registerPseudonym("Extra Targets", "Extra Target");
+	registerPseudonym("Filter Constants", "Filter Constant");
+	registerPseudonym("Filter Ops", "Filter Op");
+	registerPseudonym("Filters", "Filter");
+	registerPseudonym("Fixtures", "Fixture");
+	registerPseudonym("Float Control Points", "Float Control Point");
+	registerPseudonym("Forces", "Force");
+	registerPseudonym("Generations", "Generation");
+	registerPseudonym("Group Collision Flags", "Group Collision Flag");
 	registerPseudonym("Groups", "Group");
+	registerPseudonym("Images", "Image");
+	registerPseudonym("In Portals", "In Portal");
+	registerPseudonym("Indices", "Index");
+	registerPseudonym("Instance Nodes", "Instance Node");
+	registerPseudonym("Instances", "Instance");
+	registerPseudonym("Interp Array Items", "Interp Item");
+	registerPseudonym("Interpolator Weights", "Interpolator Weight");
+	registerPseudonym("Interpolators", "Interpolator");
+	registerPseudonym("Items", "Item");
+	registerPseudonym("Joints", "Joint");
+	registerPseudonym("Keys", "Key");
+	registerPseudonym("Knots", "Knot");
+	registerPseudonym("Limits", "Limit");
+	registerPseudonym("Lines", "Line");
+	registerPseudonym("LOD Distances", "LOD Distance");
+	registerPseudonym("LOD Entries", "LOD Entry");
+	registerPseudonym("LOD Levels", "LOD Level");
+	registerPseudonym("LODs", "LOD");
+	registerPseudonym("Mapped Primitives", "Mapped Primitive");
+	registerPseudonym("Master Particles", "Master Particle");
 	registerPseudonym("Match Groups", "Match Group");
+	registerPseudonym("Material Descs", "Material Desc");
+	registerPseudonym("Materials", "Material");
+	registerPseudonym("Mesh Emitters", "Mesh Emitter");
+	registerPseudonym("Meshes", "Mesh");
+	registerPseudonym("Mipmaps", "Mipmap");
+	registerPseudonym("Modified Meshes", "Modified Mesh");
+	registerPseudonym("Modifiers", "Modifier");
+	registerPseudonym("Morphs", "Morph");
+	registerPseudonym("Node Groups", "Node Group");
+	registerPseudonym("Nodes", "Node");
 	registerPseudonym("Normals", "Normal");
+	registerPseudonym("Objs", "Obj");
+	registerPseudonym("Out Portals", "Out Portal");
+	registerPseudonym("Particle Meshes", "Particle Mesh");
 	registerPseudonym("Particle Normals", "Particle Normal");
+	registerPseudonym("Particle Systems", "Particle System");
 	registerPseudonym("Particle Triangles", "Particle Triangle");
 	registerPseudonym("Particle Vertices", "Particle Vertex");
+	registerPseudonym("Particles", "Particle");
 	registerPseudonym("Partitions", "Partition");
+	registerPseudonym("Pivots", "Pivot");
+	registerPseudonym("Points", "Point");
+	registerPseudonym("Polygon Indices", "Polygon Index");
+	registerPseudonym("Polygons", "Polygon");
+	registerPseudonym("Poses", "Pose");
+	registerPseudonym("Positions", "Position");
 	registerPseudonym("Properties", "Property");
+	registerPseudonym("Proportion Levels", "Proportion Level");
+	registerPseudonym("Props", "Prop");
+	registerPseudonym("Quaternion Keys", "Quaternion Key");
+	registerPseudonym("Radii", "Radius");
+	registerPseudonym("Refs", "Ref");
 	registerPseudonym("Regions", "Region");
+	registerPseudonym("Rooms", "Room");
+	registerPseudonym("Roots", "Root");
+	registerPseudonym("Rotation Angles", "Rotation Angle");
+	registerPseudonym("Rotation Axes", "Rotation Axis");
+	registerPseudonym("Rotation Keys", "Rotation Key");
+	registerPseudonym("Rotation Speeds", "Rotation Speed");
+	registerPseudonym("Rotations", "Rotation");
 	registerPseudonym("Scales", "Scale");
 	registerPseudonym("Segment Starts", "Segment Start");
+	registerPseudonym("Shader Textures", "Shader Texture");
+	registerPseudonym("Shadow Casters", "Shadow Caster");
+	registerPseudonym("Shadow Receivers", "Shadow Receiver");
+	registerPseudonym("Shape Descriptions", "Shape Description");
+	registerPseudonym("Shape Properties", "Shape Property");
+	registerPseudonym("Simulation Steps", "Simulation Step");
+	registerPseudonym("Size Keys", "Size Key");
+	registerPseudonym("Sizes", "Size");
+	registerPseudonym("Skin Indices", "Skin Index");
+	registerPseudonym("Skins", "Skin");
+	registerPseudonym("Sources", "Source");
+	registerPseudonym("Spawn Rate Keys", "Spawn Rate Key");
+	registerPseudonym("Spawners", "Spawner");
+	registerPseudonym("Spheres", "Sphere");
+	registerPseudonym("States", "State");
 	registerPseudonym("Strings", "String");
 	registerPseudonym("Strip Lengths", "Strip Length");
 	registerPseudonym("Strips", "Strip");
+	registerPseudonym("Sub Shapes", "Sub Shape");
+	registerPseudonym("SubEntry List", "SubEntry");
+	registerPseudonym("Submesh To Region Map", "Submesh To Region");
+	registerPseudonym("Submit Points", "Submit Point");
+	registerPseudonym("Subtexture Offsets", "Subtexture Offset");
+	registerPseudonym("Systems", "System");
 	registerPseudonym("Tangents", "Tangent");
+	registerPseudonym("Target Names", "Target Name");
+	registerPseudonym("Tear Indices", "Tear Index");
+	registerPseudonym("Tear Split Planes", "Tear Split Plane");
+	registerPseudonym("Text Keys", "Text Key");
+	registerPseudonym("Texture Array", "Texture");
 	registerPseudonym("Texture Arrays", "Texture Array");
 	registerPseudonym("Textures", "Texture");
+	registerPseudonym("Transforms", "Transform");
+	registerPseudonym("Translations", "Translation");
+	registerPseudonym("Tread Transforms", "Tread Transform");
 	registerPseudonym("Triangles Copy", "Triangle Copy");
 	registerPseudonym("Triangles", "Triangle");
+	registerPseudonym("UV Groups", "UV Group");
+	registerPseudonym("Vector Blocks", "Vector Block");
+	registerPseudonym("Vectors", "Vector");
+	registerPseudonym("Vels", "Vel");
 	registerPseudonym("Vertex Colors", "Vertex Color");
+	registerPseudonym("Vertex Counts", "Vertex Count");
 	registerPseudonym("Vertex Data", "Vertex");
 	registerPseudonym("Vertex Indices", "Vertex Index");
+	registerPseudonym("Vertex Positions", "Vertex Position");
 	registerPseudonym("Vertex Weights", "Vertex Weight");
 	registerPseudonym("Vertices", "Vertex");
+	registerPseudonym("Wall Planes", "Wall Plane");
+	registerPseudonym("Walls", "Wall");
+	registerPseudonym("Weight Indices", "Weight Index");
+	registerPseudonym("Weights", "Weight");
+	registerPseudonym("XYZ Rotations", "XYZ Rotation");
+
+	#define registerMultiPseudonym(plural, singular1, singular2) multiArrayPseudonyms1.insert(plural, singular1); multiArrayPseudonyms2.insert(plural, singular2)
+
+	registerMultiPseudonym("Bone Data", "Bone", "Weight");
+	registerMultiPseudonym("Bone Indices", "Vertex", "Bone Index");
+	registerMultiPseudonym("Points", "Strip", "Point");
+	registerMultiPseudonym("RGB Image Data", "RGB X", "RGB Y");
+	registerMultiPseudonym("RGBA Image Data", "RGBA X", "RGBA Y");
+	registerMultiPseudonym("Strips", "Strip", "Point");
+	registerMultiPseudonym("UV Sets", "UV Set", "UV");
+	registerMultiPseudonym("Vertex Weights", "Vertex", "Weight");
+}
+
+inline QString resolveArrayPseudonym( const QHash<QString, QString> & pseudonymMap, const NifItem * item )
+{
+	return pseudonymMap.value( item->name(), item->name() ) + " " + QString::number( item->row() );
 }
 
 //! @file nifmodel.cpp The NIF data model.
@@ -1054,20 +1215,30 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 					if ( ndr )
 						return iname;
 
-					if ( item->hasStrType("NiBlock") )
+					if ( isNiBlock(item) )
 						return QString::number( getBlockNumber(item) ) + " " + iname;
-					else if ( isArrayEx( item->parent() ) ) {
-						auto arrayName = arrayPseudonyms.value(iname);
-						if ( arrayName.isEmpty() ) {
-							if ( item->hasName("UV Sets") )
-								arrayName = QString( item->isVector2() ? "UV" : "UV Set" );
-							else
-								arrayName = iname;
-						}
-						return arrayName + " " + QString::number( item->row() );
+
+					auto p = item->parent();
+					if ( p && p->isArray() && !p->isBinary() ) {
+						// Is it a 2nd level array of a multi-array?
+						if ( p->isMultiArray() )
+							return resolveArrayPseudonym( multiArrayPseudonyms1, item );
+
+						// Is it an item (3rd level) of a multi-array?
+						auto pp = p->parent();
+						if ( pp && pp->isMultiArray() )
+							return resolveArrayPseudonym( multiArrayPseudonyms2, item );
+
+						// Is it an item of an non-binary array?
+						return resolveArrayPseudonym( arrayPseudonyms, item );
 					}
 
-					return " " + iname;
+					// Gavrant: not sure why the previous code prepended the item's name with a whitespace.
+					// Let's leave that whitespace for first level items, but omit it for their subitems to save a bit of screen space.
+					if ( !p || !p->parent() || p->parent() == root )
+						return " " + iname;
+
+					return iname;
 				}
 				break;
 			case TypeCol:
