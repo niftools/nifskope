@@ -45,8 +45,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 NifBlockEditor::NifBlockEditor( NifModel * n, const QModelIndex & i, bool fireAndForget )
-	: QWidget(), nif( n ), iBlock( i )
+	: QWidget( n->getWindow(), Qt::Tool ), nif( n ), iBlock( i )
 {
+	setWindowModality( Qt::WindowModality::WindowModal );
+
 	connect( nif, &NifModel::dataChanged, this, &NifBlockEditor::nifDataChanged );
 	connect( nif, &NifModel::modelReset, this, &NifBlockEditor::updateData );
 	connect( nif, &NifModel::destroyed, this, &NifBlockEditor::nifDestroyed );
@@ -75,8 +77,6 @@ NifBlockEditor::NifBlockEditor( NifModel * n, const QModelIndex & i, bool fireAn
 
 		layout->addLayout( btnlayout );
 	}
-
-	setWindowFlags( Qt::Tool | Qt::WindowStaysOnTopHint );
 }
 
 void NifBlockEditor::add( NifEditBox * box )
