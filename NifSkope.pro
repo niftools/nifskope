@@ -205,7 +205,11 @@ HEADERS += \
 	src/version.h \
 	lib/dds.h \
 	lib/dxgiformat.h \
-	lib/half.h
+	lib/half.h \
+	lib/json.hpp \
+	lib/stb_image.h \
+	lib/stb_image_write.h \
+	lib/tinygltf.h
 
 SOURCES += \
 	src/data/nifitem.cpp \
