@@ -843,6 +843,7 @@ void SettingsResources::on_btnArchiveAdd_clicked()
 	
 	filtered += GameManager::filter_archives( files, "materials" );
 	filtered += GameManager::filter_archives( files, "textures" );
+	filtered += GameManager::filter_archives( files, "geometries" );
 	filtered.removeDuplicates();
 
 	for ( int i = 0; i < filtered.count(); i++ ) {
