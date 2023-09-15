@@ -349,17 +349,18 @@ void GLView::glProjection( int x, int y )
 		bs |= BoundSphere( scene->view * Vector3(), axis );
 	}
 
-	float bounds = (bs.radius > 1024.0) ? bs.radius : 1024.0;
+	float bounds = (bs.radius > 1024.0 * scale()) ? bs.radius : 1024.0 * scale();
+
 
 	GLdouble nr = fabs( bs.center[2] ) - bounds * 1.5;
 	GLdouble fr = fabs( bs.center[2] ) + bounds * 1.5;
 
 	if ( perspectiveMode || (view == ViewWalk) ) {
 		// Perspective View
-		if ( nr < 1.0 )
-			nr = 1.0;
-		if ( fr < 2.0 )
-			fr = 2.0;
+		if ( nr < 1.0 * scale() )
+			nr = 1.0 * scale();
+		if ( fr < 2.0 * scale() )
+			fr = 2.0 * scale();
 
 		if ( nr > fr ) {
 			// add: swap them when needed
@@ -370,8 +371,8 @@ void GLView::glProjection( int x, int y )
 
 		if ( (fr - nr) < 0.00001f ) {
 			// add: ensure distance
-			nr = 1.0;
-			fr = 2.0;
+			nr = 1.0 * scale();
+			fr = 2.0 * scale();
 		}
 
 		GLdouble h2 = tan( ( cfg.fov / Zoom ) / 360 * M_PI ) * nr;
@@ -425,7 +426,8 @@ void GLView::paintGL()
 		textures->setNifFolder( model->getFolder() );
 		scene->make( model );
 		scene->transform( Transform(), scene->timeMin() );
-		axis = (scene->bounds().radius <= 0) ? 1024.0 : scene->bounds().radius;
+
+		axis = (scene->bounds().radius <= 0) ? 1024.0 * scale() : scene->bounds().radius;
 
 		if ( scene->timeMin() != scene->timeMax() ) {
 			if ( time < scene->timeMin() || time > scene->timeMax() )
@@ -496,7 +498,7 @@ void GLView::paintGL()
 
 		// TODO: Configurable grid in Settings
 		// 1024 game units, major lines every 128, minor lines every 64
-		drawGrid( 1024, 128, 2 );
+		drawGrid( (int)(1024 * scale()), (int)(128 * scale()), 2);
 
 		glPopMatrix();
 	}
@@ -961,7 +963,7 @@ void GLView::setCenter()
 		BoundSphere bs = scene->bounds();
 
 		if ( bs.radius < 1 )
-			bs.radius = 1024.0;
+			bs.radius = 1024.0 * scale();
 
 		setDistance( bs.radius * 1.2 );
 		setZoom( 1.0 );
