@@ -933,7 +933,7 @@ void GLView::center()
 
 void GLView::move( float x, float y, float z )
 {
-	Pos += Matrix::euler( Rot[0] / 180 * PI, Rot[1] / 180 * PI, Rot[2] / 180 * PI ).inverted() * Vector3( x, y, z );
+	Pos += Matrix::euler( Rot[0] / 180 * PI, Rot[1] / 180 * PI, Rot[2] / 180 * PI ).inverted() * Vector3( x, y, z ) * scale();
 	updateViewpoint();
 	update();
 }
