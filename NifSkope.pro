@@ -525,7 +525,7 @@ win32:contains(QT_ARCH, i386) {
 			$$[QT_INSTALL_PLUGINS]/imageformats/qwebp$${DLLEXT}
 
 		styles += \
-			$$[QT_INSTALL_PLUGINS]/styles/qwindowsvistastyle$${DLLEXT} \
+			$$[QT_INSTALL_PLUGINS]/styles/qwindowsvistastyle$${DLLEXT}
 
 		copyFiles( $$platforms, platforms, true )
 		copyFiles( $$imageformats, imageformats, true )
