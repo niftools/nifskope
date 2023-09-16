@@ -268,7 +268,7 @@ QModelIndex BaseModel::parent( const QModelIndex & child ) const
 		return QModelIndex();
 
 	const NifItem * parentItem = childItem->parent();
-	if ( !parentItem || parentItem == root ) // Yes, we ignore parentItem == root because otherwise "Block Details" shows the whole hiearchy
+	if ( !parentItem || parentItem == root ) // Yes, we ignore parentItem == root because otherwise "Block Details" shows the whole hierarchy
 		return QModelIndex();
 
 	return itemToIndex( parentItem );
@@ -671,18 +671,19 @@ const NifItem * BaseModel::getItem( const NifItem * parent, int childIndex, bool
 	return nullptr;
 }
 
-const NifItem * BaseModel::getItem( const QModelIndex & index ) const
+const NifItem * BaseModel::getItem( const QModelIndex & index, bool reportErrors ) const
 {
 	if ( !index.isValid() )
 		return nullptr;
 
 	if ( index.model() != this ) {
-		reportError( tr( "BaseModel::getItem got a model index from another model (%1)." ).arg( indexRepr(index) ) );
+		if ( reportErrors )
+			reportError( tr( "BaseModel::getItem got a model index from another model (%1)." ).arg( indexRepr(index) ) );
 		return nullptr;
 	}
 
 	const NifItem * item = indexToItem( index );
-	if ( !item )
+	if ( !item && reportErrors )
 		reportError( "BaseModel::getItem got a valid model index with null internalPointer." ); // WTF
 	return item;
 }
@@ -810,13 +811,16 @@ QString BaseModel::itemRepr( const NifItem * item ) const
 QString BaseModel::indexRepr( const QModelIndex & index )
 {
 	if ( index.isValid() ) {
-		auto model = static_cast<const BaseModel *>( index.model() );
+		auto model = qobject_cast<const BaseModel *>( index.model() );
+		if ( !model )
+			return QString("[INVALID INDEX (BAD MODEL)]");
 		auto item = indexToItem( index );
-		if ( model && item )
-			return model->itemRepr( item );
+		if ( !item )
+			return QString("[INVALID INDEX (BAD ITEM POINTER)]");
+		return model->itemRepr( item );
 	}
 
-	return QString("[INVALID INDEX]");
+	return QString("[NULL]");
 }
 
 QString BaseModel::topItemRepr( const NifItem * item ) const

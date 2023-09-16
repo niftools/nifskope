@@ -344,9 +344,9 @@ public:
 	//! Get a child NifItem from its parent and numerical index.
 	NifItem * getItem( const NifItem * parent, int childIndex, bool reportErrors = true );
 	//! Get a NifItem from its model index.
-	const NifItem * getItem( const QModelIndex & index ) const;
+	const NifItem * getItem( const QModelIndex & index, bool reportErrors = true ) const;
 	//! Get a NifItem from its model index.
-	NifItem * getItem( const QModelIndex & index );
+	NifItem * getItem( const QModelIndex & index, bool reportErrors = true );
 	//! Get a child NifItem from its parent and name.
 	const NifItem * getItem( const QModelIndex & parent, const QString & name, bool reportErrors = false ) const;
 	//! Get a child NifItem from its parent and name.
@@ -652,7 +652,7 @@ inline bool BaseModel::isArrayEx( const NifItem * item ) const
 
 // Item getters
 
-#define _BASEMODEL_NONCONST_GETITEM_1(arg) const_cast<NifItem *>( const_cast<const BaseModel *>(this)->getItem( arg ) )
+#define _BASEMODEL_NONCONST_GETITEM_2(arg1, arg2) const_cast<NifItem *>( const_cast<const BaseModel *>(this)->getItem( arg1, arg2 ) )
 #define _BASEMODEL_NONCONST_GETITEM_3(arg1, arg2, arg3) const_cast<NifItem *>( const_cast<const BaseModel *>(this)->getItem( arg1, arg2, arg3 ) )
 
 inline NifItem * BaseModel::getItem( const NifItem * parent, const QString & name, bool reportErrors )
@@ -675,9 +675,9 @@ inline NifItem * BaseModel::getItem( const NifItem * parent, int childIndex, boo
 {
 	return _BASEMODEL_NONCONST_GETITEM_3( parent, childIndex, reportErrors );
 }
-inline NifItem * BaseModel::getItem( const QModelIndex & index )
+inline NifItem * BaseModel::getItem( const QModelIndex & index, bool reportErrors )
 {
-	return _BASEMODEL_NONCONST_GETITEM_1( index );
+	return _BASEMODEL_NONCONST_GETITEM_2( index, reportErrors );
 }
 inline const NifItem * BaseModel::getItem( const QModelIndex & parent, const QString & name, bool reportErrors ) const
 {

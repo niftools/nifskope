@@ -53,7 +53,7 @@ void setupArrayPseudonyms()
 	if ( !arrayPseudonyms.isEmpty() )
 		return;
 
-	#define registerPseudonym(plural, singular)		arrayPseudonyms.insert(plural, singular)
+	#define registerPseudonym(plural, singular)		arrayPseudonyms.insert(QStringLiteral(plural), QStringLiteral(singular))
 
 	registerPseudonym("Active Keys", "Active Key");
 	registerPseudonym("Actors", "Actor");
@@ -240,7 +240,9 @@ void setupArrayPseudonyms()
 	registerPseudonym("Weights", "Weight");
 	registerPseudonym("XYZ Rotations", "XYZ Rotation");
 
-	#define registerMultiPseudonym(plural, singular1, singular2) multiArrayPseudonyms1.insert(plural, singular1); multiArrayPseudonyms2.insert(plural, singular2)
+	#define registerMultiPseudonym(plural, singular1, singular2) \
+		multiArrayPseudonyms1.insert(QStringLiteral(plural), QStringLiteral(singular1)); \
+		multiArrayPseudonyms2.insert(QStringLiteral(plural), QStringLiteral(singular2))
 
 	registerMultiPseudonym("Bone Data", "Bone", "Weight");
 	registerMultiPseudonym("Bone Indices", "Vertex", "Bone Index");
@@ -1229,7 +1231,7 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 						if ( pp && pp->isMultiArray() )
 							return resolveArrayPseudonym( multiArrayPseudonyms2, item );
 
-						// Is it an item of an non-binary array?
+						// It's an item of a non-binary array.
 						return resolveArrayPseudonym( arrayPseudonyms, item );
 					}
 
@@ -1271,17 +1273,17 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 							return tr( "<palette link not found>" );
 						auto paletteLink = getLink( itemPalette );
 						if ( paletteLink < 0 )
-							return tr( "<palette link is empty>" );
+							return tr( "<empty palette link>" );
 						itemPalette = getBlockItem( paletteLink );
 						if ( !itemPalette )
-							return tr( "<palette link is invalid>" );
+							return tr( "<invalid palette link>" );
 						itemPalette = getItem( itemPalette, "Palette", false );
 						if ( !itemPalette )
 							return tr( "<palette not found>" );
 
 						QByteArray *pBytes = itemPalette->get<QByteArray *>();
 						if ( !pBytes || offset >= pBytes->count() )
-							return tr( "<offset invalid>" );
+							return tr( "<invalid offset>" );
 
 						return QString( &pBytes->data()[offset] );
 					
