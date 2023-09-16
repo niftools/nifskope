@@ -93,16 +93,33 @@ protected slots:
 	//! Scroll to index; connected to expanded()
 	void scrollExpand( const QModelIndex & index );
 
+	void onItemCollapsed( const QModelIndex & index );
+
 protected:
 	void drawBranches( QPainter * painter, const QRect & rect, const QModelIndex & index ) const override final;
 	void keyPressEvent( QKeyEvent * e ) override final;
+	void mousePressEvent( QMouseEvent * event ) override final;
+	void mouseReleaseEvent( QMouseEvent * event ) override final;
+	void mouseMoveEvent( QMouseEvent * event ) override final;
 
 	QStyleOptionViewItem viewOptions() const override final;
 
-	void autoExpand( const QModelIndex & index );
+	void autoExpandBlock( const QModelIndex & blockIndex );
+	void autoExpandItem( const NifItem * item );
 
 	bool doRowHiding = true;
 	bool autoExpanded = false;
+public:
+	// Do "smart auto-expand" of items when the view changes NiBlock.
+	bool doAutoExpanding = false;
+protected:
+	// Block mouseRelease and mouseMove events processing. Is reset on mousePress event.
+	// This is a workaround for the following "feature" of QTreeView in Qt 5:
+	//     If you click the expand/collapse icon (">") of an item with a mouse button
+	//     and this leads to the item shifting in the view (e.g., see scrollExpand here),
+	//     then, when you release the mouse button (or move the cursor), you may accidently select several items in the view
+	//     because QTreeView treats this as if you'd click on the expanded/collapsed item and drag the cursor to another item.
+	bool blockMouseSelection = false;
 
 	class BaseModel * nif = nullptr;
 

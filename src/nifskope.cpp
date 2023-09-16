@@ -207,6 +207,7 @@ NifSkope::NifSkope()
 	//	Note: this has some side effects such as vertex selection 
 	//	in viewport being wrong if you attempt to select many rows.
 	tree->setSelectionMode( QAbstractItemView::ExtendedSelection );
+	tree->doAutoExpanding = true;
 
 	// Header Details
 	header = ui->header;
