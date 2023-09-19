@@ -137,7 +137,7 @@ QList<TestMessage> BaseModel::getMessages() const
 int BaseModel::evalArraySize( const NifItem * array ) const
 {
 	// shortcut for speed
-	if ( !isArrayEx(array) ) {
+	if ( !isArray(array) ) {
 		if ( array )
 			reportError( array, __func__, "The input item is not an array." );
 		return 0;
@@ -796,10 +796,10 @@ QString BaseModel::itemRepr( const NifItem * item ) const
 			break;
 		} else {
 			QString subres;
-			if ( parent->isArrayEx() )
+			if ( parent->isArray() )
 				subres = QString(" [%1]").arg( item->row() );
 			else
-				subres = "\\" + item->name();
+				subres = SLASH_QSTRING + item->name();
 			result = subres + result;
 			item = parent;
 		}

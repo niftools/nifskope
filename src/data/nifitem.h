@@ -402,6 +402,24 @@ public:
 	//! Return the number of child items.
 	int childCount() const { return childItems.count(); }
 
+	//! Checks if the item is testAncestor itself or its child or a child of a child, etc.
+	bool isDescendantOf( const NifItem * testAncestor ) const;
+
+	//! Checks if testDescendant is this item itself or its child or a child of a child, etc.
+	bool isAncestorOf( const NifItem * testDescendant ) const { return testDescendant && testDescendant->isDescendantOf( this ); }
+
+	//! Gets the ancestry level of the item relative to testAncestor.
+	// 0 - this item is testAncestor; 1 - the item is a child of testAncestor; 2 - a child of a child, etc.
+	// Returns -1 if the item is not a descendant of testAncestor.
+	int ancestorLevel( const NifItem * testAncestor ) const;
+
+	//! Gets the ancestor of the item at level testLevel,
+	// where levels are: 0 - this item; 1 - the item's parent; 2 - the parent of the parent, etc.
+	const NifItem * ancestorAt( int testLevel ) const;
+	//! Gets the ancestor of the item at level testLevel,
+	// where levels are: 0 - this item; 1 - the item's parent; 2 - the parent of the parent, etc.
+	NifItem * ancestorAt( int testLevel ) { return const_cast<NifItem *>( const_cast<const NifItem *>(this)->ancestorAt(testLevel) ); }
+
 private:
 	void registerChild( NifItem * item, int at );
 
@@ -579,13 +597,14 @@ private:
 
 	void unregisterInParentLinkCache();
 
-	bool hasChildLinks() const { return ( linkAncestorRows.count() > 0 ) || ( linkRows.count() > 0 ); }
-
 	void updateLinkCache( int iStartChild, bool bDoCleanup );
 
 	void onParentItemChange();
 
 public:
+	//! Does the item have any children of link type?
+	bool hasChildLinks() const { return ( linkAncestorRows.count() > 0 ) || ( linkRows.count() > 0 ); }
+
 	//! Return the value of the item data (const version)
 	inline const NifValue & value() const { return itemData.value; }
 	//! Return the value of the item data
@@ -635,8 +654,6 @@ public:
 	inline bool isArray() const { return itemData.isArray(); }
 	//! Is the item data a multi-array. Multi-array means the item's children are also arrays.
 	inline bool isMultiArray() const { return itemData.isMultiArray(); }
-	//! Is the item data an array or is its parent a multi-array.
-	inline bool isArrayEx() const { return isArray() || ( parentItem && parentItem->isMultiArray() ); }
 	//! Is the item data conditionless. Conditionless means no expression evaluation is necessary.
 	inline bool isConditionless() const { return itemData.isConditionless(); }
 	//! Does the items data's condition checks only the type of the parent block.

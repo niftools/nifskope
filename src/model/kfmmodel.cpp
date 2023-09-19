@@ -36,8 +36,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "message.h"
 #include "io/nifstream.h"
 
+#include <QStringBuilder>
 
 //! @file kfmmodel.cpp KfmModel
+
+const QString DOT_QSTRING(".");
 
 KfmModel::KfmModel( QObject * parent ) : BaseModel( parent )
 {
@@ -57,10 +60,10 @@ QString KfmModel::version2string( quint32 v )
 	if ( v == 0 )
 		return QString();
 
-	QString s = QString::number( ( v >> 24 ) & 0xff, 16 ) + "."
-	            + QString::number( ( v >> 16 ) & 0xff, 16 ) + "."
-	            + QString::number( ( v >> 8 ) & 0xff, 16 ) + "."
-	            + QString::number( v & 0xff, 16 );
+	QString s = QString::number( ( v >> 24 ) & 0xff, 16 ) % DOT_QSTRING
+	            % QString::number( ( v >> 16 ) & 0xff, 16 ) % DOT_QSTRING
+	            % QString::number( ( v >> 8 ) & 0xff, 16 ) % DOT_QSTRING
+	            % QString::number( v & 0xff, 16 );
 	return s;
 }
 
@@ -69,7 +72,7 @@ quint32 KfmModel::version2number( const QString & s )
 	if ( s.isEmpty() )
 		return 0;
 
-	QStringList l = s.split( "." );
+	QStringList l = s.split( DOT_QSTRING );
 
 	if ( l.count() <= 1 ) {
 		bool ok;
@@ -88,21 +91,6 @@ quint32 KfmModel::version2number( const QString & s )
 bool KfmModel::evalVersionImpl( const NifItem * item ) const
 {
 	return item->evalVersion(version);
-
-	// Gavrant: the commented out code below has been copied from the old evalVersion, and it does NOT make sense
-	/*
-	// Early reject for ver1/ver2
-	item->setVersionCondition( item->evalVersion( version ) );
-	if ( !item->versionCondition() )
-		return false;
-
-	// Early reject for vercond
-	item->setVersionCondition( item->vercond().isEmpty() );
-	if ( item->versionCondition() )
-		return true;
-
-	return item->evalVersion( version );
-	*/
 }
 
 void KfmModel::clear()
@@ -112,12 +100,12 @@ void KfmModel::clear()
 	filename = QString();
 	folder = QString();
 	root->killChildren();
+	version = 0x0200000b;
 	auto rootData = NifData( "Kfm", "Kfm" );
 	rootData.setIsCompound( true );
 	rootData.setIsConditionless( true );
 	insertType( root, rootData );
 	kfmroot = root->child( 0 );
-	version = 0x0200000b;
 	endResetModel();
 
 	if ( kfmroot )
@@ -246,6 +234,8 @@ bool KfmModel::setHeaderString( const QString & s, uint ver )
 {
 	if ( s.startsWith( ";Gamebryo KFM File Version " ) ) {
 		version = version2number( s.right( s.length() - 27 ) );
+		root->invalidateVersionCondition();
+		root->invalidateCondition();
 
 		if ( isVersionSupported( version ) ) {
 			return true;

@@ -123,19 +123,19 @@ public:
 	//! Updates stored file and folder information
 	void refreshFileInfo( const QString & );
 
+	/*! Return true if the item is an array.
+	*
+	* @param item	The item to check.
+	* @return		true if the index is an array.
+	*/
+	bool isArray( const NifItem * item ) const;
+
 	/*! Return true if the index pointed to is an array.
 	 *
 	 * @param iArray The index to check.
 	 * @return		true if the index is an array.
 	 */
 	bool isArray( const QModelIndex & iArray ) const;
-
-	/*! Return true if the item is an array or its parent is a multi-array.
-	*
-	* @param item	The item to check.
-	* @return		true if the index is an array.
-	*/
-	bool isArrayEx( const NifItem * item ) const;
 
 	//! Get an item as a NifValue.
 	NifValue getValue( const QModelIndex & index ) const;
@@ -287,6 +287,11 @@ public:
 
 public:
 	QModelIndex itemToIndex( const NifItem * item, int column = 0 ) const;
+
+	//! Checks if the item is a direct child of the root.
+	bool isTopItem( const NifItem * item ) const;
+	//! Checks if the model index is a direct child of the root.
+	bool isTopIndex( const QModelIndex & index ) const;
 
 	//! Get the top-level parent (a child of the model's root item) of an item.
 	// Return null if the item is the root itself or not a child of the root.
@@ -608,7 +613,16 @@ private:
 
 inline QModelIndex BaseModel::itemToIndex( const NifItem * item, int column ) const
 {
-	return ( item && item != root ) ? createIndex( item->row(), column, const_cast<NifItem *>(item) ) : QModelIndex();
+	return item ? createIndex( item->row(), column, const_cast<NifItem *>(item) ) : QModelIndex();
+}
+
+inline bool BaseModel::isTopItem( const NifItem * item ) const
+{
+	return item && item->parent() == root;
+}
+inline bool BaseModel::isTopIndex( const QModelIndex & index ) const
+{
+	return isTopItem( getItem(index) );
 }
 
 inline NifItem * BaseModel::getTopItem( const NifItem * item )
@@ -638,15 +652,14 @@ inline bool BaseModel::setIndexValue( const QModelIndex & index, const NifValue 
 	return setItemValue( getItem(index), val );
 }
 
-inline bool BaseModel::isArray( const QModelIndex & index ) const
+inline bool BaseModel::isArray( const NifItem * item ) const
 {
-	auto item = getItem( index ); 
 	return item && item->isArray();
 }
 
-inline bool BaseModel::isArrayEx( const NifItem * item ) const
+inline bool BaseModel::isArray( const QModelIndex & index ) const
 {
-	return item && item->isArrayEx();
+	return isArray( getItem( index ) );
 }
 
 

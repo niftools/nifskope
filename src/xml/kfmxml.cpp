@@ -157,6 +157,8 @@ public:
 				bool isCompound = KfmModel::compounds.contains( type );
 				bool isArray = !arr1.isEmpty();
 				bool isMultiArray = !arr2.isEmpty();
+				if ( isMultiArray && !isArray )
+					err( tr("\"arr2\" attribute without \"arr1\" attribute") );
 
 				data.setAbstract( abs == "1" );
 				data.setTemplated( isTemplated );

@@ -368,6 +368,8 @@ public:
 					bool isCompound = NifModel::compounds.contains( type );
 					bool isArray = !arr1.isEmpty();
 					bool isMultiArray = !arr2.isEmpty();
+					if ( isMultiArray && !isArray )
+						err( tr("\"width\" attribute without \"length\" attribute") );
 
 					// Override some compounds as mixins (compounds without nesting)
 					//	This flattens the hierarchy as if the mixin's <add> rows belong to the mixin's parent
@@ -424,6 +426,8 @@ public:
 					data.setIsMixin( isMixin );
 					data.setHasTypeCondition( hasTypeCondition );
 
+					if ( data.isBinary() && isMultiArray )
+						err( tr("Binary multi-arrays not supported") );
 
 					if ( !defval.isEmpty() ) {
 						bool ok;

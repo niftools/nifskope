@@ -1113,7 +1113,7 @@ inline QModelIndex NifModel::getBlockIndex( const QModelIndex & index, const QSt
 
 inline bool NifModel::isNiBlock( const NifItem * item ) const
 {
-	return item && item->parent() == root && isBlockRow( item->row() );
+	return isTopItem( item ) && isBlockRow( item->row() );
 }
 inline bool NifModel::isNiBlock( const NifItem * item, const QString & testType ) const
 {
