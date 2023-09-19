@@ -933,7 +933,7 @@ void GLView::center()
 
 void GLView::move( float x, float y, float z )
 {
-	Pos += Matrix::euler( Rot[0] / 180 * PI, Rot[1] / 180 * PI, Rot[2] / 180 * PI ).inverted() * Vector3( x, y, z ) * scale();
+	Pos += Matrix::euler( Rot[0] / 180 * PI, Rot[1] / 180 * PI, Rot[2] / 180 * PI ).inverted() * Vector3( x, y, z );
 	updateViewpoint();
 	update();
 }
@@ -962,7 +962,7 @@ void GLView::setCenter()
 		// Center on entire mesh
 		BoundSphere bs = scene->bounds();
 
-		if ( bs.radius < 1 )
+		if ( bs.radius < 1 * scale() )
 			bs.radius = 1024.0 * scale();
 
 		setDistance( bs.radius * 1.2 );
@@ -1321,6 +1321,8 @@ void GLView::advanceGears()
 	if ( kbd[ Qt::Key_Left ] )  rotate( 0, 0, -cfg.rotSpd * dT );
 	if ( kbd[ Qt::Key_Right ] ) rotate( 0, 0, +cfg.rotSpd * dT );
 
+	// Fix movement speed for Starfield scale
+	dT *= scale();
 	// Movement
 	if ( kbd[ Qt::Key_A ] ) move( +cfg.moveSpd * dT, 0, 0 );
 	if ( kbd[ Qt::Key_D ] ) move( -cfg.moveSpd * dT, 0, 0 );
@@ -1805,7 +1807,7 @@ void GLView::mouseReleaseEvent( QMouseEvent * event )
 void GLView::wheelEvent( QWheelEvent * event )
 {
 	if ( view == ViewWalk )
-		mouseMov += Vector3( 0, 0, ((double) event->delta()) / 4.0 );
+		mouseMov += Vector3( 0, 0, ((double) event->delta()) / 4.0 ) * scale();
 	else
 	{
 		if (event->delta() < 0)
