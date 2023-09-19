@@ -65,7 +65,7 @@ public:
 
 			if ( index == iFlags )
 				return iFlags;
-		} else if ( nif->itemName( index ) == "Flags" && nif->itemType( index.parent() ) == "TexDesc" ) {
+		} else if ( nif->itemName( index ) == "Flags" && nif->itemStrType( index.parent() ) == "TexDesc" ) {
 			return index;
 		}
 
@@ -96,7 +96,7 @@ public:
 				return Shape;
 			} else if ( name == "NiStencilProperty" ) {
 				return Stencil;
-			} else if ( nif->itemType( index.parent() ) == "TexDesc" ) {
+			} else if ( nif->itemStrType( index.parent() ) == "TexDesc" ) {
 				return TexDesc;
 			} else if ( name == "NiVertexColorProperty" ) {
 				return VertexColor;

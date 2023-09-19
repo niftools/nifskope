@@ -45,8 +45,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 NifBlockEditor::NifBlockEditor( NifModel * n, const QModelIndex & i, bool fireAndForget )
-	: QWidget(), nif( n ), iBlock( i )
+	: QWidget( n->getWindow(), Qt::Tool ), nif( n ), iBlock( i )
 {
+	setWindowModality( Qt::WindowModality::WindowModal );
+
 	connect( nif, &NifModel::dataChanged, this, &NifBlockEditor::nifDataChanged );
 	connect( nif, &NifModel::modelReset, this, &NifBlockEditor::updateData );
 	connect( nif, &NifModel::destroyed, this, &NifBlockEditor::nifDestroyed );
@@ -75,8 +77,6 @@ NifBlockEditor::NifBlockEditor( NifModel * n, const QModelIndex & i, bool fireAn
 
 		layout->addLayout( btnlayout );
 	}
-
-	setWindowFlags( Qt::Tool | Qt::WindowStaysOnTopHint );
 }
 
 void NifBlockEditor::add( NifEditBox * box )
@@ -313,9 +313,9 @@ void NifVectorEdit::updateData( NifModel * dstNif )
 {
 	NifItem * item = dstNif->getItem( index );
 	if ( item ) {
-		if ( item->valueIsVector3() )
+		if ( item->isVector3() )
 			vector->setVector3( item->get<Vector3>() );
-		else if ( item->valueIsVector2() )
+		else if ( item->isVector2() )
 			vector->setVector2( item->get<Vector2>() );
 	}
 }
@@ -324,9 +324,9 @@ void NifVectorEdit::applyData( NifModel * dstNif )
 {
 	NifItem * item = dstNif->getItem( index );
 	if ( item ) {
-		if ( item->valueIsVector3() )
+		if ( item->isVector3() )
 			item->set<Vector3>( vector->getVector3() );
-		else if ( item->valueIsVector2() )
+		else if ( item->isVector2() )
 			item->set<Vector2>( vector->getVector2() );
 	}
 }
@@ -342,9 +342,9 @@ void NifRotationEdit::updateData( NifModel * dstNif )
 {
 	const NifItem * item = dstNif->getItem( index );
 	if ( item ) {
-		if ( item->valueIsMatrix() )
+		if ( item->isMatrix() )
 			rotation->setMatrix( item->get<Matrix>() );
-		else if ( item->valueIsQuat() )
+		else if ( item->isQuat() )
 			rotation->setQuat( item->get<Quat>() );
 	}
 }
@@ -353,9 +353,9 @@ void NifRotationEdit::applyData( NifModel * dstNif )
 {
 	NifItem * item = dstNif->getItem( index );
 	if ( item ) {
-		if ( item->valueIsMatrix() )
+		if ( item->isMatrix() )
 			item->set<Matrix>( rotation->getMatrix() );
-		else if ( item->valueIsQuat() )
+		else if ( item->isQuat() )
 			item->set<Quat>( rotation->getQuat() );
 	}
 }

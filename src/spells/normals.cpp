@@ -278,7 +278,7 @@ public:
 			return index;
 
 
-		float maxa = angle->value() / 180 * PI;
+		float maxa = deg2rad( angle->value() );
 		float maxd = dist->value();
 
 		QVector<Vector3> snorms( norms );

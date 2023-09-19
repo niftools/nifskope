@@ -33,6 +33,52 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifitem.h"
 #include "model/basemodel.h"
 
+bool NifItem::isDescendantOf( const NifItem * testAncestor ) const
+{
+	if ( testAncestor ) {
+		const NifItem * ancestor = this;
+		do {
+			if ( ancestor == testAncestor )
+				return true;
+			ancestor = ancestor->parent();
+		} while ( ancestor );
+	}
+
+	return false;
+}
+
+int NifItem::ancestorLevel( const NifItem * testAncestor ) const
+{
+	if ( testAncestor ) {
+		const NifItem * ancestor = this;
+		for ( int level = 0; ; level++ ) {
+			if ( ancestor == testAncestor )
+				return level;
+			ancestor = ancestor->parent();
+			if ( !ancestor )
+				break;
+		}
+	}
+
+	return -1;
+}
+
+const NifItem * NifItem::ancestorAt( int testLevel ) const
+{
+	if ( testLevel >= 0 ) {
+		const NifItem * ancestor = this;
+		for ( int level = 0; ; level++ ) {
+			if ( level == testLevel )
+				return ancestor;
+			ancestor = ancestor->parent();
+			if ( !ancestor )
+				break;
+		}
+	}
+
+	return nullptr;
+}
+
 void NifItem::registerChild( NifItem * item, int at )
 {
 	int nOldChildren = childItems.count();
@@ -92,7 +138,7 @@ void NifItem::unregisterInParentLinkCache()
 	}
 }
 
-static void cleanupChildIndexVector( QVector<ushort> v, int iStartChild )
+static void cleanupChildIndexVector( QVector<ushort> & v, int iStartChild )
 {
 	for ( int i = v.count() - 1; i >= 0; i-- ) {
 		if ( v.at(i) >= iStartChild )
@@ -113,7 +159,7 @@ void NifItem::updateLinkCache( int iStartChild, bool bDoCleanup )
 	// Add new links
 	for ( int i = iStartChild; i < childItems.count(); i++ ) {
 		const NifItem * c = childItems.at( i );
-		if ( c->valueIsLink() )
+		if ( c->isLink() )
 			linkRows.append( i );
 		if ( c->hasChildLinks() )
 			linkAncestorRows.append( i );
@@ -137,6 +183,11 @@ void NifItem::onParentItemChange()
 
 	for ( NifItem * c : childItems )
 		c->onParentItemChange();
+}
+
+QString NifItem::repr() const
+{
+	return parentModel->itemRepr( this );
 }
 
 void NifItem::reportError( const QString & msg ) const

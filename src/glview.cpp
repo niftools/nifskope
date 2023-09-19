@@ -92,10 +92,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define ZOOM_QE_KEY_MULT 1.025 
 #define ZOOM_MOUSE_WHEEL_MULT 0.95
 
-#ifndef M_PI
-#define M_PI 3.1415926535897932385
-#endif
-
 
 //! @file glview.cpp GLView implementation
 
@@ -462,7 +458,7 @@ void GLView::paintGL()
 		ap( 2, 0 ) = 1; ap( 2, 1 ) = 0; ap( 2, 2 ) = 0;
 	}
 
-	viewTrans.rotation.fromEuler( Rot[0] / 180.0 * PI, Rot[1] / 180.0 * PI, Rot[2] / 180.0 * PI );
+	viewTrans.rotation.fromEuler( deg2rad(Rot[0]), deg2rad(Rot[1]), deg2rad(Rot[2]) );
 	viewTrans.translation = viewTrans.rotation * Pos;
 	viewTrans.rotation = viewTrans.rotation * ap;
 
@@ -525,9 +521,9 @@ void GLView::paintGL()
 		Vector4 lightDir( 0.0, 0.0, 1.0, 0.0 );
 
 		if ( !frontalLight ) {
-			float decl = declination / 180.0 * PI;
+			float decl = deg2rad( declination );
 			Vector3 v( sin( decl ), 0, cos( decl ) );
-			Matrix m; m.fromEuler( 0, 0, planarAngle / 180.0 * PI );
+			Matrix m; m.fromEuler( 0, 0, deg2rad( planarAngle ) );
 			v = m * v;
 			lightDir = Vector4( viewTrans.rotation * v, 0.0 );
 
@@ -933,7 +929,7 @@ void GLView::center()
 
 void GLView::move( float x, float y, float z )
 {
-	Pos += Matrix::euler( Rot[0] / 180 * PI, Rot[1] / 180 * PI, Rot[2] / 180 * PI ).inverted() * Vector3( x, y, z );
+	Pos += Matrix::euler( deg2rad(Rot[0]), deg2rad(Rot[1]), deg2rad(Rot[2]) ).inverted() * Vector3( x, y, z );
 	updateViewpoint();
 	update();
 }

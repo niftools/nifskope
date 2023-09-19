@@ -638,7 +638,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 					// Skyrim, nothing here yet
 				} else if ( nif->getVersionNumber() >= 0x0303000D ) {
 					//Newer versions use NiTexturingProperty and NiSourceTexture
-					if ( iTexProp.isValid() == false || objIndex != 0 || nif->itemType( iTexProp ) != "NiTexturingProperty" ) {
+					if ( iTexProp.isValid() == false || objIndex != 0 || nif->itemStrType( iTexProp ) != "NiTexturingProperty" ) {
 						iTexProp = nif->insertNiBlock( "NiTexturingProperty" );
 					}
 
@@ -649,7 +649,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 					nif->set<int>( iBaseMap, "Clamp Mode", 3 );
 					nif->set<int>( iBaseMap, "Filter Mode", 2 );
 
-					if ( iTexSource.isValid() == false || objIndex != 0 || nif->itemType( iTexSource ) != "NiSourceTexture" ) {
+					if ( iTexSource.isValid() == false || objIndex != 0 || nif->itemStrType( iTexSource ) != "NiSourceTexture" ) {
 						iTexSource = nif->insertNiBlock( "NiSourceTexture" );
 					}
 
@@ -665,13 +665,13 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 					nif->set<QString>( iTexSource, "File Name", mat->map_Kd );
 				} else {
 					//Older versions use NiTextureProperty and NiImage
-					if ( iTexProp.isValid() == false || objIndex != 0 || nif->itemType( iTexProp ) != "NiTextureProperty" ) {
+					if ( iTexProp.isValid() == false || objIndex != 0 || nif->itemStrType( iTexProp ) != "NiTextureProperty" ) {
 						iTexProp = nif->insertNiBlock( "NiTextureProperty" );
 					}
 
 					addLink( nif, iShape, "Properties", nif->getBlockNumber( iTexProp ) );
 
-					if ( iTexSource.isValid() == false || objIndex != 0 || nif->itemType( iTexSource ) != "NiImage" ) {
+					if ( iTexSource.isValid() == false || objIndex != 0 || nif->itemStrType( iTexSource ) != "NiImage" ) {
 						iTexSource = nif->insertNiBlock( "NiImage" );
 					}
 

@@ -37,7 +37,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		return ( nif->getVersion() == "4.0.0.2" && nif->itemType( index ) == "NiBlock" && nif->get<QString>( index, "Name" ) == "Bip01" ); //&& QFile::exists( SKEL_DAT ) );
+		return ( nif->getVersion() == "4.0.0.2" && nif->itemStrType( index ) == "NiBlock" && nif->get<QString>( index, "Name" ) == "Bip01" ); //&& QFile::exists( SKEL_DAT ) );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
@@ -199,7 +199,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		return ( nif->getVersion() == "4.0.0.2" && nif->itemType( index ) == "NiBlock" && nif->get<QString>( index, "Name" ) == "Bip01" );
+		return ( nif->getVersion() == "4.0.0.2" && nif->itemStrType( index ) == "NiBlock" && nif->get<QString>( index, "Name" ) == "Bip01" );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
@@ -1237,7 +1237,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		return ( nif->getVersion() == "4.0.0.2" && nif->itemType( index ) == "NiBlock" )
+		return ( nif->getVersion() == "4.0.0.2" && nif->itemStrType( index ) == "NiBlock" )
 		       && ( ( nif->get<QString>( index, "Name" ).startsWith( "Bip01 L" ) ) || ( nif->get<QString>( index, "Name" ).startsWith( "Bip01 R" ) ) );
 	}
 

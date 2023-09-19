@@ -1454,7 +1454,7 @@ public:
 		}
 
 		Matrix rotMatrix;
-		rotMatrix.fromEuler( 0, 0, ( rotation * PI / 180.0 ) );
+		rotMatrix.fromEuler( 0, 0, deg2rad(rotation) );
 
 		for ( const auto i : uvw->selection ) {
 			Vector3 temp( uvw->texcoords[i], 0 );
@@ -1483,7 +1483,7 @@ public:
 		}
 
 		Matrix rotMatrix;
-		rotMatrix.fromEuler( 0, 0, -( rotation * PI / 180.0 ) );
+		rotMatrix.fromEuler( 0, 0, -deg2rad(rotation) );
 
 		for ( const auto i : uvw->selection ) {
 			Vector3 temp( uvw->texcoords[i], 0 );

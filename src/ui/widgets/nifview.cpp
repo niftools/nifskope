@@ -51,6 +51,7 @@ NifTreeView::NifTreeView( QWidget * parent, Qt::WindowFlags flags ) : QTreeView(
 	setParent( parent );
 
 	connect( this, &NifTreeView::expanded, this, &NifTreeView::scrollExpand );
+	connect( this, &NifTreeView::collapsed, this, &NifTreeView::onItemCollapsed );
 }
 
 NifTreeView::~NifTreeView()
@@ -66,9 +67,8 @@ void NifTreeView::setModel( QAbstractItemModel * model )
 
 	QTreeView::setModel( model );
 
-	if ( nif && doRowHiding ) {
+	if ( nif )
 		connect( nif, &BaseModel::dataChanged, this, &NifTreeView::updateConditions );
-	}
 }
 
 void NifTreeView::setRootIndex( const QModelIndex & index )
@@ -93,11 +93,8 @@ void NifTreeView::setRowHiding( bool show )
 
 	doRowHiding = !show;
 
-	if ( nif && doRowHiding ) {
+	if ( nif )
 		connect( nif, &BaseModel::dataChanged, this, &NifTreeView::updateConditions );
-	} else if ( nif ) {
-		disconnect( nif, &BaseModel::dataChanged, this, &NifTreeView::updateConditions );
-	}
 
 	// refresh
 	updateConditionRecurse( rootIndex() );
@@ -114,13 +111,13 @@ bool NifTreeView::isRowHidden( int r, const QModelIndex & index ) const
 bool NifTreeView::isRowHidden( const NifItem * rowItem ) const
 {
 	if ( rowItem && nif ) {
-		if ( doRowHiding ) {
-			if ( !nif->evalCondition( rowItem ))
+		if ( doRowHiding || rowItem->hasTypeCondition() ) {
+			if ( !nif->evalCondition( rowItem ) )
 				return true;
-		} /* else {
+		} else {
 			if ( !nif->evalVersion( rowItem ) )
 				return true;
-		} */
+		}
 	}
 
 	return false;
@@ -167,7 +164,7 @@ void NifTreeView::copy()
 	}
 }
 
-void NifTreeView::pasteTo( QModelIndex iDest, const NifValue & srcValue )
+void NifTreeView::pasteTo( const QModelIndex iDest, const NifValue & srcValue )
 {	
 	// Only run once per row for the correct column
 	if ( iDest.column() != NifModel::ValueCol )
@@ -254,7 +251,7 @@ void NifTreeView::pasteTo( QModelIndex iDest, const NifValue & srcValue )
 void NifTreeView::paste()
 {
 	ChangeValueCommand::createTransaction();
-	for ( const auto i : valueIndexList( selectionModel()->selectedIndexes() ) )
+	for ( const auto & i : valueIndexList( selectionModel()->selectedIndexes() ) )
 		pasteTo( i, valueClipboard->getValue() );
 }
 
@@ -486,50 +483,93 @@ void NifTreeView::keyPressEvent( QKeyEvent * e )
 	QTreeView::keyPressEvent( e );
 }
 
+void NifTreeView::mousePressEvent( QMouseEvent * event )
+{
+	blockMouseSelection = false;
+	QTreeView::mousePressEvent( event );
+}
+
+void NifTreeView::mouseReleaseEvent( QMouseEvent * event )
+{
+	if ( !blockMouseSelection )
+		QTreeView::mouseReleaseEvent( event );
+}
+
+void NifTreeView::mouseMoveEvent( QMouseEvent * event )
+{
+	if ( !blockMouseSelection )
+		QTreeView::mouseMoveEvent( event );
+}
+
 void NifTreeView::currentChanged( const QModelIndex & current, const QModelIndex & last )
 {
 	QTreeView::currentChanged( current, last );
 
-	if ( nif && doRowHiding ) {
+	if ( nif )
 		updateConditionRecurse( current );
-	}
 
 	autoExpanded = false;
-	auto mdl = static_cast<NifModel *>( nif );
-	if ( mdl && mdl->isNiBlock( current ) ) {
-		auto cnt = mdl->rowCount( current );
-		const int ARRAY_LIMIT = 100;
-		if ( mdl->blockInherits( current, "NiTransformInterpolator" ) 
-			 || mdl->blockInherits( current, "NiBSplineTransformInterpolator" ) ) {
-			// Auto-Expand NiQuatTransform
-			autoExpand( current.child( 0, 0 ) );
-		} else if ( mdl->blockInherits( current, "NiNode" ) ) {
-			// Auto-Expand Children array
-			auto iChildren = mdl->getIndex( current, "Children" );
-			if ( mdl->rowCount( iChildren ) < ARRAY_LIMIT )
-				autoExpand( iChildren );
-		} else if ( mdl->blockInherits( current, "NiSkinPartition" ) ) {
-			// Auto-Expand skin partitions array
-			autoExpand( current.child( 1, 0 ) );
-		} else if ( mdl->getValue( current.child( cnt - 1, 0 ) ).type() == NifValue::tNone
-					&& mdl->rowCount( current.child( cnt - 1, 0 ) ) < ARRAY_LIMIT ) {
-			// Auto-Expand final arrays/compounds
-			autoExpand( current.child( cnt - 1, 0 ) );
-		}
-	}
+	if ( doAutoExpanding )
+		autoExpandBlock( current );
 
 	emit sigCurrentIndexChanged( currentIndex() );
 }
 
-void NifTreeView::autoExpand( const QModelIndex & index )
+void NifTreeView::autoExpandBlock( const QModelIndex & blockIndex )
 {
-	autoExpanded = true;
-	expand( index );
+	auto mdl = qobject_cast<const NifModel *>( nif );
+	if ( !mdl )
+		return;
+
+	auto block = mdl->getItem( blockIndex, false );
+	if ( !mdl->isNiBlock(block) )
+		return;
+
+	if ( mdl->inherits(block->name(), "NiTransformInterpolator") || mdl->inherits(block->name(), "NiBSplineTransformInterpolator") ) {
+		// Auto-Expand NiQuatTransform
+		autoExpandItem( mdl->getItem(block, "Transform") );
+	} else if ( mdl->inherits(block->name(), "NiNode") ) {
+		// Auto-Expand Children array
+		autoExpandItem( mdl->getItem(block, "Children") );
+	} else if ( mdl->inherits(block->name(), "NiSkinPartition") || mdl->inherits(block->name(), "BSDismemberSkinInstance") ) {
+		// Auto-Expand skin partitions array
+		autoExpandItem( mdl->getItem(block, "Partitions") );
+	} else {
+		// Auto-Expand final arrays/compounds
+		for( int i = block->childCount() - 1; i >= 0; i-- ) {
+			auto c = block->child(i);
+			if ( c && !isRowHidden(c) ) {
+				autoExpandItem( c );
+				break;
+			}
+		}
+	}
+}
+
+void NifTreeView::autoExpandItem( const NifItem * item )
+{
+	if ( !item )
+		return;
+
+	auto nChildren = item->childCount();
+	if ( nChildren > 0 && nChildren < 100 ) {
+		autoExpanded = true;
+		blockMouseSelection = true;
+		expand( nif->itemToIndex(item) );
+	}
 }
 
 void NifTreeView::scrollExpand( const QModelIndex & index )
 {
+	blockMouseSelection = true;
+
 	// this is a compromise between scrolling to the top, and scrolling the last child to the bottom
 	if ( !autoExpanded )
 		scrollTo( index, PositionAtCenter );
+}
+
+void NifTreeView::onItemCollapsed( const QModelIndex & index )
+{
+	Q_UNUSED( index );
+	blockMouseSelection = true;
 }

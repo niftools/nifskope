@@ -604,7 +604,7 @@ void drawRagdollCone( const Vector3 & pivot, const Vector3 & twist, const Vector
 
 		Vector3 xy = x * sin( f ) + y * sin( f <= PI / 2 || f >= 3 * PI / 2 ? maxPlaneAngle : -minPlaneAngle ) * cos( f );
 
-		glVertex( pivot + z * sqrt( 1 - xy.length() * xy.length() ) + xy );
+		glVertex( pivot + z * sqrt( 1 - xy.squaredLength() ) + xy );
 	}
 
 	glEnd();
@@ -619,7 +619,7 @@ void drawRagdollCone( const Vector3 & pivot, const Vector3 & twist, const Vector
 
 		Vector3 xy = x * sin( -f ) + y * sin( -f <= PI / 2 || -f >= 3 * PI / 2 ? maxPlaneAngle : -minPlaneAngle ) * cos( -f );
 
-		glVertex( pivot + z * sqrt( 1 - xy.length() * xy.length() ) + xy );
+		glVertex( pivot + z * sqrt( 1 - xy.squaredLength() ) + xy );
 	}
 
 	glEnd();

@@ -441,7 +441,7 @@ bool TexturingProperty::bind( int id, const QString & fname )
 			glTranslatef( textures[id].center[0], textures[id].center[1], 0 );
 
 			// rotation appears to be in radians
-			glRotatef( (textures[id].rotation * 180.0 / PI ), 0, 0, 1 );
+			glRotatef( rad2deg( textures[id].rotation ), 0, 0, 1 );
 			// It appears that the scaling here is relative to center
 			glScalef( textures[id].tiling[0], textures[id].tiling[1], 1 );
 			glTranslatef( textures[id].translation[0], textures[id].translation[1], 0 );

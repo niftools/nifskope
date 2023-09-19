@@ -179,7 +179,7 @@ public:
 			dataItem = item->child( 0 );
 		}
 
-		if ( dataItem && dataItem->valueIsByteArray() ) {
+		if ( dataItem && dataItem->isByteArray() ) {
 			auto bytes = dataItem->get<QByteArray *>();
 			data.append( *bytes );
 		}
@@ -255,7 +255,7 @@ REGISTER_SPELL( spImportBinary )
 bool spCollapseArray::isApplicable( const NifModel * nif, const QModelIndex & index )
 {
 	if ( nif->isArray( index ) && index.isValid()
-	     && ( nif->itemType( index ) == "Ref" || nif->itemType( index ) == "Ptr" ) )
+	     && ( nif->itemStrType( index ) == "Ref" || nif->itemStrType( index ) == "Ptr" ) )
 	{
 		// copy from spUpdateArray when that changes
 		return true;

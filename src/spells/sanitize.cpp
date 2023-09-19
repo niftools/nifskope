@@ -324,7 +324,7 @@ public:
 					qCCritical( nsSpell ) << Spell::tr( "Invalid link '%1'." ).arg( QString::number(l) );
 					return idx;
 				} else {
-					QString tmplt = nif->itemTmplt( idx );
+					QString tmplt = nif->itemTempl( idx );
 
 					if ( !tmplt.isEmpty() ) {
 						QModelIndex iBlock = nif->getBlockIndex( l );

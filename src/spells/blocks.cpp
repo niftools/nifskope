@@ -374,7 +374,7 @@ bool addLink( NifModel * nif, const QModelIndex & iParent, const QString & array
 
 		if ( nif->isArray( iArray ) && item ) {
 			for ( int c = 0; c < item->childCount(); c++ ) {
-				if ( item->child( c )->valueToLink() == -1 ) {
+				if ( item->child( c )->getLinkValue() == -1 ) {
 					nif->setLink( iArray.child( c, 0 ), link );
 					return true;
 				}
@@ -415,7 +415,7 @@ void delLink( NifModel * nif, const QModelIndex & iParent, QString array, int li
 */
 void blockLink( NifModel * nif, const QModelIndex & index, const QModelIndex & iBlock )
 {
-	if ( nif->isLink( index ) && nif->blockInherits( iBlock, nif->itemTmplt( index ) ) ) {
+	if ( nif->isLink( index ) && nif->blockInherits( iBlock, nif->itemTempl( index ) ) ) {
 		nif->setLink( index, nif->getBlockNumber( iBlock ) );
 	}
 
@@ -711,7 +711,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		if ( nif->itemType( index ) != "NiBlock" )
+		if ( nif->itemStrType( index ) != "NiBlock" )
 			return false;
 
 		if ( nif->getUserVersion() < 12 )
@@ -825,7 +825,7 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		NifItem * item = static_cast<NifItem *>(index.internalPointer());
-		auto type = item->temp();
+		auto type = item->templ();
 
 		std::list<QString> allIds = nif->allNiBlocks().toStdList();
 		blockFilter( nif, allIds, type );

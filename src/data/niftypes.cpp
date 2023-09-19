@@ -250,13 +250,13 @@ bool Matrix::toEuler( float & x, float & y, float & z ) const
 			return true;
 		} else {
 			x = -atan2( -m[1][0], m[1][1] );
-			y = -PI / 2;
+			y = float(-HALF_PI);
 			z = 0.0;
 			return false;
 		}
 	} else {
 		x = atan2( m[1][0], m[1][1] );
-		y = PI / 2;
+		y = float(HALF_PI);
 		z = 0.0;
 		return false;
 	}

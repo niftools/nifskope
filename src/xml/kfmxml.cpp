@@ -157,6 +157,8 @@ public:
 				bool isCompound = KfmModel::compounds.contains( type );
 				bool isArray = !arr1.isEmpty();
 				bool isMultiArray = !arr2.isEmpty();
+				if ( isMultiArray && !isArray )
+					err( tr("\"arr2\" attribute without \"arr1\" attribute") );
 
 				data.setAbstract( abs == "1" );
 				data.setTemplated( isTemplated );
@@ -223,7 +225,7 @@ public:
 
 	bool checkTemp( const NifData & data )
 	{
-		return data.temp().isEmpty() || NifValue::type( data.temp() ) != NifValue::tNone || data.temp() == XMLTMPL;
+		return data.templ().isEmpty() || NifValue::type( data.templ() ) != NifValue::tNone || data.templ() == XMLTMPL;
 	}
 
 	bool endDocument() override final
@@ -236,7 +238,7 @@ public:
 					err( tr( "compound type %1 referes to unknown type %2" ).arg( key, data.type() ) );
 
 				if ( !checkTemp( data ) )
-					err( tr( "compound type %1 refers to unknown template type %2" ).arg( key, data.temp() ) );
+					err( tr( "compound type %1 refers to unknown template type %2" ).arg( key, data.templ() ) );
 
 				if ( data.type() == key )
 					err( tr( "compound type %1 contains itself" ).arg( key ) );

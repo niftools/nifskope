@@ -88,7 +88,7 @@ void ReferenceBrowser::browse( const QModelIndex & index )
 		return;
 	}
 
-	QString blockType = nif->itemType( index );
+	QString blockType = nif->itemStrType( index );
 
 	if ( blockType == "NiBlock" ) {
 		blockType = nif->itemName( index );

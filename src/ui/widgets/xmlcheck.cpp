@@ -589,7 +589,7 @@ void TestThread::run()
 
 static QString linkId( const NifModel * nif, QModelIndex idx )
 {
-	QString id = QString( "%1 (%2)" ).arg( nif->itemName( idx ), nif->itemTmplt( idx ) );
+	QString id = QString( "%1 (%2)" ).arg( nif->itemName( idx ), nif->itemTempl( idx ) );
 
 	while ( idx.parent().isValid() ) {
 		idx = idx.parent();
@@ -616,7 +616,7 @@ QList<TestMessage> TestThread::checkLinks( const NifModel * nif, const QModelInd
 			} else if ( l >= nif->getBlockCount() ) {
 				messages.append( TestMessage() << tr( "invalid link" ) << linkId( nif, idx ) );
 			} else {
-				QString tmplt = nif->itemTmplt( idx );
+				QString tmplt = nif->itemTempl( idx );
 
 				if ( !tmplt.isEmpty() ) {
 					QModelIndex iBlock = nif->getBlockIndex( l );

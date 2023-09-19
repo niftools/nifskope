@@ -1016,9 +1016,9 @@ QString NifValue::toString() const
 			}
 
 			return ( pre + QString( "Y %1 P %2 R %3" ) + suf )
-			       .arg( NumOrMinMax( x / PI * 180, 'f', ROTATION_COARSE ) )
-			       .arg( NumOrMinMax( y / PI * 180, 'f', ROTATION_COARSE ) )
-			       .arg( NumOrMinMax( z / PI * 180, 'f', ROTATION_COARSE ) );
+			       .arg( NumOrMinMax( rad2deg(x), 'f', ROTATION_COARSE ) )
+			       .arg( NumOrMinMax( rad2deg(y), 'f', ROTATION_COARSE ) )
+			       .arg( NumOrMinMax( rad2deg(z), 'f', ROTATION_COARSE ) );
 		}
 	case tMatrix4:
 		{
@@ -1027,16 +1027,13 @@ QString NifValue::toString() const
 			m->decompose( t, r, s );
 			float xr, yr, zr;
 			r.toEuler( xr, yr, zr );
-			xr *= 180 / PI;
-			yr *= 180 / PI;
-			zr *= 180 / PI;
 			return QString( "Trans( X %1 Y %2 Z %3 ) Rot( Y %4 P %5 R %6 ) Scale( X %7 Y %8 Z %9 )" )
 			       .arg( t[0], 0, 'f', 3 )
 			       .arg( t[1], 0, 'f', 3 )
 			       .arg( t[2], 0, 'f', 3 )
-			       .arg( xr,   0, 'f', 3 )
-			       .arg( yr,   0, 'f', 3 )
-			       .arg( zr,   0, 'f', 3 )
+			       .arg( rad2deg(xr), 0, 'f', 3 )
+			       .arg( rad2deg(yr), 0, 'f', 3 )
+			       .arg( rad2deg(zr), 0, 'f', 3 )
 			       .arg( s[0], 0, 'f', 3 )
 			       .arg( s[1], 0, 'f', 3 )
 			       .arg( s[2], 0, 'f', 3 );

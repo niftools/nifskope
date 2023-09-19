@@ -123,24 +123,22 @@ public:
 	//! Updates stored file and folder information
 	void refreshFileInfo( const QString & );
 
-	/*! Return true if the index pointed to is an array.
-	 *
-	 * @param array The index to check.
-	 * @return		true if the index is an array.
-	 */
-	bool isArray( const QModelIndex & iArray ) const;
-
 	/*! Return true if the item is an array.
 	*
-	* @param array The item to check.
+	* @param item	The item to check.
 	* @return		true if the index is an array.
 	*/
 	bool isArray( const NifItem * item ) const;
 
+	/*! Return true if the index pointed to is an array.
+	 *
+	 * @param iArray The index to check.
+	 * @return		true if the index is an array.
+	 */
+	bool isArray( const QModelIndex & iArray ) const;
+
 	//! Get an item as a NifValue.
 	NifValue getValue( const QModelIndex & index ) const;
-	// Get an item as a NifValue by name.
-	//NifValue getValue( const QModelIndex & parent, const QString & name ) const;
 
 	//! Set an item from a NifValue.
 	bool setIndexValue( const QModelIndex & index, const NifValue & v );
@@ -148,7 +146,7 @@ public:
 	//! Get the item name.
 	QString itemName( const QModelIndex & index ) const;
 	//! Get the item type string.
-	QString itemType( const QModelIndex & index ) const;
+	QString itemStrType( const QModelIndex & index ) const;
 	//! Get the item argument string.
 	QString itemArg( const QModelIndex & index ) const;
 	//! Get the item arr1 string.
@@ -164,7 +162,7 @@ public:
 	//! Get the item documentation.
 	QString itemText( const QModelIndex & index ) const;
 	//! Get the item template string.
-	QString itemTmplt( const QModelIndex & index ) const;
+	QString itemTempl( const QModelIndex & index ) const;
 
 
 	//! Is name a NiBlock identifier (<niobject abstract="0"> or <niobject abstract="1">)?
@@ -269,18 +267,31 @@ public:
 	void logWarning( const QString & details ) const;
 
 public:
-	//! Return string representation ("path") of an item within the model (e.g., "Block [0]\Vertex Data [3]\Vertex colors") as a QString.
+	//! Return string representation ("path") of an item within its model (e.g., "NiTriShape [0]\Vertex Data [3]\Vertex colors").
 	// Mostly for messages and debug.
 	QString itemRepr( const NifItem * item ) const;
+
+	//! Return string representation ("path") of a model index within its model (e.g., "NiTriShape [0]\Vertex Data [3]\Vertex colors").
+	// Mostly for messages and debug.
+	static QString indexRepr( const QModelIndex & index );
+
 protected:
 	virtual QString topItemRepr( const NifItem * item ) const;
+
 public:
 	void reportError( const QString & err ) const;
 	void reportError( const NifItem * item, const QString & err ) const;
 	void reportError( const NifItem * item, const QString & funcName, const QString & err ) const;
+	void reportError( const QModelIndex & index, const QString & err ) const;
+	void reportError( const QModelIndex & index, const QString & funcName, const QString & err ) const;
 
 public:
 	QModelIndex itemToIndex( const NifItem * item, int column = 0 ) const;
+
+	//! Checks if the item is a direct child of the root.
+	bool isTopItem( const NifItem * item ) const;
+	//! Checks if the model index is a direct child of the root.
+	bool isTopIndex( const QModelIndex & index ) const;
 
 	//! Get the top-level parent (a child of the model's root item) of an item.
 	// Return null if the item is the root itself or not a child of the root.
@@ -316,6 +327,10 @@ protected:
 	virtual bool evalConditionImpl( const NifItem * item ) const;
 
 	// NifItem getters
+protected:
+	const NifItem * getItemInternal( const NifItem * parent, const QString & name, bool reportErrors ) const;
+	const NifItem * getItemInternal( const NifItem * parent, const QLatin1String & name, bool reportErrors ) const;
+
 public:
 	//! Get a child NifItem from its parent and name.
 	const NifItem * getItem( const NifItem * parent, const QString & name, bool reportErrors = false ) const;
@@ -334,9 +349,9 @@ public:
 	//! Get a child NifItem from its parent and numerical index.
 	NifItem * getItem( const NifItem * parent, int childIndex, bool reportErrors = true );
 	//! Get a NifItem from its model index.
-	const NifItem * getItem( const QModelIndex & index ) const;
+	const NifItem * getItem( const QModelIndex & index, bool reportErrors = true ) const;
 	//! Get a NifItem from its model index.
-	NifItem * getItem( const QModelIndex & index );
+	NifItem * getItem( const QModelIndex & index, bool reportErrors = true );
 	//! Get a child NifItem from its parent and name.
 	const NifItem * getItem( const QModelIndex & parent, const QString & name, bool reportErrors = false ) const;
 	//! Get a child NifItem from its parent and name.
@@ -601,6 +616,15 @@ inline QModelIndex BaseModel::itemToIndex( const NifItem * item, int column ) co
 	return item ? createIndex( item->row(), column, const_cast<NifItem *>(item) ) : QModelIndex();
 }
 
+inline bool BaseModel::isTopItem( const NifItem * item ) const
+{
+	return item && item->parent() == root;
+}
+inline bool BaseModel::isTopIndex( const QModelIndex & index ) const
+{
+	return isTopItem( getItem(index) );
+}
+
 inline NifItem * BaseModel::getTopItem( const NifItem * item )
 {
 	return const_cast<NifItem *>( const_cast<const BaseModel *>(this)->getTopItem( item ) );
@@ -628,10 +652,20 @@ inline bool BaseModel::setIndexValue( const QModelIndex & index, const NifValue 
 	return setItemValue( getItem(index), val );
 }
 
+inline bool BaseModel::isArray( const NifItem * item ) const
+{
+	return item && item->isArray();
+}
+
+inline bool BaseModel::isArray( const QModelIndex & index ) const
+{
+	return isArray( getItem( index ) );
+}
+
 
 // Item getters
 
-#define _BASEMODEL_NONCONST_GETITEM_1(arg) const_cast<NifItem *>( const_cast<const BaseModel *>(this)->getItem( arg ) )
+#define _BASEMODEL_NONCONST_GETITEM_2(arg1, arg2) const_cast<NifItem *>( const_cast<const BaseModel *>(this)->getItem( arg1, arg2 ) )
 #define _BASEMODEL_NONCONST_GETITEM_3(arg1, arg2, arg3) const_cast<NifItem *>( const_cast<const BaseModel *>(this)->getItem( arg1, arg2, arg3 ) )
 
 inline NifItem * BaseModel::getItem( const NifItem * parent, const QString & name, bool reportErrors )
@@ -654,9 +688,9 @@ inline NifItem * BaseModel::getItem( const NifItem * parent, int childIndex, boo
 {
 	return _BASEMODEL_NONCONST_GETITEM_3( parent, childIndex, reportErrors );
 }
-inline NifItem * BaseModel::getItem( const QModelIndex & index )
+inline NifItem * BaseModel::getItem( const QModelIndex & index, bool reportErrors )
 {
-	return _BASEMODEL_NONCONST_GETITEM_1( index );
+	return _BASEMODEL_NONCONST_GETITEM_2( index, reportErrors );
 }
 inline const NifItem * BaseModel::getItem( const QModelIndex & parent, const QString & name, bool reportErrors ) const
 {
@@ -831,19 +865,19 @@ inline bool BaseModel::updateArraySize( NifItem * arrayRootItem )
 }
 inline bool BaseModel::updateArraySize( const NifItem * arrayParent, int arrayIndex )
 {
-	return updateArraySizeImpl( getItem(arrayParent, arrayIndex) );
+	return updateArraySizeImpl( getItem(arrayParent, arrayIndex, true) );
 }
 inline bool BaseModel::updateArraySize( const NifItem * arrayParent, const QString & arrayName )
 {
-	return updateArraySizeImpl( getItem(arrayParent, arrayName) );
+	return updateArraySizeImpl( getItem(arrayParent, arrayName, true) );
 }
 inline bool BaseModel::updateArraySize( const NifItem * arrayParent, const QLatin1String & arrayName )
 {
-	return updateArraySizeImpl( getItem(arrayParent, arrayName) );
+	return updateArraySizeImpl( getItem(arrayParent, arrayName, true) );
 }
 inline bool BaseModel::updateArraySize( const NifItem * arrayParent, const char * arrayName )
 {
-	return updateArraySizeImpl( getItem(arrayParent, QLatin1String(arrayName)) );
+	return updateArraySizeImpl( getItem(arrayParent, QLatin1String(arrayName), true) );
 }
 inline bool BaseModel::updateArraySize( const QModelIndex & iArray )
 {
@@ -851,19 +885,19 @@ inline bool BaseModel::updateArraySize( const QModelIndex & iArray )
 }
 inline bool BaseModel::updateArraySize( const QModelIndex & arrayParent, int arrayIndex )
 {
-	return updateArraySizeImpl( getItem(arrayParent, arrayIndex) );
+	return updateArraySizeImpl( getItem(arrayParent, arrayIndex, true) );
 }
 inline bool BaseModel::updateArraySize( const QModelIndex & arrayParent, const QString & arrayName )
 {
-	return updateArraySizeImpl( getItem(arrayParent, arrayName) );
+	return updateArraySizeImpl( getItem(arrayParent, arrayName, true) );
 }
 inline bool BaseModel::updateArraySize( const QModelIndex & arrayParent, const QLatin1String & arrayName )
 {
-	return updateArraySizeImpl( getItem(arrayParent, arrayName) );
+	return updateArraySizeImpl( getItem(arrayParent, arrayName, true) );
 }
 inline bool BaseModel::updateArraySize( const QModelIndex & arrayParent, const char * arrayName )
 {
-	return updateArraySizeImpl( getItem(arrayParent, QLatin1String(arrayName)) );
+	return updateArraySizeImpl( getItem(arrayParent, QLatin1String(arrayName), true) );
 }
 
 

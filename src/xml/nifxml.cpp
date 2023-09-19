@@ -347,11 +347,16 @@ public:
 					QString vercond = get( "vercond" );
 					QString defval = get( "default" );
 
+					bool hasTypeCondition = false;
+
 					QString onlyT = list.value( "onlyT" );
 					QString excludeT = list.value( "excludeT" );
 					if ( !onlyT.isEmpty() || !excludeT.isEmpty() ) {
 						Q_ASSERT( cond.isEmpty() );
 						Q_ASSERT( onlyT.isEmpty() != excludeT.isEmpty() );
+						// hasTypeCondition flag here relies on that cond is always either "cond" attribute or "onlyT/excludeT", not a combination of both at the same time.
+						// If it ever changes, hasTypeCondition logic will have to be rewritten.
+						hasTypeCondition = true;
 						if ( !onlyT.isEmpty() )
 							cond = onlyT;
 						else
@@ -363,6 +368,8 @@ public:
 					bool isCompound = NifModel::compounds.contains( type );
 					bool isArray = !arr1.isEmpty();
 					bool isMultiArray = !arr2.isEmpty();
+					if ( isMultiArray && !isArray )
+						err( tr("\"width\" attribute without \"length\" attribute") );
 
 					// Override some compounds as mixins (compounds without nesting)
 					//	This flattens the hierarchy as if the mixin's <add> rows belong to the mixin's parent
@@ -417,7 +424,10 @@ public:
 					data.setIsArray( isArray );
 					data.setIsMultiArray( isMultiArray );
 					data.setIsMixin( isMixin );
+					data.setHasTypeCondition( hasTypeCondition );
 
+					if ( data.isBinary() && isMultiArray )
+						err( tr("Binary multi-arrays not supported") );
 
 					if ( !defval.isEmpty() ) {
 						bool ok;
@@ -642,11 +652,11 @@ public:
 	//! Checks that a template type is valid
 	bool checkTemp( const NifData & d )
 	{
-		return ( d.temp().isEmpty()
-				|| NifValue::type( d.temp() ) != NifValue::tNone
-				|| d.temp() == XMLTMPL
-				|| NifModel::blocks.contains( d.temp() )
-				|| NifModel::compounds.contains( d.temp() )
+		return ( d.templ().isEmpty()
+				|| NifValue::type( d.templ() ) != NifValue::tNone
+				|| d.templ() == XMLTMPL
+				|| NifModel::blocks.contains( d.templ() )
+				|| NifModel::compounds.contains( d.templ() )
 		);
 	}
 
@@ -661,7 +671,7 @@ public:
 					err( tr( "struct type %1 refers to unknown type %2" ).arg( key, data.type() ) );
 
 				if ( !checkTemp( data ) )
-					err( tr( "struct type %1 refers to unknown template type %2" ).arg( key, data.temp() ) );
+					err( tr( "struct type %1 refers to unknown template type %2" ).arg( key, data.templ() ) );
 
 				if ( data.type() == key )
 					err( tr( "struct type %1 contains itself" ).arg( key ) );
@@ -682,7 +692,7 @@ public:
 					err( tr( "niobject %1 refers to unknown type %2" ).arg( key, data.type() ) );
 
 				if ( !checkTemp( data ) )
-					err( tr( "niobject %1 refers to unknown template type %2" ).arg( key, data.temp() ) );
+					err( tr( "niobject %1 refers to unknown template type %2" ).arg( key, data.templ() ) );
 			}
 		}
 

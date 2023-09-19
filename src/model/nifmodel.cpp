@@ -43,42 +43,223 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDebug>
 #include <QFile>
 #include <QSettings>
-
-QHash<QString, QString> NifModel::arrayPseudonyms;
-
-void NifModel::setupArrayPseudonyms()
-{
-	if (!arrayPseudonyms.isEmpty())
-		return;
-
-	#define registerPseudonym(plural, singular)		arrayPseudonyms.insert(plural, singular)
-
-	registerPseudonym("Vertex Data", "Vertex");
-	registerPseudonym("Vertices", "Vertex");
-	registerPseudonym("Triangles", "Triangle");
-	registerPseudonym("Normals", "Normal");
-	registerPseudonym("Tangents", "Tangent");
-	registerPseudonym("Bitangents", "Bitangent");
-	registerPseudonym("Vertex Colors", "Vertex Color");
-	registerPseudonym("Textures", "Texture");
-	registerPseudonym("Strings", "String");
-	registerPseudonym("Children", "Child");
-	registerPseudonym("Extra Data List", "Extra Data");
-	registerPseudonym("Chunk Materials", "Chunk Material");
-	registerPseudonym("Chunk Transforms", "Chunk Transform");
-	registerPseudonym("Big Verts", "Big Vert");
-	registerPseudonym("Big Tris", "Big Tri");
-	registerPseudonym("Chunks", "Chunk");
-	registerPseudonym("Effects", "Effect");
-	registerPseudonym("Partitions", "Partition");
-	registerPseudonym("Bones", "Bone");
-	registerPseudonym("Bone List", "Bone");
-	registerPseudonym("Bone Weights", "Bone Weight");
-	registerPseudonym("Vertex Weights", "Vertex Weight");
-	registerPseudonym("Bone Indices", "Bone Index");
-}
+#include <QStringBuilder>
 
 //! @file nifmodel.cpp The NIF data model.
+
+const QString EMPTY_QSTRING;
+const QString SPACE_QSTRING(" ");
+const QString DOT_QSTRING(".");
+
+QHash<QString, QString> arrayPseudonyms;
+QHash<QString, QString> multiArrayPseudonyms1;
+QHash<QString, QString> multiArrayPseudonyms2;
+
+void setupArrayPseudonyms()
+{
+	if ( !arrayPseudonyms.isEmpty() )
+		return;
+
+	#define registerPseudonym(plural, singular)		arrayPseudonyms.insert(QStringLiteral(plural), QStringLiteral(singular))
+
+	registerPseudonym("Active Keys", "Active Key");
+	registerPseudonym("Actors", "Actor");
+	registerPseudonym("Affected Node Pointers", "Affected Node Pointer");
+	registerPseudonym("Affected Nodes", "Affected Node");
+	registerPseudonym("Anim Note Arrays", "Anim Note Array");
+	registerPseudonym("Anim Notes", "Anim Note");
+	registerPseudonym("Attachments", "Attachment");
+	registerPseudonym("Big Tris", "Big Tri");
+	registerPseudonym("Big Verts", "Big Vert");
+	registerPseudonym("Bitangents", "Bitangent");
+	registerPseudonym("Block Infos", "Block Info");
+	registerPseudonym("Block Offsets", "Block Offset");
+	registerPseudonym("Block Type Hashes", "Block Type Hash");
+	registerPseudonym("Block Types", "Block Type");
+	registerPseudonym("Blocks", "Block");
+	registerPseudonym("Bone Bounds", "Bone Bound");
+	registerPseudonym("Bone Indices", "Bone Index");
+	registerPseudonym("Bone List", "Bone");
+	registerPseudonym("Bone Transforms", "Bone Transform");
+	registerPseudonym("Bone Weights", "Bone Weight");
+	registerPseudonym("Bones", "Bone");
+	registerPseudonym("Bounding Volumes", "Bounding Volume");
+	registerPseudonym("Buttons", "Button");
+	registerPseudonym("Chained Entities", "Chained Entity");
+	registerPseudonym("Channel Types", "Channel Type");
+	registerPseudonym("Channels", "Channel");
+	registerPseudonym("Children", "Child");
+	registerPseudonym("Chunk Materials", "Chunk Material");
+	registerPseudonym("Chunk Transforms", "Chunk Transform");
+	registerPseudonym("Chunks", "Chunk");
+	registerPseudonym("Clothes", "Cloth");
+	registerPseudonym("Colliders", "Collider");
+	registerPseudonym("Color Keys", "Color Key");
+	registerPseudonym("Colors", "Color");
+	registerPseudonym("Compact Control Points", "Compact Control Point");
+	registerPseudonym("Compartments", "Compartment");
+	registerPseudonym("Complete Points", "Complete Point");
+	registerPseudonym("Component Formats", "Component Format");
+	registerPseudonym("Compressed Vertices", "Compressed Vertex");
+	registerPseudonym("Connect Points", "Connect Point");
+	registerPseudonym("Constraints", "Constraint");
+	registerPseudonym("Control Points", "Control Point");
+	registerPseudonym("Controlled Blocks", "Controlled Block");
+	registerPseudonym("Controller Seq List", "Controller Seq");
+	registerPseudonym("Controller Sequences", "Controller Sequence");
+	registerPseudonym("Corners", "Corner");
+	registerPseudonym("Cut Offsets", "Cut Offset");
+	registerPseudonym("Data Sizes", "Data Size");
+	registerPseudonym("Datastreams", "Datastream");
+	registerPseudonym("Dests", "Dest");
+	registerPseudonym("DIV2 Floats", "DIV2 Float");
+	registerPseudonym("DIV2 Ints", "DIV2 Int");
+	registerPseudonym("Effects", "Effect");
+	registerPseudonym("Elements", "Element");
+	registerPseudonym("Emitter Meshes", "Emitter Mesh");
+	registerPseudonym("Emitters", "Emitter");
+	registerPseudonym("Evaluators", "Evaluator");
+	registerPseudonym("Extra Data List", "Extra Data");
+	registerPseudonym("Extra Targets", "Extra Target");
+	registerPseudonym("Filter Constants", "Filter Constant");
+	registerPseudonym("Filter Ops", "Filter Op");
+	registerPseudonym("Filters", "Filter");
+	registerPseudonym("Fixtures", "Fixture");
+	registerPseudonym("Float Control Points", "Float Control Point");
+	registerPseudonym("Forces", "Force");
+	registerPseudonym("Generations", "Generation");
+	registerPseudonym("Group Collision Flags", "Group Collision Flag");
+	registerPseudonym("Groups", "Group");
+	registerPseudonym("Images", "Image");
+	registerPseudonym("In Portals", "In Portal");
+	registerPseudonym("Indices", "Index");
+	registerPseudonym("Instance Nodes", "Instance Node");
+	registerPseudonym("Instances", "Instance");
+	registerPseudonym("Interp Array Items", "Interp Item");
+	registerPseudonym("Interpolator Weights", "Interpolator Weight");
+	registerPseudonym("Interpolators", "Interpolator");
+	registerPseudonym("Items", "Item");
+	registerPseudonym("Joints", "Joint");
+	registerPseudonym("Keys", "Key");
+	registerPseudonym("Knots", "Knot");
+	registerPseudonym("Limits", "Limit");
+	registerPseudonym("Lines", "Line");
+	registerPseudonym("LOD Distances", "LOD Distance");
+	registerPseudonym("LOD Entries", "LOD Entry");
+	registerPseudonym("LOD Levels", "LOD Level");
+	registerPseudonym("LODs", "LOD");
+	registerPseudonym("Mapped Primitives", "Mapped Primitive");
+	registerPseudonym("Master Particles", "Master Particle");
+	registerPseudonym("Match Groups", "Match Group");
+	registerPseudonym("Material Descs", "Material Desc");
+	registerPseudonym("Materials", "Material");
+	registerPseudonym("Mesh Emitters", "Mesh Emitter");
+	registerPseudonym("Meshes", "Mesh");
+	registerPseudonym("Mipmaps", "Mipmap");
+	registerPseudonym("Modified Meshes", "Modified Mesh");
+	registerPseudonym("Modifiers", "Modifier");
+	registerPseudonym("Morphs", "Morph");
+	registerPseudonym("Node Groups", "Node Group");
+	registerPseudonym("Nodes", "Node");
+	registerPseudonym("Normals", "Normal");
+	registerPseudonym("Objs", "Obj");
+	registerPseudonym("Out Portals", "Out Portal");
+	registerPseudonym("Particle Meshes", "Particle Mesh");
+	registerPseudonym("Particle Normals", "Particle Normal");
+	registerPseudonym("Particle Systems", "Particle System");
+	registerPseudonym("Particle Triangles", "Particle Triangle");
+	registerPseudonym("Particle Vertices", "Particle Vertex");
+	registerPseudonym("Particles", "Particle");
+	registerPseudonym("Partitions", "Partition");
+	registerPseudonym("Pivots", "Pivot");
+	registerPseudonym("Points", "Point");
+	registerPseudonym("Polygon Indices", "Polygon Index");
+	registerPseudonym("Polygons", "Polygon");
+	registerPseudonym("Poses", "Pose");
+	registerPseudonym("Positions", "Position");
+	registerPseudonym("Properties", "Property");
+	registerPseudonym("Proportion Levels", "Proportion Level");
+	registerPseudonym("Props", "Prop");
+	registerPseudonym("Quaternion Keys", "Quaternion Key");
+	registerPseudonym("Radii", "Radius");
+	registerPseudonym("Refs", "Ref");
+	registerPseudonym("Regions", "Region");
+	registerPseudonym("Rooms", "Room");
+	registerPseudonym("Roots", "Root");
+	registerPseudonym("Rotation Angles", "Rotation Angle");
+	registerPseudonym("Rotation Axes", "Rotation Axis");
+	registerPseudonym("Rotation Keys", "Rotation Key");
+	registerPseudonym("Rotation Speeds", "Rotation Speed");
+	registerPseudonym("Rotations", "Rotation");
+	registerPseudonym("Scales", "Scale");
+	registerPseudonym("Segment Starts", "Segment Start");
+	registerPseudonym("Shader Textures", "Shader Texture");
+	registerPseudonym("Shadow Casters", "Shadow Caster");
+	registerPseudonym("Shadow Receivers", "Shadow Receiver");
+	registerPseudonym("Shape Descriptions", "Shape Description");
+	registerPseudonym("Shape Properties", "Shape Property");
+	registerPseudonym("Simulation Steps", "Simulation Step");
+	registerPseudonym("Size Keys", "Size Key");
+	registerPseudonym("Sizes", "Size");
+	registerPseudonym("Skin Indices", "Skin Index");
+	registerPseudonym("Skins", "Skin");
+	registerPseudonym("Sources", "Source");
+	registerPseudonym("Spawn Rate Keys", "Spawn Rate Key");
+	registerPseudonym("Spawners", "Spawner");
+	registerPseudonym("Spheres", "Sphere");
+	registerPseudonym("States", "State");
+	registerPseudonym("Strings", "String");
+	registerPseudonym("Strip Lengths", "Strip Length");
+	registerPseudonym("Strips", "Strip");
+	registerPseudonym("Sub Shapes", "Sub Shape");
+	registerPseudonym("SubEntry List", "SubEntry");
+	registerPseudonym("Submesh To Region Map", "Submesh To Region");
+	registerPseudonym("Submit Points", "Submit Point");
+	registerPseudonym("Subtexture Offsets", "Subtexture Offset");
+	registerPseudonym("Systems", "System");
+	registerPseudonym("Tangents", "Tangent");
+	registerPseudonym("Target Names", "Target Name");
+	registerPseudonym("Tear Indices", "Tear Index");
+	registerPseudonym("Tear Split Planes", "Tear Split Plane");
+	registerPseudonym("Text Keys", "Text Key");
+	registerPseudonym("Texture Array", "Texture");
+	registerPseudonym("Texture Arrays", "Texture Array");
+	registerPseudonym("Textures", "Texture");
+	registerPseudonym("Transforms", "Transform");
+	registerPseudonym("Translations", "Translation");
+	registerPseudonym("Tread Transforms", "Tread Transform");
+	registerPseudonym("Triangles Copy", "Triangle Copy");
+	registerPseudonym("Triangles", "Triangle");
+	registerPseudonym("UV Groups", "UV Group");
+	registerPseudonym("Vector Blocks", "Vector Block");
+	registerPseudonym("Vectors", "Vector");
+	registerPseudonym("Vels", "Vel");
+	registerPseudonym("Vertex Colors", "Vertex Color");
+	registerPseudonym("Vertex Counts", "Vertex Count");
+	registerPseudonym("Vertex Data", "Vertex");
+	registerPseudonym("Vertex Indices", "Vertex Index");
+	registerPseudonym("Vertex Positions", "Vertex Position");
+	registerPseudonym("Vertex Weights", "Vertex Weight");
+	registerPseudonym("Vertices", "Vertex");
+	registerPseudonym("Wall Planes", "Wall Plane");
+	registerPseudonym("Walls", "Wall");
+	registerPseudonym("Weight Indices", "Weight Index");
+	registerPseudonym("Weights", "Weight");
+	registerPseudonym("XYZ Rotations", "XYZ Rotation");
+
+	#define registerMultiPseudonym(plural, singular1, singular2) \
+		multiArrayPseudonyms1.insert(QStringLiteral(plural), QStringLiteral(singular1)); \
+		multiArrayPseudonyms2.insert(QStringLiteral(plural), QStringLiteral(singular2))
+
+	registerMultiPseudonym("Bone Data", "Bone", "Weight");
+	registerMultiPseudonym("Bone Indices", "Vertex", "Bone Index");
+	registerMultiPseudonym("Points", "Strip", "Point");
+	registerMultiPseudonym("RGB Image Data", "RGB X", "RGB Y");
+	registerMultiPseudonym("RGBA Image Data", "RGBA X", "RGBA Y");
+	registerMultiPseudonym("Strips", "Strip", "Point");
+	registerMultiPseudonym("UV Sets", "UV Set", "UV");
+	registerMultiPseudonym("Vertex Weights", "Vertex", "Weight");
+}
 
 NifModel::NifModel( QObject * parent ) : BaseModel( parent )
 {
@@ -110,8 +291,8 @@ QString NifModel::version2string( quint32 v )
 
 	if ( v < 0x0303000D ) {
 		//This is an old-style 2-number version with one period
-		s = QString::number( ( v >> 24 ) & 0xff, 10 ) + "."
-		    + QString::number( ( v >> 16 ) & 0xff, 10 );
+		s = QString::number( ( v >> 24 ) & 0xff, 10 ) % DOT_QSTRING
+		    % QString::number( ( v >> 16 ) & 0xff, 10 );
 
 		quint32 sub_num1 = ( (v >> 8) & 0xff );
 		quint32 sub_num2 = (v & 0xff);
@@ -125,10 +306,10 @@ QString NifModel::version2string( quint32 v )
 		}
 	} else {
 		//This is a new-style 4-number version with 3 periods
-		s = QString::number( ( v >> 24 ) & 0xff, 10 ) + "."
-		    + QString::number( ( v >> 16 ) & 0xff, 10 ) + "."
-		    + QString::number( ( v >> 8 ) & 0xff, 10 ) + "."
-		    + QString::number( v & 0xff, 10 );
+		s = QString::number( ( v >> 24 ) & 0xff, 10 ) % DOT_QSTRING
+			% QString::number( ( v >> 16 ) & 0xff, 10 ) % DOT_QSTRING
+			% QString::number( ( v >> 8 ) & 0xff, 10 ) % DOT_QSTRING
+			% QString::number( v & 0xff, 10 );
 	}
 
 	return s;
@@ -139,8 +320,8 @@ quint32 NifModel::version2number( const QString & s )
 	if ( s.isEmpty() )
 		return 0;
 
-	if ( s.contains( "." ) ) {
-		QStringList l = s.split( "." );
+	if ( s.contains( DOT_QSTRING ) ) {
+		QStringList l = s.split( DOT_QSTRING );
 
 		quint32 v = 0;
 
@@ -208,7 +389,9 @@ void NifModel::clear()
 
 	NifItem * header = getHeaderItem();
 
-	NifItem::valueFromFileVersion( getItem( header, "Version" ), version );
+	auto headerVer = getItem( header, "Version" );
+	if ( headerVer )
+		headerVer->setFileVersionValue( version );
 
 	QString header_string( ( version <= 0x0A000100 ) ? "NetImmerse File Format, Version " : "Gamebryo File Format, Version " );
 	header_string += version2string( version );
@@ -384,8 +567,11 @@ void NifModel::updateFooter()
 	if ( itemRoots ) {
 		set<int>( footer, "Num Roots", rootLinks.count() );
 		updateArraySize( itemRoots );
-		for ( int r = 0; r < itemRoots->childCount(); r++ )
-			NifItem::valueFromLink( itemRoots->child( r ), rootLinks.value( r ) );
+		for ( int r = 0; r < itemRoots->childCount(); r++ ) {
+			auto child = itemRoots->child( r );
+			if ( child )
+				child->setLinkValue( rootLinks.value( r ) );
+		}
 	}
 }
 
@@ -397,7 +583,7 @@ bool NifModel::updateArraySizeImpl( NifItem * array )
 {
 	if ( !isArray( array ) ) {
 		if ( array )
-			reportError( array, "updateArraySize", "The input item is not an array." );
+			reportError( array, __func__, "The input item is not an array." );
 		return false;
 	}
 
@@ -410,20 +596,21 @@ bool NifModel::updateArraySizeImpl( NifItem * array )
 	int nNewSize = evalArraySize( array );
 
 	if ( nNewSize > 1024 * 1024 * 8 ) {
-		reportError( array, "updateArraySize", tr( "Array size %1 is much too large." ).arg( nNewSize ) );
+		reportError( array, __func__, tr( "Array size %1 is much too large." ).arg( nNewSize ) );
 		return false;
 	} else if ( nNewSize < 0 ) {
-		reportError( array, "updateArraySize", tr( "Array size %1 is invalid." ).arg( nNewSize ) );
+		reportError( array, __func__, tr( "Array size %1 is invalid." ).arg( nNewSize ) );
 		return false;
 	}
 
 	int nOldSize = array->childCount();
+	bool bOldHasChildLinks = array->hasChildLinks();
 
 	if ( nNewSize > nOldSize ) { // Add missing items
 		NifData data( array->name(),
-					  array->type(),
-					  array->temp(),
-					  NifValue( NifValue::type( array->type() ) ),
+					  array->strType(),
+					  array->templ(),
+					  NifValue( NifValue::type( array->strType() ) ),
 					  addConditionParentPrefix( array->arg() ),
 					  addConditionParentPrefix( array->arr2() ) // arr1 in children is parent arr2
 		);
@@ -448,8 +635,8 @@ bool NifModel::updateArraySizeImpl( NifItem * array )
 
 	if ( nNewSize != nOldSize
 		&& state != Loading
-		&& ( isCompound(array->type()) || NifValue::isLink(NifValue::type(array->type())) )
-		&& getTopItem( array ) != getFooterItem()
+		&& ( bOldHasChildLinks || array->hasChildLinks() ) // had or has any links inside
+		&& !array->isDescendantOf( getFooterItem() )
 	) {
 		updateLinks();
 		updateFooter();
@@ -491,7 +678,7 @@ bool NifModel::updateByteArraySize( NifItem * array )
 
 	// Create the dummy row for holding the byte array
 	if ( nOldRows == 0 ) {
-		NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::tBlob ), addConditionParentPrefix( array->arg() ) );
+		NifData data( array->name(), array->strType(), array->templ(), NifValue( NifValue::tBlob ), addConditionParentPrefix( array->arg() ) );
 		data.setBinary( true );
 
 		beginInsertRows( itemToIndex(array), 0, 1 );
@@ -522,7 +709,7 @@ bool NifModel::updateChildArraySizes( NifItem * parent )
 
 	for ( auto child : parent->childIter() ) {
 		if ( evalCondition( child ) ) {
-			if ( isArray(child) ) {
+			if ( child->isArray() ) {
 				if ( !updateArraySize(child) )
 					return false;
 			}
@@ -596,7 +783,7 @@ QModelIndex NifModel::insertNiBlock( const QString & identifier, int at )
 
 void NifModel::removeNiBlock( int blocknum )
 {
-	if ( blocknum < 0 || blocknum >= getBlockCount() )
+	if ( !isValidBlockNumber( blocknum ) )
 		return;
 
 	adjustLinks( root, blocknum, 0 );
@@ -611,7 +798,7 @@ void NifModel::removeNiBlock( int blocknum )
 
 void NifModel::moveNiBlock( int src, int dst )
 {
-	if ( src < 0 || src >= getBlockCount() )
+	if ( !isValidBlockNumber( src ) )
 		return;
 
 	beginRemoveRows( QModelIndex(), src + 1, src + 1 );
@@ -651,7 +838,7 @@ void NifModel::updateStrings( NifModel * src, NifModel * tgt, NifItem * item )
 	if ( !item )
 		return;
 
-	if ( item->valueType() == NifValue::tStringIndex || item->valueType() == NifValue::tSizedString || item->hasType("string") ) {
+	if ( item->hasValueType(NifValue::tStringIndex) || item->hasValueType(NifValue::tSizedString) || item->hasStrType("string") ) {
 		QString str = src->resolveString( item );
 		tgt->assignString( tgt->createIndex( 0, 0, item ), str, false );
 	}
@@ -718,7 +905,7 @@ void NifModel::reorderBlocks( const QVector<qint32> & order )
 	QMap<qint32, qint32> blockMap;
 
 	for ( qint32 n = 0; n < order.count(); n++ ) {
-		if ( blockMap.contains( order[n] ) || order[n] < 0 || order[n] >= getBlockCount() ) {
+		if ( blockMap.contains( order[n] ) || !isValidBlockNumber( order[n] ) ) {
 			logMessage(tr("Reorder Blocks error"), err, QMessageBox::Critical);
 			return;
 		}
@@ -771,7 +958,7 @@ int NifModel::getBlockNumber( const NifItem * item ) const
 	const NifItem * block = getTopItem( item );
 	if ( block ) {
 		int iRow = block->row();
-		if ( iRow >= firstBlockRow() && iRow <= lastBlockRow() )
+		if ( isBlockRow( iRow ) )
 			return iRow - firstBlockRow();
 	}
 
@@ -812,7 +999,7 @@ const NifItem * NifModel::_getBlockItem( const NifItem * block, const QStringLis
 
 const NifItem * NifModel::getBlockItem( qint32 link ) const
 {
-	if ( link >= 0 && link < getBlockCount() )
+	if ( isValidBlockNumber( link ) )
 		return root->child( link + firstBlockRow() );
 
 	return nullptr;
@@ -822,17 +1009,6 @@ const NifItem * NifModel::getBlockItem( const NifItem * item ) const
 {
 	const NifItem * block = getTopItem( item );
 	return isNiBlock(block) ? block : nullptr;
-}
-
-bool NifModel::isNiBlock( const NifItem * item ) const
-{
-	if ( item && item->parent() == root ) {
-		int iRow = item->row();
-		if ( iRow >= firstBlockRow() && iRow <= lastBlockRow() )
-			return true;
-	}
-
-	return false;
 }
 
 bool NifModel::isNiBlock( const NifItem * item, const std::initializer_list<const char *> & testTypes ) const
@@ -977,12 +1153,12 @@ void NifModel::insertType( NifItem * parent, const NifData & data, int at )
 			insertType( parent, d );
 		}
 	} else if ( data.isTemplated() ) {
-		QString tmp = parent->temp();
+		QString tmp = parent->templ();
 		NifItem * tItem = parent;
 
 		while ( tmp == XMLTMPL && tItem->parent() ) {
 			tItem = tItem->parent();
-			tmp = tItem->temp();
+			tmp = tItem->templ();
 		}
 
 		NifData d( data );
@@ -994,8 +1170,8 @@ void NifModel::insertType( NifItem * parent, const NifData & data, int at )
 			d.setTemplated( false );
 		}
 
-		if ( d.temp() == XMLTMPL )
-			d.setTemp( tmp );
+		if ( d.templ() == XMLTMPL )
+			d.setTempl( tmp );
 
 		insertType( parent, d, at );
 	} else {
@@ -1037,38 +1213,45 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 			switch ( column ) {
 			case NameCol:
 				{
-					const QString & iname = item->name();
-
 					if ( ndr )
-						return iname;
+						return item->name();
 
-					if ( item->hasType("NiBlock") )
-						return QString::number( getBlockNumber(item) ) + " " + iname;
-					else if ( isArray( item->parent() ) ) {
-						auto arrayName = arrayPseudonyms.value(iname);
-						if ( arrayName.isEmpty() ) {
-							if ( item->hasName("UV Sets") )
-								arrayName = QString( item->valueIsVector2() ? "UV" : "UV Set" );
-							else
-								arrayName = iname;
+					auto p = item->parent();
+					// Prepend a space to the name for top level items and subitems of the 1st level.
+					const QString & namePrefix = ( !p || p == root || !p->parent() || p->parent() == root ) ? SPACE_QSTRING : EMPTY_QSTRING;
+
+					if ( isNiBlock(item) )
+						return QString( namePrefix % QString::number( getBlockNumber(item) ) % SPACE_QSTRING % item->name() );
+
+					if ( p && p->isArray() && !p->isBinary() ) {
+						QHash<QString, QString> & pseudonymMap = arrayPseudonyms;
+						// Is it a 2nd level array of a multi-array?
+						if ( p->isMultiArray() )
+							pseudonymMap = multiArrayPseudonyms1;
+						else {
+							// Is it an item (3rd level) of a multi-array?
+							auto pp = p->parent();
+							if ( pp && pp->isMultiArray() )
+								pseudonymMap = multiArrayPseudonyms2;
 						}
-						return arrayName + " " + QString::number( item->row() );
+
+						return QString( namePrefix % pseudonymMap.value( item->name(), item->name() ) % SPACE_QSTRING % QString::number( item->row() ) );
 					}
 
-					return " " + iname;
+					return namePrefix + item->name();
 				}
 				break;
 			case TypeCol:
 				{
-					if ( !item->temp().isEmpty() ) {
+					if ( !item->templ().isEmpty() ) {
 						const NifItem * tempItem = item;
-						while ( tempItem && tempItem->temp() == XMLTMPL )
+						while ( tempItem && tempItem->templ() == XMLTMPL )
 							tempItem = tempItem->parent();
 
-						return QString( "%1<%2>" ).arg( item->type(), tempItem ? tempItem->temp() : QString() );
+						return QString( "%1<%2>" ).arg( item->strType(), tempItem ? tempItem->templ() : QString() );
 					}
 
-					return item->type();
+					return item->strType();
 				}
 				break;
 			case ValueCol:
@@ -1076,7 +1259,7 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 					auto vt = item->valueType();			
 
 					if ( vt == NifValue::tString || vt == NifValue::tFilePath ) {
-						return QString( resolveString( item ) ).replace( "\n", " " ).replace( "\r", " " );
+						return QString( resolveString( item ) ).replace( "\n", SPACE_QSTRING ).replace( "\r", SPACE_QSTRING );
 					
 					} else if ( vt == NifValue::tStringOffset ) {
 						int offset = item->get<int>();
@@ -1088,17 +1271,17 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 							return tr( "<palette link not found>" );
 						auto paletteLink = getLink( itemPalette );
 						if ( paletteLink < 0 )
-							return tr( "<palette link is empty>" );
+							return tr( "<empty palette link>" );
 						itemPalette = getBlockItem( paletteLink );
 						if ( !itemPalette )
-							return tr( "<palette link is invalid>" );
+							return tr( "<invalid palette link>" );
 						itemPalette = getItem( itemPalette, "Palette", false );
 						if ( !itemPalette )
 							return tr( "<palette not found>" );
 
 						QByteArray *pBytes = itemPalette->get<QByteArray *>();
 						if ( !pBytes || offset >= pBytes->count() )
-							return tr( "<offset invalid>" );
+							return tr( "<invalid offset>" );
 
 						return QString( &pBytes->data()[offset] );
 					
@@ -1130,8 +1313,8 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 
 						return QString( "%2 [%1]" ).arg( iBlock ).arg( itemBlockEntry->get<QString>() );
 					
-					} else if ( item->valueIsLink() ) {
-						int link = item->valueToLink();
+					} else if ( item->isLink() ) {
+						int link = item->getLinkValue();
 						if ( link < 0 )
 							return tr( "None" );
 						if ( link >= getBlockCount() )
@@ -1147,18 +1330,18 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 
 						return tr( "%1 [%2]" ).arg( link ).arg( block->name() );
 					
-					} else if ( item->valueIsCount() ) {
-						if ( item->hasType("BSVertexDesc") )
+					} else if ( item->isCount() ) {
+						if ( item->hasStrType("BSVertexDesc") )
 							return item->get<BSVertexDesc>().toString();
 
-						QString optId = NifValue::enumOptionName( item->type(), item->valueToCount() );
+						QString optId = NifValue::enumOptionName( item->strType(), item->getCountValue() );
 						if ( optId.isEmpty() )
-							return item->valueToString();
+							return item->getValueAsString();
 
 						return optId;
 					}
 
-					return item->valueToString().replace( "\n", " " ).replace( "\r", " " );
+					return item->getValueAsString().replace( "\n", SPACE_QSTRING ).replace( "\r", SPACE_QSTRING );
 				}
 				break;
 			case ArgCol:
@@ -1184,7 +1367,7 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 			switch ( column ) {
 			case NameCol:
 				// (QColor, QIcon or QPixmap) as stated in the docs
-				/*if ( itemType( index ) == "NiBlock" )
+				/*if ( itemStrType( index ) == "NiBlock" )
 				    return QString::number( getBlockNumber( index ) );*/
 				return QVariant();
 			default:
@@ -1197,12 +1380,12 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 			case NameCol:
 				return item->name();
 			case TypeCol:
-				return item->type();
+				return item->strType();
 			case ValueCol:
 				{
-					if ( item->valueType() == NifValue::tString || item->valueType() == NifValue::tFilePath )
+					if ( item->hasValueType(NifValue::tString) || item->hasValueType(NifValue::tFilePath) )
 						return resolveString( item );
-					return item->valueToVariant();
+					return item->getValueAsVariant();
 				}
 			case ArgCol:
 				return item->arg();
@@ -1227,7 +1410,7 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 			switch ( column ) {
 			case NameCol:
 				{
-					if ( item->parent() && isArray( item->parent() ) ) {
+					if ( isArray( item->parent() ) ) {
 						return QString();
 					} else {
 						QString tip = QString( "<p><b>%1</b></p><p>%2</p>" )
@@ -1250,7 +1433,7 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 				}
 				break;
 			case TypeCol:
-				return NifValue::typeDescription( item->type() );
+				return NifValue::typeDescription( item->strType() );
 			case ValueCol:
 				{
 					switch ( item->valueType() ) {
@@ -1263,20 +1446,20 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 					case NifValue::tULittle32:
 						{
 							return tr( "dec: %1\nhex: 0x%2" )
-							       .arg( item->valueToString() )
-							       .arg( item->valueToCount(), 8, 16, QChar( '0' ) );
+							       .arg( item->getValueAsString() )
+							       .arg( item->getCountValue(), 8, 16, QChar( '0' ) );
 						}
 					case NifValue::tFloat:
 					case NifValue::tHfloat:
 					case NifValue::tNormbyte:
 						{
 							return tr( "float: %1\nhex: 0x%2" )
-							       .arg( NumOrMinMax( item->valueToFloat(), 'g', 8 ) )
-							       .arg( item->valueToCount(), 8, 16, QChar( '0' ) );
+							       .arg( NumOrMinMax( item->getFloatValue(), 'g', 8 ) )
+							       .arg( item->getCountValue(), 8, 16, QChar( '0' ) );
 						}
 					case NifValue::tFlags:
 						{
-							quint16 f = item->valueToCount();
+							quint16 f = item->getCountValue();
 							return tr( "dec: %1\nhex: 0x%2\nbin: 0b%3" )
 							       .arg( f )
 							       .arg( f, 4, 16, QChar( '0' ) )
@@ -1284,10 +1467,10 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 						}
 					case NifValue::tStringIndex:
 						return QString( "0x%1" )
-						       .arg( item->valueToCount(), 8, 16, QChar( '0' ) );
+						       .arg( item->getCountValue(), 8, 16, QChar( '0' ) );
 					case NifValue::tStringOffset:
 						return QString( "0x%1" )
-						       .arg( item->valueToCount(), 8, 16, QChar( '0' ) );
+						       .arg( item->getCountValue(), 8, 16, QChar( '0' ) );
 					case NifValue::tVector3:
 						return item->get<Vector3>().toHtml();
 					case NifValue::tHalfVector3:
@@ -1343,7 +1526,7 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 		{
 			// "notify" about an invalid index in "Triangles"
 			// TODO: checkbox, "show invalid only"
-			if ( column == ValueCol && item->valueIsTriangle() ) {
+			if ( column == ValueCol && item->isTriangle() ) {
 				const NifItem * nv = findItemX( item, "Num Vertices" );
 
 				if ( !nv ) {
@@ -1351,13 +1534,13 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 					return QVariant();
 				}
 
-				quint32 nvc = nv->valueToCount();
+				quint32 nvc = nv->getCountValue();
 				Triangle t  = item->get<Triangle>();
 
 				if ( t[0] >= nvc || t[1] >= nvc || t[2] >= nvc )
 					return QColor::fromRgb( 240, 210, 210 );
-			} else if ( column == ValueCol && item->valueIsColor() ) {
-				return item->valueToColor();
+			} else if ( column == ValueCol && item->isColor() ) {
+				return item->getColorValue();
 			}
 		}
 		return QVariant();
@@ -1393,20 +1576,20 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 	case NifModel::NameCol:
 		item->setName( value.toString() );
 
-		if ( item->parent() && item->parent() == root )
+		if ( isTopItem(item) )
 			updateHeader();
 
 		break;
 	case NifModel::TypeCol:
-		item->setType( value.toString() );
+		item->setStrType( value.toString() );
 		break;
 	case NifModel::ValueCol:
 		{
-			if ( item->valueType() == NifValue::tString || item->valueType() == NifValue::tFilePath ) {
-				item->valueChangeType( version < 0x14010003 ? NifValue::tSizedString : NifValue::tStringIndex );
+			if ( item->hasValueType(NifValue::tString) || item->hasValueType(NifValue::tFilePath) ) {
+				item->changeValueType( version < 0x14010003 ? NifValue::tSizedString : NifValue::tStringIndex );
 				assignString( item, value.toString(), true );
 			} else {
-				item->valueFromVariant( value );
+				item->setValueFromVariant( value );
 			}
 		}
 		break;
@@ -1430,6 +1613,7 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 		break;
 	case NifModel::VerCondCol:
 		item->setVerCond( value.toString() );
+		break;
 	default:
 		return false;
 	}
@@ -1438,17 +1622,14 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 	if ( index.column() == ValueCol ) {
 		if ( item->hasName("File Name") ) {
 			NifItem * parent = item->parent();
-			if ( parent && ( parent->hasName("Texture Source") || parent->hasName("NiImage") ) ) {
-				parent = parent->parent();
-				if ( parent && parent->hasType("NiBlock") && parent->hasName("NiSourceTexture") ) {
-					QModelIndex pidx = itemToIndex( parent, ValueCol );
-					emit dataChanged( pidx, pidx );
-				}
+			if ( isNiBlock(parent) && ( parent->hasName("NiSourceTexture") || parent->hasName("NiImage") ) ) {
+				QModelIndex pidx = itemToIndex( parent, ValueCol );
+				emit dataChanged( pidx, pidx );
 			}
 
 		} else if ( item->hasName("Name") ) {
 			NifItem * parent = item->parent();
-			if ( parent && parent->hasType("NiBlock") ) {
+			if ( isNiBlock(parent) ) {
 				QModelIndex pidx = itemToIndex( parent, ValueCol );
 				emit dataChanged( pidx, pidx );
 			}
@@ -1510,7 +1691,7 @@ QModelIndex NifModel::buddy( const QModelIndex & index ) const
 	if ( !item )
 		return QModelIndex();
 
-	if ( index.column() == ValueCol && item->parent() == root && item->hasType("NiBlock") ) {
+	if ( index.column() == ValueCol && isNiBlock(item) ) {
 		QModelIndex buddy;
 
 		if ( item->hasName("NiSourceTexture") || item->hasName("NiImage") ) {
@@ -1526,9 +1707,9 @@ QModelIndex NifModel::buddy( const QModelIndex & index ) const
 
 		if ( buddy.isValid() )
 			return buddy;
-	} else if ( index.column() == ValueCol && item->parent() != root ) {
+	} else if ( index.column() == ValueCol && !isTopItem(item) ) {
 
-		if ( item->hasType("ControlledBlock") && item->hasName("Controlled Blocks") ) {
+		if ( item->hasStrType("ControlledBlock") && item->hasName("Controlled Blocks") ) {
 			QModelIndex buddy;
 
 			if ( version >= 0x14010003 ) {
@@ -1617,7 +1798,7 @@ bool NifModel::load( QIODevice & device )
 
 	// read header
 	NifItem * header = getHeaderItem();
-	if ( !header || !loadHeader( header, stream ) ) {
+	if ( !loadHeader( header, stream ) ) {
 		auto m = tr( "Failed to load file header (version %1, %2)" ).arg( version, 0, 16 ).arg( version2string( version ) );
 		logMessage(tr(readFail), m, QMessageBox::Critical);
 
@@ -1855,7 +2036,7 @@ bool NifModel::save( QIODevice & device ) const
 
 		//qDebug() << "saving block " << c << ": " << itemName( index( c, 0 ) );
 
-		if ( itemType( index( c, 0 ) ) == "NiBlock" ) {
+		if ( itemStrType( index( c, 0 ) ) == "NiBlock" ) {
 			if ( version > 0x0a000000 ) {
 				if ( version < 0x0a020000 ) {
 					int null = 0;
@@ -1949,7 +2130,7 @@ bool NifModel::loadHeaderOnly( const QString & fname )
 	// read header
 	NifItem * header = getHeaderItem();
 
-	if ( !header || !loadHeader( header, stream ) ) {
+	if ( !loadHeader( header, stream ) ) {
 		logMessage(tr(readFail), tr("Failed to load file header version %1").arg(version), QMessageBox::Critical);
 		return false;
 	}
@@ -2011,13 +2192,13 @@ int NifModel::fileOffset( const QModelIndex & index ) const
 		for ( int c = 0; c < root->childCount(); c++ ) {
 			const NifItem * block = root->child( c );
 
-			if ( c >= firstBlockRow() && c <= lastBlockRow() ) {
+			if ( isBlockRow( c ) ) {
 				if ( version > 0x0a000000 ) {
 					if ( version < 0x0a020000 )
 						ofs += 4;
 				} else {
 					if ( version < 0x0303000d ) {
-						if ( rootLinks.contains( c - 1 ) )
+						if ( rootLinks.contains( c - firstBlockRow() ) )
 							ofs += 4 + QLatin1String( "Top Level Object" ).size();
 					}
 
@@ -2058,14 +2239,14 @@ int NifModel::blockSize( const NifItem * item, NifSStream & stream ) const
 		}
 
 		if ( evalCondition( child ) ) {
-			if ( isArray( child ) || !child->arr2().isEmpty() || child->childCount() > 0 ) {
-				if ( isArray( child ) && !child->isBinary() ) {
+			if ( child->isArray() || child->childCount() > 0 ) {
+				if ( child->isArray() && !child->isBinary() ) {
 					int nRealSize = child->childCount();
 					int nCalcSize = evalArraySize( child );
 					if ( nRealSize != nCalcSize ) {
 						reportError( 
 							child,
-							"blockSize",
+							__func__,
 							tr( "The array's size (%1) does not match its calculated size (%2)." ).arg( nRealSize ).arg( nCalcSize ) 
 						);
 					}
@@ -2108,7 +2289,7 @@ bool NifModel::loadItem( NifItem * parent, NifIStream & stream )
 		}
 
 		if ( evalCondition( child ) ) {
-			if ( isArray( child ) ) {
+			if ( child->isArray() ) {
 				if ( !updateArraySize( child ) )
 					return false;
 				if ( !loadItem( child, stream ) )
@@ -2150,8 +2331,30 @@ bool NifModel::loadHeader( NifItem * header, NifIStream & stream )
 	stream.reset();
 
 	bsVersion = 0;
-	set<int>( header, "User Version", 0 );
-	set<int>( header, "BS Header\\BS Version", 0 );
+
+	// Reset User Version and BS Header\BS Version of the header without condition evaluation and
+	// assuming that there could be muliple children with those names (who knows what will happen to nif.xml).
+	bool bFoundUserVersion = false;
+	bool bFoundBSVersion = false;
+	for ( auto child : header->childIter() ) {
+		if ( child->hasName("User Version") ) {
+			child->set<int>( 0 );
+			bFoundUserVersion = true;
+		} else if ( child->hasName("BS Header") ) {
+			for ( auto subChild : child->childIter() ) {
+				if ( subChild->hasName("BS Version") ) {
+					subChild->set<int>( 0 );
+					bFoundBSVersion = true;
+				}
+			}
+		}
+	}
+
+	if ( !bFoundUserVersion )
+		reportError(header, "Could not find \"User Version\" subitem." );
+	if ( !bFoundBSVersion )
+		reportError(header, "Could not find \"BS Header\\BS Version\" subitem." );
+
 	invalidateItemConditions( header );
 	bool result = loadItem(header, stream);
 	cacheBSVersion( header );
@@ -2168,18 +2371,21 @@ bool NifModel::saveItem( const NifItem * parent, NifOStream & stream ) const
 
 	for ( auto child : parent->childIter() ) {
 		if ( child->isAbstract() ) {
-			qDebug() << "Not saving abstract item " << child->name();
+			// qDebug() << "Not saving abstract item " << child->name();
 			continue;
 		}
 
 		if ( evalCondition( child ) ) {
-			if ( isArray( child ) || !child->arr2().isEmpty() || child->childCount() > 0 ) {
-				if ( isArray( child ) && child->childCount() != evalArraySize( child ) ) {
-					if ( child->isBinary() ) {
-						// special byte
-					} else {
-						logWarning(tr("Block %1 %2 array size mismatch").arg(getBlockNumber(parent)).arg(child->name()));
+			if ( child->isArray() || child->childCount() > 0 ) {
+				if ( child->isArray() && !child->isBinary() ) {
+					int nRealSize = child->childCount();
+					int nCalcSize = evalArraySize( child );
+					if ( nRealSize != nCalcSize ) {
+						logWarning( 
+							tr( "The size of %3 array (%1) does not match its calculated size (%2)." ).arg( nRealSize ).arg( nCalcSize ).arg( itemRepr(child) )
+						);
 					}
+
 				}
 
 				if ( !saveItem( child, stream ) )
@@ -2216,7 +2422,7 @@ bool NifModel::fileOffset( const NifItem * parent, const NifItem * target, NifSS
 			return true;
 
 		if ( evalCondition( child ) ) {
-			if ( isArray( child ) || !child->arr2().isEmpty() || child->childCount() > 0 ) {
+			if ( child->isArray() || child->childCount() > 0 ) {
 				if ( fileOffset( child, target, stream, ofs ) )
 					return true;
 			} else {
@@ -2240,7 +2446,7 @@ const NifItem * NifModel::getConditionCacheItem( const NifItem * item ) const
 	const NifItem * compoundStruct = item->parent();
 	if ( compoundStruct ) {
 		const NifItem * compoundArray = compoundStruct->parent();
-		if ( isArray(compoundArray) && compoundStruct->row() > 0 && isFixedCompound( compoundStruct->type() ) ) {
+		if ( compoundArray->isArray() && compoundStruct->row() > 0 && isFixedCompound( compoundStruct->strType() ) ) {
 			const NifItem * refStruct = compoundArray->child( 0 );
 			if ( !refStruct ) // Just in case...
 				return nullptr;
@@ -2288,7 +2494,7 @@ void NifModel::invalidateDependentConditions( NifItem * item )
 		return;
 
 	NifItem * p = item->parent();
-	if ( !p || p == root || isArray(p) )
+	if ( !p || p == root || p->isArray() )
 		return;
 
 	const QString & name = item->name();
@@ -2301,7 +2507,7 @@ void NifModel::invalidateDependentConditions( NifItem * item )
 		//	Note: May cause some false positives but this is OK
 		if ( c->cond().contains(name) 
 			|| c->arg().contains(name) 
-			|| ( c->childCount() > 0 && !isArray(c) ) // If it has children but is not an array, let's reset conditions just to be safe.
+			|| ( c->childCount() > 0 && !c->isArray() ) // If it has children but is not an array, let's reset conditions just to be safe.
 		) {
 			c->invalidateCondition();
 		}
@@ -2385,7 +2591,7 @@ void NifModel::updateLinks( int block, NifItem * parent )
 			continue;
 		}
 	
-		int i = c->valueToLink();
+		int i = c->getLinkValue();
 		if ( i >= 0 ) {
 			if ( c->valueType() == NifValue::tUpLink ) {
 				if ( !parentLinks[block].contains( i ) )
@@ -2428,14 +2634,14 @@ void NifModel::adjustLinks( NifItem * parent, int block, int delta )
 	if ( parent->childCount() > 0 ) {
 		for ( auto child : parent->children() )
 			adjustLinks( child, block, delta );
-	} else {
-		int l = parent->valueToLink();
+	} else if ( parent->isLink() ) {
+		int l = parent->getLinkValue();
 
 		if ( l >= 0 && ( ( delta != 0 && l >= block ) || l == block ) ) {
 			if ( delta == 0 )
-				parent->valueFromLink( -1 );
+				parent->setLinkValue( -1 );
 			else
-				parent->valueFromLink( l + delta );
+				parent->setLinkValue( l + delta );
 		}
 	}
 }
@@ -2448,19 +2654,19 @@ void NifModel::mapLinks( NifItem * parent, const QMap<qint32, qint32> & map )
 	if ( parent->childCount() > 0 ) {
 		for ( auto child : parent->children() )
 			mapLinks( child, map );
-	} else {
-		int l = parent->valueToLink();
+	} else if ( parent->isLink() ) {
+		int l = parent->getLinkValue();
 
 		if ( l >= 0 ) {
 			if ( map.contains( l ) )
-				parent->valueFromLink( map[ l ] );
+				parent->setLinkValue( map[ l ] );
 		}
 	}
 }
 
 bool NifModel::setLink( NifItem * item, qint32 link )
 {
-	if ( NifItem::valueFromLink( item, link) ) {
+	if ( item && item->setLinkValue(link) ) {
 		onItemValueChange( item );
 		return true;
 	}
@@ -2472,16 +2678,16 @@ QVector<qint32> NifModel::getLinkArray( const NifItem * arrayRootItem ) const
 {
 	QVector<qint32> links;
 
-	if ( isArray( arrayRootItem ) ) {
+	if ( isArray(arrayRootItem) ) {
 		int nLinks = arrayRootItem->childCount();
 		if ( nLinks > 0 ) {
 			links.reserve( nLinks );
 			for ( auto child : arrayRootItem->childIter() )
-				links.append( child->valueToLink() );
+				links.append( child->getLinkValue() );
 		}
 	} else {
 		if ( arrayRootItem )
-			reportError( arrayRootItem, "getLinkArray", "The item is not an array." );
+			reportError( arrayRootItem, __func__, "The item is not an array." );
 	}
 
 	return links;
@@ -2491,7 +2697,7 @@ bool NifModel::setLinkArray( NifItem * arrayRootItem, const QVector<qint32> & li
 {
 	if ( !isArray(arrayRootItem) ) {
 		if ( arrayRootItem )
-			reportError( arrayRootItem, "setLinkArray", "The item is not an array." );
+			reportError( arrayRootItem, __func__, "The item is not an array." );
 		return false;
 	}
 
@@ -2499,7 +2705,7 @@ bool NifModel::setLinkArray( NifItem * arrayRootItem, const QVector<qint32> & li
 	if ( links.count() != nLinks ) {
 		reportError( 
 			arrayRootItem,
-			"setLinkArray",
+			__func__,
 			tr( "The input QVector's size (%1) does not match the array's size (%2)." ).arg( links.count() ).arg( nLinks )
 		);
 		return false;
@@ -2507,13 +2713,15 @@ bool NifModel::setLinkArray( NifItem * arrayRootItem, const QVector<qint32> & li
 	if ( nLinks == 0 )
 		return true;
 
-	for ( int i = 0; i < nLinks; i++ )
-		NifItem::valueFromLink( arrayRootItem->child( i ), links.at( i ) );
+	for ( int i = 0; i < nLinks; i++ ) {
+		auto child = arrayRootItem->child( i );
+		if ( child )
+			child->setLinkValue( links.at( i ) );
+	}
 
 	onArrayValuesChange( arrayRootItem );
 
-	auto block = getTopItem( arrayRootItem );
-	if ( block && block != getFooterItem() ) {
+	if ( !arrayRootItem->isDescendantOf( getFooterItem() ) ) {
 		updateLinks();
 		updateFooter();
 		emit linksChanged();
@@ -2546,7 +2754,7 @@ QString NifModel::resolveString( const NifItem * item ) const
 	if ( !item )
 		return QString();
 
-	if ( item->valueIsString() )
+	if ( item->isString() )
 		return item->get<QString>();
 
 	if ( getVersionNumber() >= 0x14010003 ) {
@@ -2559,9 +2767,9 @@ QString NifModel::resolveString( const NifItem * item ) const
 			if ( itemIndex )
 				iStrIndex = itemIndex->get<int>();
 			else
-				reportError( item, "resolveString", "Could not find \"Index\" subitem." );
+				reportError( item, __func__, "Could not find \"Index\" subitem." );
 		} else {
-			reportError( item, "resolveString", tr( "Unsupported value type (%1)." ).arg( int(vt) ) );
+			reportError( item, __func__, tr( "Unsupported value type (%1)." ).arg( int(vt) ) );
 		}
 
 		if ( iStrIndex < 0 )
@@ -2578,9 +2786,9 @@ QString NifModel::resolveString( const NifItem * item ) const
 		if ( itemString )
 			return itemString->get<QString>();
 
-		reportError( item, "resolveString", "Could not find \"String\" subitem.");
+		reportError( item, __func__, "Could not find \"String\" subitem." );
 	} else {
-		item->value().reportConvertToError( this, item, "a QString");
+		item->value().reportConvertToError( this, item, "a QString" );
 	}
 
 	return QString();
@@ -2599,7 +2807,7 @@ bool NifModel::assignString( NifItem * item, const QString & string, bool replac
 		case NifValue::tNone:
 			itemIndex = getItem( item, "Index" );
 			if ( !itemIndex ) {
-				reportError( item, "assignString", "Could not find \"Index\" subitem." );
+				reportError( item, __func__, "Could not find \"Index\" subitem." );
 				return false;
 			}
 			iOldStrIndex = itemIndex->get<int>();
@@ -2609,7 +2817,7 @@ bool NifModel::assignString( NifItem * item, const QString & string, bool replac
 			iOldStrIndex = itemIndex->get<int>();
 			break;
 		case NifValue::tSizedString:
-			if ( item->hasType("string") ) {
+			if ( item->hasStrType("string") ) {
 				itemIndex = item;
 				iOldStrIndex = -1;
 				break;
@@ -2630,7 +2838,7 @@ bool NifModel::assignString( NifItem * item, const QString & string, bool replac
 				// TODO: Can we remove the string safely here?
 			}
 
-			itemIndex->valueChangeType( NifValue::tStringIndex );
+			itemIndex->changeValueType( NifValue::tStringIndex );
 			return set<int>( itemIndex, 0xffffffff );
 		}
 
@@ -2655,7 +2863,7 @@ bool NifModel::assignString( NifItem * item, const QString & string, bool replac
 			BaseModel::set<QString>( headerStrings, nHeaderStrings, string );
 		}
 
-		itemIndex->valueChangeType( NifValue::tStringIndex );
+		itemIndex->changeValueType( NifValue::tStringIndex );
 		return set<int>( itemIndex, iNewStrIndex );
 	} // endif getVersionNumber() >= 0x14010003
 
@@ -2663,7 +2871,7 @@ bool NifModel::assignString( NifItem * item, const QString & string, bool replac
 	if ( item->valueType() == NifValue::tNone ) {
 		NifItem * itemString = getItem( item, "String" );
 		if ( !itemString ) {
-			reportError( item, "assignString", "Could not find \"String\" subitem.");
+			reportError( item, __func__, "Could not find \"String\" subitem." );
 			return false;
 		}
 		return BaseModel::set<QString>( itemString, string );
@@ -2796,8 +3004,8 @@ bool NifModel::testSkipIO( const NifItem * item ) const
 	bool testSkip = false;
 	// Be advised, getBSVersion returns 0 if it's the file's header that is being loaded.
 	// Though for shader properties loadItem happens after the header is fully processed, so the check below should work w/o issues.
-	if ( getBSVersion() >= 151 && item->parent() == root ) {
-		if (item->hasName("BSLightingShaderProperty") || item->hasName("BSEffectShaderProperty") )
+	if ( getBSVersion() >= 151 && isTopItem( item ) ) {
+		if ( item->hasName("BSLightingShaderProperty") || item->hasName("BSEffectShaderProperty") )
 			testSkip = true;
 	}
 	return testSkip;
@@ -2811,8 +3019,8 @@ void NifModel::cacheBSVersion( const NifItem * headerItem )
 QString NifModel::topItemRepr( const NifItem * item ) const
 {
 	int iRow = item->row();
-	if ( iRow >= firstBlockRow() && iRow <= lastBlockRow() )
-		return QString("%2 [%1]").arg( iRow - 1 ).arg( item->name() );
+	if ( isBlockRow( iRow ) )
+		return QString("%2 [%1]").arg( iRow - firstBlockRow() ).arg( item->name() );
 
 	return item->name();
 }
@@ -2822,13 +3030,10 @@ void NifModel::onItemValueChange( NifItem * item )
 	invalidateDependentConditions( item );
 	BaseModel::onItemValueChange( item );
 
-	if ( item->valueIsLink() ) {
-		auto block = getTopItem( item );
-		if ( block && block != getFooterItem() ) {
-			updateLinks();
-			updateFooter();
-			emit linksChanged();
-		}
+	if ( item->isLink() && !item->isDescendantOf( getFooterItem() ) ) {
+		updateLinks();
+		updateFooter();
+		emit linksChanged();
 	}
 }
 
@@ -2850,10 +3055,10 @@ QVariant NifModelEval::operator()( const QVariant & v ) const
 		const NifItem * itemLeft = model->getItem( item, left, true );
 
 		if ( itemLeft ) {
-			if ( itemLeft->valueIsCount() )
-				return QVariant( itemLeft->valueToCount() );
-			else if ( itemLeft->valueIsFileVersion() )
-				return QVariant( itemLeft->valueToFileVersion() );
+			if ( itemLeft->isCount() )
+				return QVariant( itemLeft->getCountValue() );
+			else if ( itemLeft->isFileVersion() )
+				return QVariant( itemLeft->getFileVersionValue() );
 		}
 
 		return QVariant( 0 );
