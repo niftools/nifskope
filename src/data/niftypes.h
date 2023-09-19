@@ -935,6 +935,11 @@ public:
 	//! Find the inverted form
 	Matrix inverted() const;
 
+	//! Convert a Z-Up matrix to a Y-Up matrix
+	Matrix toYUp() const;
+	//! Convert a Y-Up matrix to a Z-Up matrix
+	Matrix toZUp() const;
+
 	//! Set from quaternion
 	void fromQuat( const Quat & q );
 	//! Convert to quaternion
@@ -964,6 +969,8 @@ public:
 protected:
 	float m[3][3];
 	static const float identity[9];
+	static const float Y_UP[3][3];
+	static const float Z_UP[3][3];
 
 	friend class NifIStream;
 	friend class NifOStream;
