@@ -36,9 +36,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "data/niftypes.h"
 
 #include <QOpenGLContext>
+#include <QPair>
 
 
 //! @file gltools.h BoundSphere, VertexWeight, BoneWeights, SkinPartition
+
+
+using TriStrip = QVector<quint16>;
+Q_DECLARE_TYPEINFO(TriStrip, Q_MOVABLE_TYPE);
+using TexCoords = QVector<Vector2>;
+Q_DECLARE_TYPEINFO(TexCoords, Q_MOVABLE_TYPE);
+
 
 //! A bounding sphere for an object, typically a Mesh
 class BoundSphere final
@@ -81,6 +89,23 @@ public:
 	float weight;
 };
 
+//! A bone, weight pair
+class BoneWeightUNORM16 final
+{
+public:
+	BoneWeightUNORM16()
+	{
+		bone = 0; weight = 0.0;
+	}
+	BoneWeightUNORM16(quint16 b, float w)
+	{
+		bone = b; weight = w;
+	}
+
+	quint16 bone;
+	float weight;
+};
+
 //! A set of vertices weighted to a bone
 class BoneWeights
 {
@@ -102,7 +127,9 @@ class BoneWeightsUNorm : public BoneWeights
 {
 public:
 	BoneWeightsUNorm() {}
-	BoneWeightsUNorm(QVector<quint32> unorms, int v);
+	BoneWeightsUNorm(QVector<QPair<quint16, quint16>> weights, int v);
+
+	QVector<BoneWeightUNORM16> weightsUNORM;
 };
 
 //! A skin partition

@@ -42,11 +42,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! @file glshape.h Shape
 
-using TriStrip = QVector<quint16>;
-Q_DECLARE_TYPEINFO( TriStrip, Q_MOVABLE_TYPE );
-using TexCoords = QVector<Vector2>;
-Q_DECLARE_TYPEINFO( TexCoords, Q_MOVABLE_TYPE );
-
 class NifModel;
 
 class Shape : public Node

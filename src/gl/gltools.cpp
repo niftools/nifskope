@@ -71,11 +71,11 @@ void BoneWeights::setTransform( const NifModel * nif, const QModelIndex & index 
 	radius = sph.radius;
 }
 
-BoneWeightsUNorm::BoneWeightsUNorm(QVector<quint32> unorms, int v)
+BoneWeightsUNorm::BoneWeightsUNorm(QVector<QPair<quint16, quint16>> weights, int v)
 {
-	weights.resize(unorms.size());
-	for ( int i = 0; i < unorms.size(); i++ ) {
-		weights[i] = VertexWeight(v, unorms[i] / (float)UINT_MAX);
+	weightsUNORM.resize(weights.size());
+	for ( int i = 0; i < weights.size(); i++ ) {
+		weightsUNORM[i] = BoneWeightUNORM16(weights[i].first, weights[i].second / 65535.0);
 	}
 }
 
