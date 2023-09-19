@@ -1328,12 +1328,12 @@ void GLView::advanceGears()
 	if ( kbd[ Qt::Key_D ] ) move( -cfg.moveSpd * dT, 0, 0 );
 	if ( kbd[ Qt::Key_W ] ) move( 0, 0, +cfg.moveSpd * dT );
 	if ( kbd[ Qt::Key_S ] ) move( 0, 0, -cfg.moveSpd * dT );
-	//if ( kbd[ Qt::Key_F ] ) move( 0, +MOV_SPD * dT, 0 );
-	//if ( kbd[ Qt::Key_R ] ) move( 0, -MOV_SPD * dT, 0 );
+	if ( kbd[ Qt::Key_Q ] ) move( 0, +cfg.moveSpd * dT, 0 );
+	if ( kbd[ Qt::Key_E ] ) move( 0, -cfg.moveSpd * dT, 0 );
 
 	// Zoom
-	if ( kbd[ Qt::Key_Q ] ) setDistance( Dist / ZOOM_QE_KEY_MULT );
-	if ( kbd[ Qt::Key_E ] ) setDistance( Dist * ZOOM_QE_KEY_MULT );
+	//if ( kbd[ Qt::Key_R ] ) setDistance( Dist / ZOOM_QE_KEY_MULT );
+	//if ( kbd[ Qt::Key_F ] ) setDistance( Dist * ZOOM_QE_KEY_MULT );
 
 	// Focal Length
 	if ( kbd[ Qt::Key_PageUp ] )   setZoom( Zoom * ZOOM_PAGE_KEY_MULT );
