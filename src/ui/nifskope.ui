@@ -132,7 +132,7 @@
    </property>
    <property name="maximumSize">
     <size>
-     <width>80</width>
+     <width>100</width>
      <height>16777215</height>
     </size>
    </property>
@@ -1481,10 +1481,10 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
   </action>
   <action name="aLODDummy">
    <property name="text">
-    <string>LOD Dummy</string>
+    <string>LOD</string>
    </property>
    <property name="visible">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
   </action>
   <action name="aShowCollision">

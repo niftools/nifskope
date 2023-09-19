@@ -344,13 +344,13 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 		// If Level2, render all
 		// If Level1, also render Level0
 		switch ( scene->lodLevel ) {
-		case Scene::Level2:
+		case Scene::Level0:
 			if ( lod2tris.count() )
 				glDrawElements( GL_TRIANGLES, lod2tris.count() * 3, GL_UNSIGNED_SHORT, lod2tris.constData() );
 		case Scene::Level1:
 			if ( lod1tris.count() )
 				glDrawElements( GL_TRIANGLES, lod1tris.count() * 3, GL_UNSIGNED_SHORT, lod1tris.constData() );
-		case Scene::Level0:
+		case Scene::Level2:
 		default:
 			if ( lod0tris.count() )
 				glDrawElements( GL_TRIANGLES, lod0tris.count() * 3, GL_UNSIGNED_SHORT, lod0tris.constData() );

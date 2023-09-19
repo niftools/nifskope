@@ -635,9 +635,9 @@ void NifSkope::initToolBars()
 	// LOD Toolbar
 	QToolBar * tLOD = ui->tLOD;
 
-	QSettings settings;
-	int lodLevel = settings.value( "GLView/LOD Level", 2 ).toInt();
-	settings.setValue( "GLView/LOD Level", lodLevel );
+	//QSettings settings;
+	//int lodLevel = settings.value( "GLView/LOD Level", 0 ).toInt();
+	//settings.setValue( "GLView/LOD Level", lodLevel );
 
 	QSlider * lodSlider = new QSlider( Qt::Horizontal );
 	lodSlider->setFocusPolicy( Qt::StrongFocus );
@@ -645,8 +645,8 @@ void NifSkope::initToolBars()
 	lodSlider->setTickInterval( 1 );
 	lodSlider->setSingleStep( 1 );
 	lodSlider->setMinimum( 0 );
-	lodSlider->setMaximum( 2 );
-	lodSlider->setValue( lodLevel );
+	lodSlider->setMaximum( 3 );
+	lodSlider->setValue(0);
 
 	tLOD->addWidget( lodSlider );
 	tLOD->setEnabled( false );

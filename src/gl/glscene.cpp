@@ -64,7 +64,7 @@ Scene::Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * 
 
 	options = ( DoLighting | DoTexturing | DoMultisampling | DoBlending | DoVertexColors | DoSpecular | DoGlow | DoCubeMapping );
 
-	lodLevel = Level2;
+	lodLevel = Level0;
 
 	visMode = VisNone;
 
@@ -198,6 +198,8 @@ void Scene::updateSelectMode( QAction * action )
 
 void Scene::updateLodLevel( int level )
 {
+	if ( game != Game::STARFIELD )
+		level = std::max(level, 2);
 	lodLevel = LodLevel( level );
 }
 
