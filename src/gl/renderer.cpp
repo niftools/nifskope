@@ -635,6 +635,17 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 
 	QString default_n = (nifVersion >= 151) ? ::default_ns : ::default_n;
 
+	// TODO: Temp for pre CDB material reading
+	if ( !mat && nifVersion >= 172 ) {
+		if ( lsp ) {
+			mesh->depthWrite = true;
+			mesh->depthTest = true;
+		} else if ( esp ) {
+			mesh->depthWrite = false;
+			mesh->depthTest = false;
+		}
+	}
+
 	// texturing
 
 	TexturingProperty * texprop = props.get<TexturingProperty>();
