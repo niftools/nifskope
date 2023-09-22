@@ -240,6 +240,7 @@ SOURCES += \
 	src/lib/importex/importex.cpp \
 	src/lib/importex/obj.cpp \
 	src/lib/importex/col.cpp \
+	src/lib/importex/gltf.cpp \
 	src/lib/nvtristripwrapper.cpp \
 	src/lib/qhull.cpp \
 	src/model/basemodel.cpp \

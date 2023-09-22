@@ -799,6 +799,17 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 	} else if ( nif ) {
 		mExport->setDisabled( false );
 		mImport->setDisabled( false );
+		
+		if ( nif->getBSVersion() >= 172 ) {
+			// Disable OBJ if/until it is supported for Starfield
+			mImport->actions().at(0)->setDisabled(true);
+			mImport->actions().at(1)->setDisabled(true);
+			mExport->actions().at(0)->setDisabled(true);
+		} else {
+			// Disable glTF if/until it is supported for pre-Starfield
+			//mImport->actions().at(2)->setDisabled(true);
+			mExport->actions().at(1)->setDisabled(true);
+		}
 		// Import OBJ as Collision disabled for non-Bethesda
 		if ( nif->getBSVersion() == 0 )
 			mImport->actions().at(1)->setDisabled(true);
