@@ -144,6 +144,7 @@ HEADERS += \
 	src/data/nifvalue.h \
 	src/gl/marker/constraints.h \
 	src/gl/marker/furniture.h \
+	srg/gl/BSMesh.h \
 	src/gl/bsshape.h \
 	src/gl/controllers.h \
 	src/gl/glcontroller.h \
@@ -160,6 +161,7 @@ HEADERS += \
 	src/gl/icontrollable.h \
 	src/gl/renderer.h \
 	src/io/material.h \
+	src/io/MeshFile.h \
 	src/io/nifstream.h \
 	src/lib/importex/3ds.h \
 	src/lib/nvtristripwrapper.h \
@@ -216,6 +218,7 @@ SOURCES += \
 	src/data/nifitem.cpp \
 	src/data/niftypes.cpp \
 	src/data/nifvalue.cpp \
+	srg/gl/BSMesh.cpp \
 	src/gl/bsshape.cpp \
 	src/gl/controllers.cpp \
 	src/gl/glcontroller.cpp \
@@ -231,6 +234,7 @@ SOURCES += \
 	src/gl/gltools.cpp \
 	src/gl/renderer.cpp \
 	src/io/material.cpp \
+	src/io/MeshFile.cpp \
 	src/io/nifstream.cpp \
 	src/lib/importex/3ds.cpp \
 	src/lib/importex/importex.cpp \

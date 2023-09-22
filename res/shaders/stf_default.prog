@@ -1,0 +1,16 @@
+# default shader
+
+checkgroup begin and
+	# Starfield
+	check HEADER/BS Header/BS Version == 172
+	check BSGeometry
+	check BSLightingShaderProperty
+checkgroup end
+
+texcoords 0 base
+texcoords 1 tangents
+texcoords 2 bitangents
+texcoords 3 indices
+texcoords 4 weights
+
+shaders stf_default.vert stf_default.frag

@@ -37,6 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gl/glcontroller.h"
 #include "gl/glmesh.h"
 #include "gl/bsshape.h"
+#include "gl/BSMesh.h"
 #include "gl/glparticles.h"
 #include "gl/gltex.h"
 #include "model/nifmodel.h"
@@ -255,6 +256,9 @@ Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 	} else if ( nif->blockInherits( iNode, "BSTriShape" ) ) {
 		node = new BSShape( this, iNode );
 		shapes += static_cast<Shape *>(node);
+	} else if ( nif->blockInherits(iNode, "BSGeometry") ) {
+		node = new BSMesh(this, iNode);
+		shapes += static_cast<Shape*>(node);
 	} else if ( nif->blockInherits( iNode, "NiAVObject" ) ) {
 		if ( nodeName == "BSTreeNode" )
 			node = new Node( this, iNode );
