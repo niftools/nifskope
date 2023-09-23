@@ -33,6 +33,8 @@ struct GltfStore
 	QMap<QString, int> boneNames;
 	// gltfSkinID to BSMesh
 	QMap<int, BSMesh*> skins;
+	// Material Paths
+	QStringList materials;
 
 	QStringList errors;
 };
@@ -80,6 +82,9 @@ bool exportCreateNodes(const NifModel* nif, const Scene* scene, tinygltf::Model&
 			// Create extra nodes for GPU LODs
 			int createdNodes = 1;
 			if ( isBSGeometry ) {
+				if ( !gltf.materials.contains(mesh->materialPath) ) {
+					gltf.materials << mesh->materialPath;
+				}
 				hasGPULODs = mesh->gpuLODs.size() > 0;
 				createdNodes = mesh->meshCount();
 				if ( hasGPULODs )
@@ -287,8 +292,6 @@ void exportCreatePrimitive(tinygltf::Model& model, QByteArray& bin, std::shared_
 	}
 
 	prim.mode = TINYGLTF_MODE_TRIANGLES;
-	// TODO: Materials
-	prim.material = 0;
 	prim.attributes[attr] = attributeIndex++;
 
 	model.accessors.push_back(acc);
@@ -380,13 +383,16 @@ void exportCreatePrimitive(tinygltf::Model& model, QByteArray& bin, std::shared_
 }
 
 bool exportCreatePrimitives(tinygltf::Model& model, QByteArray& bin, const BSMesh* bsmesh, tinygltf::Mesh& gltfMesh,
-							quint32& attributeIndex, quint32 lodLevel, GltfStore& gltf, qint32 meshLodLevel = -1)
+							quint32& attributeIndex, quint32 lodLevel, int materialID, GltfStore& gltf, qint32 meshLodLevel = -1)
 {
 	if ( lodLevel >= bsmesh->meshes.size() )
 		return false;
 
 	auto& mesh = bsmesh->meshes[lodLevel];
 	auto prim = tinygltf::Primitive();
+
+	// TODO: Full Materials, create empty Material for now
+	prim.material = materialID;
 
 	exportCreatePrimitive(model, bin, mesh, prim, "POSITION", mesh->positions.size(), TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC3, attributeIndex, gltf);
 	exportCreatePrimitive(model, bin, mesh, prim, "NORMAL", mesh->normals.size(), TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC3, attributeIndex, gltf);
@@ -479,8 +485,9 @@ bool exportCreateMeshes(const NifModel* nif, const Scene* scene, tinygltf::Model
 					tinygltf::Mesh gltfMesh;
 					gltfNode.mesh = meshIndex;
 					gltfMesh.name = QString("%1%2%3").arg(node->getName()).arg(":LOD").arg(j).toStdString();
+					int materialID = gltf.materials.indexOf(mesh->materialPath) + 1;
 					int lodLevel = (hasGPULODs) ? 0 : j;
-					if ( exportCreatePrimitives(model, bin, mesh, gltfMesh, attributeIndex, lodLevel, gltf, skeletalLodIndex) ) {
+					if ( exportCreatePrimitives(model, bin, mesh, gltfMesh, attributeIndex, lodLevel, materialID, gltf, skeletalLodIndex) ) {
 						meshIndex++;
 						model.meshes.push_back(gltfMesh);
 						if ( hasGPULODs ) {
@@ -518,8 +525,13 @@ void exportGltf(const NifModel* nif, const Scene* scene, const QModelIndex& inde
 		buff.name = buffName.toStdString();
 		buff.data = std::vector<unsigned char>(buffer.cbegin(), buffer.cend());
 		model.buffers.push_back(buff);
-		// TODO: Materials
-		model.materials.push_back(tinygltf::Material());
+
+		gltf.materials.prepend("Default");
+		for ( const auto& name : gltf.materials ) {
+			auto mat = tinygltf::Material();
+			mat.name = name.toStdString();
+			model.materials.push_back(mat);
+		}
 
 		writer.WriteGltfSceneToFile(&model, filename.toStdString(), false, false, false, false);
 	}
