@@ -511,7 +511,8 @@ win32:contains(QT_ARCH, i386) {
 	READMES += \
 		CHANGELOG.md \
 		LICENSE.md \
-		README.md
+		README.md \
+		README_GLTF.md
 
 	copyDirs( $$SHADERS, shaders )
 	#copyDirs( $$LANG, lang )

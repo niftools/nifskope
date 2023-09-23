@@ -1,8 +1,8 @@
  == CHANGELOG ==
 
-**NOTE: This changelog is not maintained for prerelease versions**
+**NOTE: This changelog is not maintained for 2.0**
 
-You may view the changes since 1.1.3 here: https://github.com/jonwd7/nifskope/releases
+You may view the 2.0 changes here: https://github.com/hexabits/nifskope/releases
 
 
 This is version 1.1.3 of NifSkope.
