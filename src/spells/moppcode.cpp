@@ -138,7 +138,7 @@ public:
 			return false;
 
 		if ( TheHavokCode.Initialize() ) {
-			//QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
+			//QModelIndex iData = nif->getBlockIndex( nif->getLink( index, "Data" ) );
 
 			if ( nif->isNiBlock( index, "bhkMoppBvTreeShape" ) ) {
 				return ( nif->checkVersion( 0x14000004, 0x14000005 )
@@ -158,14 +158,14 @@ public:
 
 		QPersistentModelIndex ibhkMoppBvTreeShape = iBlock;
 
-		QModelIndex ibhkPackedNiTriStripsShape = nif->getBlock( nif->getLink( ibhkMoppBvTreeShape, "Shape" ) );
+		QModelIndex ibhkPackedNiTriStripsShape = nif->getBlockIndex( nif->getLink( ibhkMoppBvTreeShape, "Shape" ) );
 
 		if ( !nif->isNiBlock( ibhkPackedNiTriStripsShape, "bhkPackedNiTriStripsShape" ) ) {
 			Message::warning( nullptr, Spell::tr( "Only bhkPackedNiTriStripsShape is supported at this time." ) );
 			return iBlock;
 		}
 
-		QModelIndex ihkPackedNiTriStripsData = nif->getBlock( nif->getLink( ibhkPackedNiTriStripsShape, "Data" ) );
+		QModelIndex ihkPackedNiTriStripsData = nif->getBlockIndex( nif->getLink( ibhkPackedNiTriStripsShape, "Data" ) );
 
 		if ( !nif->isNiBlock( ihkPackedNiTriStripsData, "hkPackedNiTriStripsData" ) )
 			return iBlock;
@@ -215,18 +215,16 @@ public:
 		if ( moppcode.size() == 0 ) {
 			Message::critical( nullptr, Spell::tr( "Failed to generate MOPP code" ) );
 		} else {
-			QModelIndex iCodeOrigin = nif->getIndex( ibhkMoppBvTreeShape, "Origin" );
-			nif->set<Vector3>( iCodeOrigin, origin );
+			auto iMoppCode = nif->getIndex( ibhkMoppBvTreeShape, "MOPP Code" );
 
-			QModelIndex iCodeScale = nif->getIndex( ibhkMoppBvTreeShape, "Scale" );
-			nif->set<float>( iCodeScale, scale );
+			nif->set<Vector4>( nif->getIndex( iMoppCode, "Offset" ), Vector4(origin, scale) );
 
-			QModelIndex iCodeSize = nif->getIndex( ibhkMoppBvTreeShape, "MOPP Data Size" );
-			QModelIndex iCode = nif->getIndex( ibhkMoppBvTreeShape, "MOPP Data" ).child( 0, 0 );
+			QModelIndex iCodeSize = nif->getIndex( iMoppCode, "Data Size" );
+			QModelIndex iCode = nif->getIndex( iMoppCode, "Data" ).child( 0, 0 );
 
 			if ( iCodeSize.isValid() && iCode.isValid() ) {
 				nif->set<int>( iCodeSize, moppcode.size() );
-				nif->updateArray( iCode );
+				nif->updateArraySize( iCode );
 				nif->set<QByteArray>( iCode, moppcode );
 			}
 		}
@@ -266,7 +264,7 @@ public:
 		spMoppCode TSpacer;
 
 		for ( int n = 0; n < nif->getBlockCount(); n++ ) {
-			QModelIndex idx = nif->getBlock( n );
+			QModelIndex idx = nif->getBlockIndex( n );
 
 			if ( TSpacer.isApplicable( nif, idx ) )
 				indices << idx;

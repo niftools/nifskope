@@ -45,6 +45,9 @@ class BaseModel;
 class QDataStream;
 class QIODevice;
 
+constexpr int NEOSTEAM_FF = 3;
+constexpr int GAMEBRYO_FF = 21;
+constexpr int NETIMMERSE_FF = 23;
 
 //! An input stream that reads a file into a model.
 class NifIStream final
@@ -59,6 +62,8 @@ public:
 
 	//! Reads a NifValue from the underlying device. Returns true if successful.
 	bool read( NifValue & );
+
+	void reset();
 
 private:
 	//! The model that data is being read into.

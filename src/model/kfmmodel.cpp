@@ -32,11 +32,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "kfmmodel.h"
 
+#include "xml/xmlconfig.h"
 #include "message.h"
 #include "io/nifstream.h"
 
+#include <QStringBuilder>
 
 //! @file kfmmodel.cpp KfmModel
+
+const QString DOT_QSTRING(".");
 
 KfmModel::KfmModel( QObject * parent ) : BaseModel( parent )
 {
@@ -56,10 +60,10 @@ QString KfmModel::version2string( quint32 v )
 	if ( v == 0 )
 		return QString();
 
-	QString s = QString::number( ( v >> 24 ) & 0xff, 16 ) + "."
-	            + QString::number( ( v >> 16 ) & 0xff, 16 ) + "."
-	            + QString::number( ( v >> 8 ) & 0xff, 16 ) + "."
-	            + QString::number( v & 0xff, 16 );
+	QString s = QString::number( ( v >> 24 ) & 0xff, 16 ) % DOT_QSTRING
+	            % QString::number( ( v >> 16 ) & 0xff, 16 ) % DOT_QSTRING
+	            % QString::number( ( v >> 8 ) & 0xff, 16 ) % DOT_QSTRING
+	            % QString::number( v & 0xff, 16 );
 	return s;
 }
 
@@ -68,7 +72,7 @@ quint32 KfmModel::version2number( const QString & s )
 	if ( s.isEmpty() )
 		return 0;
 
-	QStringList l = s.split( "." );
+	QStringList l = s.split( DOT_QSTRING );
 
 	if ( l.count() <= 1 ) {
 		bool ok;
@@ -84,33 +88,9 @@ quint32 KfmModel::version2number( const QString & s )
 	return v;
 }
 
-bool KfmModel::evalVersion( NifItem * item, bool chkParents ) const
+bool KfmModel::evalVersionImpl( const NifItem * item ) const
 {
-	if ( item->isVercondValid() )
-		return item->versionCondition();
-
-	item->setVersionCondition( item == root );
-	if ( item->versionCondition() )
-		return true;
-
-	if ( chkParents && item->parent() ) {
-		// Set false if parent is false and early reject
-		item->setVersionCondition( evalVersion( item->parent(), true ) );
-		if ( !item->versionCondition() )
-			return false;
-	}
-
-	// Early reject for ver1/ver2
-	item->setVersionCondition( item->evalVersion( version ) );
-	if ( !item->versionCondition() )
-		return false;
-
-	// Early reject for vercond
-	item->setVersionCondition( item->vercond().isEmpty() );
-	if ( item->versionCondition() )
-		return true;
-
-	return item->evalVersion( version );
+	return item->evalVersion(version);
 }
 
 void KfmModel::clear()
@@ -120,14 +100,12 @@ void KfmModel::clear()
 	filename = QString();
 	folder = QString();
 	root->killChildren();
+	version = 0x0200000b;
 	auto rootData = NifData( "Kfm", "Kfm" );
 	rootData.setIsCompound( true );
 	rootData.setIsConditionless( true );
 	insertType( root, rootData );
-	kfmroot = (root->childCount()) ? root->child( 0 ) : nullptr;
-	if ( kfmroot )
-		kfmroot->setCondition( true );
-	version = 0x0200000b;
+	kfmroot = root->child( 0 );
 	endResetModel();
 
 	if ( kfmroot )
@@ -138,64 +116,51 @@ void KfmModel::clear()
  *  array functions
  */
 
-static QString parentPrefix( const QString & x )
+bool KfmModel::updateArraySizeImpl( NifItem * array )
 {
-	for ( int c = 0; c < x.length(); c++ ) {
-		if ( !x[c].isNumber() )
-			return QString( "..\\" ) + x;
-	}
-
-
-	return x;
-}
-
-bool KfmModel::updateArrayItem( NifItem * array )
-{
-	if ( !array->isArray() )
-		return false;
-
-	int d1 = getArraySize( array );
-
-	if ( d1 > 1024 * 1024 * 8 ) {
-		auto m = tr( "array %1 much too large. %2 bytes requested" ).arg( array->name() ).arg( d1 );
-		if ( msgMode == UserMessage ) {
-			Message::append( nullptr, tr( "Could not update array item." ), m, QMessageBox::Critical );
-		} else {
-			testMsg( m );
-		}
+	if ( !array->isArray() ) {
+		if ( array )
+			reportError( array, __func__, "The input item is not an array." );
 		return false;
 	}
 
-	int rows = array->childCount();
+	// Get new array size
+	int nNewSize = evalArraySize( array );
 
-	if ( d1 > rows ) {
+	if ( nNewSize > 1024 * 1024 * 8 ) {
+		reportError( array, __func__, tr( "Array size %1 is much too large." ).arg( nNewSize ) );
+		return false;
+	} else if ( nNewSize < 0 ) {
+		reportError( array, __func__, tr( "Array size %1 is invalid." ).arg( nNewSize ) );
+		return false;
+	}
+
+	int nOldSize = array->childCount();
+
+	if ( nNewSize > nOldSize ) { // Add missing items
 		NifData data( array->name(),
-					  array->type(),
-					  array->temp(),
-					  NifValue( NifValue::type( array->type() ) ),
-					  parentPrefix( array->arg() ),
-					  parentPrefix( array->arr2() ) );
-		
+					  array->strType(),
+					  array->templ(),
+					  NifValue( NifValue::type( array->strType() ) ),
+					  addConditionParentPrefix( array->arg() ),
+			          addConditionParentPrefix( array->arr2() ) // arr1 in children is parent arr2
+		);
+
 		// Fill data flags
 		data.setIsConditionless( true );
 		data.setIsCompound( array->isCompound() );
 		data.setIsArray( array->isMultiArray() );
 
-		beginInsertRows( createIndex( array->row(), 0, array ), rows, d1 - 1 );
-
-		array->prepareInsert( d1 - rows );
-
-		for ( int c = rows; c < d1; c++ )
+		beginInsertRows( itemToIndex(array), nOldSize, nNewSize - 1 );
+		array->prepareInsert( nNewSize - nOldSize );
+		for ( int c = nOldSize; c < nNewSize; c++ )
 			insertType( array, data );
-
 		endInsertRows();
 	}
 
-	if ( d1 < rows ) {
-		beginRemoveRows( createIndex( array->row(), 0, array ), d1, rows - 1 );
-
-		array->removeChildren( d1, rows - d1 );
-
+	if ( nNewSize < nOldSize ) { // Remove excess items
+		beginRemoveRows( itemToIndex(array), nNewSize, nOldSize - 1 );
+		array->removeChildren( nNewSize, nOldSize - nNewSize );
 		endRemoveRows();
 	}
 
@@ -212,7 +177,7 @@ void KfmModel::insertType( NifItem * parent, const NifData & data, int at )
 		NifItem * array = insertBranch( parent, data, at );
 
 		if ( evalCondition( array ) )
-			updateArrayItem( array );
+			updateArraySize( array );
 
 	} else if ( data.isCompound() ) {
 		NifBlockPtr compound = compounds.value( data.type() );
@@ -221,31 +186,31 @@ void KfmModel::insertType( NifItem * parent, const NifData & data, int at )
 		NifItem * branch = insertBranch( parent, data, at );
 		branch->prepareInsert( compound->types.count() );
 
-		if ( !data.arg().isEmpty() || !data.temp().isEmpty() ) {
-			QString arg = parentPrefix( data.arg() );
-			QString tmp = data.temp();
+		if ( !data.arg().isEmpty() || !data.templ().isEmpty() ) {
+			QString arg = addConditionParentPrefix( data.arg() );
+			QString tmp = data.templ();
 
-			if ( tmp == "TEMPLATE" ) {
+			if ( tmp == XMLTMPL ) {
 				NifItem * tItem = branch;
 
-				while ( tmp == "TEMPLATE" && tItem->parent() ) {
+				while ( tmp == XMLTMPL && tItem->parent() ) {
 					tItem = tItem->parent();
-					tmp = tItem->temp();
+					tmp = tItem->templ();
 				}
 			}
 
 			for ( NifData & d : compound->types ) {
-				if ( d.type() == "TEMPLATE" ) {
+				if ( d.type() == XMLTMPL ) {
 					d.setType( tmp );
 					d.value.changeType( NifValue::type( tmp ) );
 				}
 
-				if ( d.arg() == "ARG" )  d.setArg( data.arg() );
-				if ( d.arr1() == "ARG" ) d.setArr1( arg );
-				if ( d.arr2() == "ARG" ) d.setArr2( arg );
+				if ( d.arg() == XMLARG )  d.setArg( data.arg() );
+				if ( d.arr1() == XMLARG ) d.setArr1( arg );
+				if ( d.arr2() == XMLARG ) d.setArr2( arg );
 
-				if ( d.cond().contains( "ARG" ) ) {
-					QString x = d.cond(); x.replace( x.indexOf( "ARG" ), 5, arg ); d.setCond( x );
+				if ( d.cond().contains( XMLARG ) ) {
+					QString x = d.cond(); x.replace( x.indexOf( XMLARG ), 5, arg ); d.setCond( x );
 				}
 
 				insertType( branch, d );
@@ -262,24 +227,15 @@ void KfmModel::insertType( NifItem * parent, const NifData & data, int at )
 
 
 /*
- *  item value functions
- */
-
-bool KfmModel::setItemValue( NifItem * item, const NifValue & val )
-{
-	item->value() = val;
-	emit dataChanged( createIndex( item->row(), ValueCol, item ), createIndex( item->row(), ValueCol, item ) );
-	return true;
-}
-
-/*
  *  load and save
  */
 
-bool KfmModel::setHeaderString( const QString & s )
+bool KfmModel::setHeaderString( const QString & s, uint ver )
 {
 	if ( s.startsWith( ";Gamebryo KFM File Version " ) ) {
 		version = version2number( s.right( s.length() - 27 ) );
+		root->invalidateVersionCondition();
+		root->invalidateCondition();
 
 		if ( isVersionSupported( version ) ) {
 			return true;
@@ -330,17 +286,13 @@ bool KfmModel::load( NifItem * parent, NifIStream & stream )
 	if ( !parent )
 		return false;
 
-	for ( int row = 0; row < parent->childCount(); row++ ) {
-		NifItem * child = parent->child( row );
-
-		if ( !child->isConditionless() )
-			child->invalidateCondition();
+	for ( NifItem * child: parent->childIter() ) {
+		child->invalidateCondition();
 
 		if ( evalCondition( child ) ) {
 			if ( child->isArray() ) {
-				if ( !updateArrayItem( child ) )
+				if ( !updateArraySize( child ) )
 					return false;
-
 				if ( !load( child, stream ) )
 					return false;
 			} else if ( child->childCount() > 0 ) {
@@ -366,7 +318,7 @@ bool KfmModel::save( NifItem * parent, NifOStream & stream ) const
 
 		if ( evalCondition( child ) ) {
 			if ( !child->arr1().isEmpty() || !child->arr2().isEmpty() || child->childCount() > 0 ) {
-				if ( !child->arr1().isEmpty() && child->childCount() != getArraySize( child ) ) {
+				if ( !child->arr1().isEmpty() && child->childCount() != evalArraySize( child ) ) {
 					Message::append( tr( "Warnings were generated while reading the blocks." ),
 						tr( "%1 array size mismatch" ).arg( child->name() )
 					);
@@ -386,7 +338,5 @@ bool KfmModel::save( NifItem * parent, NifOStream & stream ) const
 
 NifItem * KfmModel::insertBranch( NifItem * parentItem, const NifData & data, int at )
 {
-	NifItem * item = parentItem->insertChild( data, at );
-	item->value().changeType( NifValue::tNone );
-	return item;
+	return parentItem->insertChild( data, NifValue::tNone, at );
 }

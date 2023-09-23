@@ -30,6 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+#include "xml/xmlconfig.h"
 #include "message.h"
 #include "model/kfmmodel.h"
 
@@ -152,10 +153,12 @@ public:
 				    KfmModel::version2number( ver2 )
 				);
 
-				bool isTemplated = (type == "TEMPLATE" || tmpl == "TEMPLATE");
+				bool isTemplated = (type == XMLTMPL || tmpl == XMLTMPL);
 				bool isCompound = KfmModel::compounds.contains( type );
 				bool isArray = !arr1.isEmpty();
 				bool isMultiArray = !arr2.isEmpty();
+				if ( isMultiArray && !isArray )
+					err( tr("\"arr2\" attribute without \"arr1\" attribute") );
 
 				data.setAbstract( abs == "1" );
 				data.setTemplated( isTemplated );
@@ -217,12 +220,12 @@ public:
 
 	bool checkType( const NifData & data )
 	{
-		return KfmModel::compounds.contains( data.type() ) || NifValue::type( data.type() ) != NifValue::tNone || data.type() == "TEMPLATE";
+		return KfmModel::compounds.contains( data.type() ) || NifValue::type( data.type() ) != NifValue::tNone || data.type() == XMLTMPL;
 	}
 
 	bool checkTemp( const NifData & data )
 	{
-		return data.temp().isEmpty() || NifValue::type( data.temp() ) != NifValue::tNone || data.temp() == "TEMPLATE";
+		return data.templ().isEmpty() || NifValue::type( data.templ() ) != NifValue::tNone || data.templ() == XMLTMPL;
 	}
 
 	bool endDocument() override final
@@ -235,7 +238,7 @@ public:
 					err( tr( "compound type %1 referes to unknown type %2" ).arg( key, data.type() ) );
 
 				if ( !checkTemp( data ) )
-					err( tr( "compound type %1 refers to unknown template type %2" ).arg( key, data.temp() ) );
+					err( tr( "compound type %1 refers to unknown template type %2" ).arg( key, data.templ() ) );
 
 				if ( data.type() == key )
 					err( tr( "compound type %1 contains itself" ).arg( key ) );
@@ -266,6 +269,9 @@ bool KfmModel::loadXML()
 	                     << "kfm.xml"
 #ifdef Q_OS_LINUX
 	                     << "/usr/share/nifskope/kfm.xml"
+#endif
+#ifdef Q_OS_MACX
+						 << "../../../kfm.xml"
 #endif
 	);
 	for ( const QString& str : xmlList ) {

@@ -1,6 +1,7 @@
 #include "transform.h"
 
 #include "ui/widgets/nifeditors.h"
+#include "gl/gltools.h"
 
 #include <QApplication>
 #include <QBuffer>
@@ -93,7 +94,7 @@ static char const * transform_xpm[] = {
 
 bool spApplyTransformation::isApplicable( const NifModel * nif, const QModelIndex & index )
 {
-	return nif->itemType( index ) == "NiBlock" &&
+	return nif->itemStrType( index ) == "NiBlock" &&
 		( nif->inherits( nif->itemName( index ), "NiNode" )
 	      || nif->inherits( nif->itemName( index ), "NiTriBasedGeom" )
 		  || nif->inherits( nif->itemName( index ), "BSTriShape" ));
@@ -119,7 +120,7 @@ QModelIndex spApplyTransformation::cast( NifModel * nif, const QModelIndex & ind
 		Transform tp( nif, index );
 		bool ok = false;
 		for ( const auto l : nif->getChildLinks( nif->getBlockNumber( index ) ) ) {
-			QModelIndex iChild = nif->getBlock( l );
+			QModelIndex iChild = nif->getBlockIndex( l );
 
 			if ( iChild.isValid() && nif->inherits( nif->itemName( iChild ), "NiAVObject" ) ) {
 				Transform tc( nif, iChild );
@@ -137,9 +138,9 @@ QModelIndex spApplyTransformation::cast( NifModel * nif, const QModelIndex & ind
 		QModelIndex iData;
 
 		if ( nif->itemName( index ) == "NiTriShape" || nif->itemName( index ) == "BSLODTriShape" )
-			iData = nif->getBlock( nif->getLink( index, "Data" ), "NiTriShapeData" );
+			iData = nif->getBlockIndex( nif->getLink( index, "Data" ), "NiTriShapeData" );
 		else if ( nif->itemName( index ) == "NiTriStrips" )
-			iData = nif->getBlock( nif->getLink( index, "Data" ), "NiTriStripsData" );
+			iData = nif->getBlockIndex( nif->getLink( index, "Data" ), "NiTriStripsData" );
 
 		if ( iData.isValid() ) {
 			Transform t( nif, index );
@@ -172,15 +173,10 @@ QModelIndex spApplyTransformation::cast( NifModel * nif, const QModelIndex & ind
 				}
 			}
 
-			QModelIndex iCenter = nif->getIndex( iData, "Center" );
-
-			if ( iCenter.isValid() )
-				nif->set<Vector3>( iCenter, t * nif->get<Vector3>( iCenter ) );
-
-			QModelIndex iRadius = nif->getIndex( iData, "Radius" );
-
-			if ( iRadius.isValid() )
-				nif->set<float>( iRadius, t.scale * nif->get<float>( iRadius ) );
+			auto bound = BoundSphere( nif, iData );
+			bound.center = t * bound.center;
+			bound.radius = t.scale * bound.radius;
+			bound.update( nif, iData );
 
 			t = Transform();
 			t.writeBack( nif, index );
@@ -194,14 +190,10 @@ QModelIndex spApplyTransformation::cast( NifModel * nif, const QModelIndex & ind
 		Transform t( nif, index );
 
 		// Update Bounding Sphere
-		auto iBound = nif->getIndex( index, "Bounding Sphere" );
-		QModelIndex iCenter = nif->getIndex( iBound, "Center" );
-		if ( iCenter.isValid() )
-			nif->set<Vector3>( iCenter, t * nif->get<Vector3>( iCenter ) );
-		
-		QModelIndex iRadius = nif->getIndex( iBound, "Radius" );
-		if ( iRadius.isValid() )
-			nif->set<float>( iRadius, t.scale * nif->get<float>( iRadius ) );
+		auto bound = BoundSphere( nif, index );
+		bound.center = t * bound.center;
+		bound.radius = t.scale * bound.radius;
+		bound.update( nif, index );
 
 		nif->setState( BaseModel::Processing );
 		for ( int i = 0; i < nif->rowCount( iVertData ); i++ ) {
@@ -220,9 +212,9 @@ QModelIndex spApplyTransformation::cast( NifModel * nif, const QModelIndex & ind
 				nif->set<ByteVector3>( iVert, "Tangent", t.rotation * tangent );
 
 				// Unpack, Transform, Pack Bitangent
-				auto bitX = nif->getValue( nif->getIndex( iVert, "Bitangent X" ) ).toFloat();
-				auto bitYi = nif->getValue( nif->getIndex( iVert, "Bitangent Y" ) ).toCount();
-				auto bitZi = nif->getValue( nif->getIndex( iVert, "Bitangent Z" ) ).toCount();
+				auto bitX = nif->get<float>( iVert, "Bitangent X" );
+				auto bitYi = nif->get<unsigned int>( iVert, "Bitangent Y" );
+				auto bitZi = nif->get<unsigned int>( iVert, "Bitangent Z" );
 
 				auto bit = t.rotation * Vector3( bitX, (bitYi / 255.0) * 2.0 - 1.0, (bitZi / 255.0) * 2.0 - 1.0 );
 
@@ -373,7 +365,7 @@ public:
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
-		NifBlockEditor * edit = new NifBlockEditor( nif, nif->getBlock( index ) );
+		NifBlockEditor * edit = new NifBlockEditor( nif, nif->getBlockIndex( index ) );
 
 		if ( Transform::canConstruct( nif, index ) ) {
 			edit->add( new NifVectorEdit( nif, nif->getIndex( index, "Translation" ) ) );
@@ -404,7 +396,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		return nif->inherits( index, "NiGeometry" );
+		return nif->blockInherits( index, "NiGeometry" );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
@@ -442,7 +434,7 @@ public:
 
 		settings.setValue( key, chkNormals->isChecked() );
 
-		QModelIndex iData = nif->getBlock( nif->getLink( nif->getBlock( index ), "Data" ), "NiGeometryData" );
+		QModelIndex iData = nif->getBlockIndex( nif->getLink( nif->getBlockIndex( index ), "Data" ), "NiGeometryData" );
 
 		QVector<Vector3> vertices = nif->getArray<Vector3>( iData, "Vertices" );
 		QMutableVectorIterator<Vector3> it( vertices );

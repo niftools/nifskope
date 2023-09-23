@@ -43,17 +43,34 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cmath>
 #include <stdlib.h>
 
-#ifndef PI
-#ifdef M_PI
-#define PI M_PI
-#else
-//! This is only defined if we can't find M_PI, which should be in stdlib's %math.h
-#define PI 3.1416f
-#endif
-#endif
-
 
 //! @file niftypes.h Matrix, Matrix4, Triangle, Vector2, Vector3, Vector4, Color3, Color4, Quat
+
+#ifndef PI
+#define PI M_PI
+#endif
+
+#ifndef HALF_PI
+#define HALF_PI M_PI_2
+#endif
+
+//! Convert radians to degrees (float).
+constexpr inline float rad2degf( float rad ) { return double(rad) * 180.0 / M_PI; }
+//! Convert radians to degrees (double).
+constexpr inline double rad2degd( double rad ) { return rad * 180.0 / M_PI; }
+//! Convert radians to degrees (float).
+constexpr inline float rad2deg( float rad ) { return rad2degf( rad ); }
+//! Convert radians to degrees (double).
+constexpr inline double rad2deg( double rad ) { return rad2degd( rad ); }
+//! Convert degrees to radians (float).
+constexpr inline float deg2radf( float deg ) { return double(deg) * M_PI / 180.0; }
+//! Convert degrees to radians (double).
+constexpr inline double deg2radd( double deg ) { return deg * M_PI / 180.0; }
+//! Convert degrees to radians (float).
+constexpr inline float deg2rad( float deg ) { return deg2radf( deg ); }
+//! Convert degrees to radians (double).
+constexpr inline double deg2rad( double deg ) { return deg2radd( deg ); }
+
 
 class NifModel;
 class QModelIndex;
@@ -89,8 +106,7 @@ public:
 	//! Add operator
 	Vector2 operator+( const Vector2 & v ) const
 	{
-		Vector2 w( *this );
-		return ( w += v );
+		return Vector2( xy[0] + v.xy[0], xy[1] + v.xy[1] );
 	}
 	//! Minus-equals operator
 	Vector2 & operator-=( const Vector2 & v )
@@ -102,13 +118,12 @@ public:
 	//! Minus operator
 	Vector2 operator-( const Vector2 & v ) const
 	{
-		Vector2 w( *this );
-		return ( w -= v );
+		return Vector2( xy[0] - v.xy[0], xy[1] - v.xy[1] );
 	}
 	//! Negation operator
 	Vector2 operator-() const
 	{
-		return Vector2() - *this;
+		return Vector2( -xy[0], -xy[1] );
 	}
 	//! Times-equals operator
 	Vector2 & operator*=( float s )
@@ -120,8 +135,7 @@ public:
 	//! Times operator
 	Vector2 operator*( float s ) const
 	{
-		Vector2 w( *this );
-		return ( w *= s );
+		return Vector2( xy[0] * s, xy[1] * s );
 	}
 	//! Divide equals operator
 	Vector2 & operator/=( float s )
@@ -133,8 +147,7 @@ public:
 	//! Divide operator
 	Vector2 operator/( float s ) const
 	{
-		Vector2 w( *this );
-		return ( w /= s );
+		return Vector2( xy[0] / s, xy[1] / s );
 	}
 
 	//! Equality operator
@@ -175,6 +188,12 @@ public:
 	//! Set from string
 	void fromString( QString str );
 
+	//! Format as string
+	QString toString() const
+	{
+		return QString("(%1, %2)").arg( NumOrMinMax(xy[0]), NumOrMinMax(xy[1]) );
+	}
+
 protected:
 	float xy[2];
 
@@ -206,7 +225,7 @@ public:
 //! QDebug stream operator for Vector2
 inline QDebug & operator<<( QDebug dbg, Vector2 v )
 {
-	dbg.nospace() << "(" << v[0] << ", " << v[1] << ")";
+	dbg.nospace() << v.toString();
 	return dbg.space();
 }
 
@@ -284,40 +303,33 @@ public:
 	//! Add operator
 	Vector3 operator+( const Vector3 & v ) const
 	{
-		Vector3 w( *this );
-		return w += v;
+		return Vector3( xyz[0] + v.xyz[0], xyz[1] + v.xyz[1], xyz[2] + v.xyz[2] );
 	}
-
-	Vector3 & operator+( float s )
+	//! Add operator
+	Vector3 operator+( float s ) const
 	{
-		xyz[0] += s;
-		xyz[1] += s;
-		xyz[2] += s;
-		return *this;
+		return Vector3( xyz[0] + s, xyz[1] + s, xyz[2] + s );
 	}
 
 	//! Minus operator
 	Vector3 operator-( const Vector3 & v ) const
 	{
-		Vector3 w( *this );
-		return w -= v;
+		return Vector3( xyz[0] - v.xyz[0], xyz[1] - v.xyz[1], xyz[2] - v.xyz[2] );
 	}
 	//! Negation operator
 	Vector3 operator-() const
 	{
-		return Vector3() - *this;
+		return Vector3( -xyz[0], -xyz[1], -xyz[2] );
 	}
 	//! Times operator
 	Vector3 operator*( float s ) const
 	{
-		Vector3 v( *this );
-		return v *= s;
+		return Vector3( xyz[0] * s, xyz[1] * s, xyz[2] * s );
 	}
 	//! Divide operator
 	Vector3 operator/( float s ) const
 	{
-		Vector3 v( *this );
-		return v /= s;
+		return Vector3( xyz[0] / s, xyz[1] / s, xyz[2] / s );
 	}
 
 	//! Equality operator
@@ -356,14 +368,11 @@ public:
 	{
 		float m = length();
 
-		if ( m > 0.0 )
-			m = 1.0 / m;
-		else
-			m = 0.0F;
-
-		xyz[0] *= m;
-		xyz[1] *= m;
-		xyz[2] *= m;
+		if ( m > 0.0f ) {
+			(*this) /= m;
+		} else {
+			xyz[0] = xyz[1] = xyz[2] = 0.0f;
+		}
 		return *this;
 	}
 
@@ -386,9 +395,9 @@ public:
 		if ( dot > 1.0 )
 			return 0.0;
 		else if ( dot < -1.0 )
-			return (float)PI;
+			return float(PI);
 		else if ( dot == 0.0 )
-			return (float)(PI / 2);
+			return float(HALF_PI);
 
 		return acos( dot );
 	}
@@ -428,6 +437,12 @@ public:
 	//! Set from string
 	void fromString( QString str );
 
+	//! Format as string
+	QString toString() const
+	{
+		return tr("(%1, %2, %3)").arg( NumOrMinMax(xyz[0]), NumOrMinMax(xyz[1]), NumOrMinMax(xyz[2]) );
+	}
+
 	//! Format as HTML
 	QString toHtml() const
 	{
@@ -466,6 +481,24 @@ public:
 	}
 };
 
+class UshortVector3 : public Vector3
+{
+public:
+	//! Default constructor
+	UshortVector3()
+	{
+		xyz[0] = xyz[1] = xyz[2] = 0.0;
+	}
+	//! Constructor
+	UshortVector3( float x, float y, float z ) : Vector3( x, y, z )
+	{
+	}
+
+	UshortVector3( Vector3 v ) : Vector3( v )
+	{
+	}
+};
+
 class ByteVector3 : public Vector3
 {
 public:
@@ -487,7 +520,7 @@ public:
 //! QDebug stream operator for Vector3
 inline QDebug & operator<<( QDebug dbg, const Vector3 & v )
 {
-	dbg.nospace() << "(" << v[0] << ", " << v[1] << ", " << v[2] << ")";
+	dbg.nospace() << v.toString();
 	return dbg.space();
 }
 
@@ -564,31 +597,27 @@ public:
 	//! Add operator
 	Vector4 operator+( const Vector4 & v ) const
 	{
-		Vector4 w( *this );
-		return w += v;
+		return Vector4( xyzw[0] + v.xyzw[0], xyzw[1] + v.xyzw[1], xyzw[2] + v.xyzw[2], xyzw[3] + v.xyzw[3] );
 	}
 	//! Minus operator
 	Vector4 operator-( const Vector4 & v ) const
 	{
-		Vector4 w( *this );
-		return w -= v;
+		return Vector4( xyzw[0] - v.xyzw[0], xyzw[1] - v.xyzw[1], xyzw[2] - v.xyzw[2], xyzw[3] - v.xyzw[3] );
 	}
 	//! Negation operator
 	Vector4 operator-() const
 	{
-		return Vector4() - *this;
+		return Vector4( -xyzw[0], -xyzw[1], -xyzw[2], -xyzw[3] );
 	}
 	//! Times operator
 	Vector4 operator*( float s ) const
 	{
-		Vector4 v( *this );
-		return v *= s;
+		return Vector4( xyzw[0] * s, xyzw[1] * s, xyzw[2] * s, xyzw[3] * s );
 	}
 	//! Divide operator
 	Vector4 operator/( float s ) const
 	{
-		Vector4 v( *this );
-		return v /= s;
+		return Vector4( xyzw[0] / s, xyzw[1] / s, xyzw[2] / s, xyzw[3] / s );
 	}
 
 	//! Equality operator
@@ -627,15 +656,11 @@ public:
 	{
 		float m = length();
 
-		if ( m > 0.0 )
-			m = 1.0 / m;
-		else
-			m = 0.0F;
-
-		xyzw[0] *= m;
-		xyzw[1] *= m;
-		xyzw[2] *= m;
-		xyzw[3] *= m;
+		if ( m > 0.0f ) {
+			(*this) /= m;
+		} else {
+			xyzw[0] = xyzw[1] = xyzw[2] = xyzw[3] = 0.0f;
+		}
 	}
 
 	//! Find the dot product of two vectors
@@ -652,11 +677,11 @@ public:
 		if ( dot > 1.0 )
 			return 0.0;
 		else if ( dot < -1.0 )
-			return (float)PI;
+			return float(PI);
 		else if ( dot == 0.0 )
-			return (float)PI / 2;
+			return float(HALF_PI);
 
-		return (float)acos( dot );
+		return acos( dot );
 	}
 
 	//! Comparison function for lexicographic sorting
@@ -683,6 +708,12 @@ public:
 	//! Set from string
 	void fromString( QString str );
 
+	//! Format as string
+	QString toString() const
+	{
+		return tr("(%1, %2, %3, %4)").arg( NumOrMinMax(xyzw[0]), NumOrMinMax(xyzw[1]), NumOrMinMax(xyzw[2]), NumOrMinMax(xyzw[3]) );
+	}
+
 	//! Format as HTML
 	QString toHtml() const
 	{
@@ -707,7 +738,7 @@ protected:
 //! QDebug stream operator for Vector2
 inline QDebug & operator<<( QDebug dbg, const Vector4 & v )
 {
-	dbg.nospace() << "(" << v[0] << ", " << v[1] << ", " << v[2] << ", " << v[3] << ")";
+	dbg.nospace() << v.toString();
 	return dbg.space();
 }
 
@@ -917,6 +948,11 @@ public:
 	//! Find the inverted form
 	Matrix inverted() const;
 
+	//! Convert a Z-Up matrix to a Y-Up matrix
+	Matrix toYUp() const;
+	//! Convert a Y-Up matrix to a Z-Up matrix
+	Matrix toZUp() const;
+
 	//! Set from quaternion
 	void fromQuat( const Quat & q );
 	//! Convert to quaternion
@@ -946,6 +982,8 @@ public:
 protected:
 	float m[3][3];
 	static const float identity[9];
+	static const float Y_UP[3][3];
+	static const float Z_UP[3][3];
 
 	friend class NifIStream;
 	friend class NifOStream;
@@ -1682,6 +1720,16 @@ public:
 	{
 	}
 
+	BSVertexDesc( quint64 val )
+	{
+		desc = val;
+	}
+
+	quint64 Value() const
+	{
+		return desc;
+	}
+
 	// Sets a specific flag
 	void SetFlag( VertexFlags flag )
 	{
@@ -1889,6 +1937,7 @@ inline QDataStream & operator>>( QDataStream & ds, BSVertexDesc & d )
 Q_DECLARE_TYPEINFO( Vector2,     Q_MOVABLE_TYPE );
 Q_DECLARE_TYPEINFO( Vector3,     Q_MOVABLE_TYPE );
 Q_DECLARE_TYPEINFO( HalfVector3, Q_MOVABLE_TYPE );
+Q_DECLARE_TYPEINFO( UshortVector3, Q_MOVABLE_TYPE );
 Q_DECLARE_TYPEINFO( ByteVector3, Q_MOVABLE_TYPE );
 Q_DECLARE_TYPEINFO( Vector4,     Q_MOVABLE_TYPE );
 Q_DECLARE_TYPEINFO( Color3,      Q_MOVABLE_TYPE );

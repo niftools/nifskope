@@ -130,7 +130,6 @@ public:
 	void center();
 	void move( float, float, float );
 	void rotate( float, float, float );
-	void zoom( float );
 
 	void setCenter();
 	void setDistance( float );
@@ -144,6 +143,8 @@ public:
 	void flipOrientation();
 
 	void setDebugMode( DebugMode );
+
+	float scale() { return (scene->game == Game::STARFIELD) ? 1.0 / 32.0 : 1.0; };
 
 	QColor clearColor() const;
 

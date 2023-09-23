@@ -17,16 +17,16 @@
  */
 
 //! Reorders blocks to put shapes before nodes (for Oblivion / FO3)
-class spReorderLinks final : public Spell
+class spReorderLinks : public Spell
 {
 public:
-	QString name() const override final { return Spell::tr( "Reorder Link Arrays" ); }
-	QString page() const override final { return Spell::tr( "Sanitize" ); }
-	bool sanity() const override final { return true; }
+	QString name() const override { return Spell::tr( "Reorder Link Arrays" ); }
+	QString page() const override { return Spell::tr( "Sanitize" ); }
+	bool sanity() const override { return true; }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override
 	{
-		return ( !index.isValid() && ( nif->getVersionNumber() >= 0x14000004 ) );
+		return ( !index.isValid() && ( nif->getVersionNumber() >= 0x14000004 && nif->getBSVersion() > 0 ) );
 	}
 
 	//! Comparator for link sort.
@@ -37,29 +37,43 @@ public:
 	 */
 	static bool compareChildLinks( const QPair<qint32, bool> & a, const QPair<qint32, bool> & b )
 	{
+		return a.first < b.first;
+	}
+
+	static bool compareChildLinksShapeTop(const QPair<qint32, bool>& a, const QPair<qint32, bool>& b)
+	{
 		return a.second != b.second ? a.second : a.first < b.first;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
+	static bool compareChildLinksShapeBtm(const QPair<qint32, bool>& a, const QPair<qint32, bool>& b)
+	{
+		return a.second != b.second ? !a.second : a.first < b.first;
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override
 	{
 		for ( int n = 0; n < nif->getBlockCount(); n++ ) {
-			QModelIndex iBlock = nif->getBlock( n );
+			QModelIndex iBlock = nif->getBlockIndex( n );
 
 			QModelIndex iNumChildren = nif->getIndex( iBlock, "Num Children" );
 			QModelIndex iChildren = nif->getIndex( iBlock, "Children" );
 
 			if ( iNumChildren.isValid() && iChildren.isValid() ) {
-				QList<QPair<qint32, bool> > links;
+				QList<QPair<qint32, bool>> links;
 
 				for ( int r = 0; r < nif->rowCount( iChildren ); r++ ) {
 					qint32 l = nif->getLink( iChildren.child( r, 0 ) );
 
 					if ( l >= 0 ) {
-						links.append( QPair<qint32, bool>( l, nif->inherits( nif->getBlock( l ), "NiTriBasedGeom" ) ) );
+						links.append( QPair<qint32, bool>( l, nif->blockInherits(nif->getBlockIndex(l), {"NiTriBasedGeom", "BSTriShape"}) ) );
 					}
 				}
 
-				std::stable_sort( links.begin(), links.end(), compareChildLinks );
+				auto compareFn = compareChildLinksShapeBtm;
+				if ( nif->getBSVersion() < 83 )
+					compareFn = compareChildLinksShapeTop;
+
+				std::stable_sort( links.begin(), links.end(), compareFn );
 
 				for ( int r = 0; r < links.count(); r++ ) {
 					if ( links[r].first != nif->getLink( iChildren.child( r, 0 ) ) ) {
@@ -69,7 +83,7 @@ public:
 
 				// update child count & array even if there are no rows (i.e. prune empty children)
 				nif->set<int>( iNumChildren, links.count() );
-				nif->updateArray( iChildren );
+				nif->updateArraySize( iChildren );
 			}
 		}
 
@@ -96,7 +110,7 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
 	{
 		for ( int n = 0; n < nif->getBlockCount(); n++ ) {
-			QModelIndex iBlock = nif->getBlock( n );
+			QModelIndex iBlock = nif->getBlockIndex( n );
 
 			spCollapseArray arrayCollapser;
 
@@ -143,7 +157,7 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
 	{
 		for ( int i = 0; i < nif->getBlockCount(); i++ ) {
-			QModelIndex iTexSrc = nif->getBlock( i, "NiSourceTexture" );
+			QModelIndex iTexSrc = nif->getBlockIndex( i, "NiSourceTexture" );
 
 			if ( iTexSrc.isValid() ) {
 				QModelIndex iFileName = nif->getIndex( iTexSrc, "File Name" );
@@ -180,11 +194,11 @@ bool spSanitizeBlockOrder::isApplicable( const NifModel *, const QModelIndex & i
 bool spSanitizeBlockOrder::childBeforeParent( NifModel * nif, qint32 block )
 {
 	// get index to the block
-	QModelIndex iBlock( nif->getBlock( block ) );
+	QModelIndex iBlock( nif->getBlockIndex( block ) );
 	// check its type
 	return (
-		nif->inherits( iBlock, "bhkRefObject" )
-		&& !nif->inherits( iBlock, "bhkConstraint" )
+		nif->blockInherits( iBlock, "bhkRefObject" )
+		&& !nif->blockInherits( iBlock, "bhkConstraint" )
 	);
 }
 
@@ -198,9 +212,9 @@ void spSanitizeBlockOrder::addTree( NifModel * nif, qint32 block, QList<qint32> 
 
 	// special case: add bhkConstraint entities before bhkConstraint
 	// (these are actually links, not refs)
-	QModelIndex iBlock( nif->getBlock( block ) );
+	QModelIndex iBlock( nif->getBlockIndex( block ) );
 
-	if ( nif->inherits( iBlock, "bhkConstraint" ) ) {
+	if ( nif->blockInherits( iBlock, "bhkConstraint" ) ) {
 		for ( const auto entity : nif->getLinkArray( iBlock, "Entities" ) ) {
 			addTree( nif, entity, newblocks );
 		}
@@ -280,7 +294,7 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
 	{
 		for ( int b = 0; b < nif->getBlockCount(); b++ ) {
-			QModelIndex iBlock = nif->getBlock( b );
+			QModelIndex iBlock = nif->getBlockIndex( b );
 			QModelIndex idx = check( nif, iBlock );
 
 			if ( idx.isValid() )
@@ -294,14 +308,13 @@ public:
 	{
 		for ( int r = 0; r < nif->rowCount( iParent ); r++ ) {
 			QModelIndex idx = iParent.child( r, 0 );
-			bool child;
 
-			if ( nif->isLink( idx, &child ) ) {
+			if ( nif->isLink( idx ) ) {
 				qint32 l = nif->getLink( idx );
 
 				if ( l < 0 ) {
 					/*
-					if ( ! child )
+					if ( ! isChildLink )
 					{
 					    qDebug() << "unassigned parent link";
 					    return idx;
@@ -311,12 +324,12 @@ public:
 					qCCritical( nsSpell ) << Spell::tr( "Invalid link '%1'." ).arg( QString::number(l) );
 					return idx;
 				} else {
-					QString tmplt = nif->itemTmplt( idx );
+					QString tmplt = nif->itemTempl( idx );
 
 					if ( !tmplt.isEmpty() ) {
-						QModelIndex iBlock = nif->getBlock( l );
+						QModelIndex iBlock = nif->getBlockIndex( l );
 
-						if ( !nif->inherits( iBlock, tmplt ) ) {
+						if ( !nif->blockInherits( iBlock, tmplt ) ) {
 							qCCritical( nsSpell ) << Spell::tr( "Link '%1' points to wrong block type." ).arg( QString::number(l) );
 							return idx;
 						}
@@ -348,7 +361,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		return nif && nif->getIndex( nif->getHeader(), "Num Strings" ).isValid() && !index.isValid();
+		return nif && nif->getIndex( nif->getHeaderIndex(), "Num Strings" ).isValid() && !index.isValid();
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
@@ -357,7 +370,7 @@ public:
 		QVector<QString> shapeNames;
 		QMap<QModelIndex, QString> modifiedBlocks;
 
-		auto iHeader = nif->getHeader();
+		auto iHeader = nif->getHeaderIndex();
 		auto numStrings = nif->get<int>( iHeader, "Num Strings" );
 		auto strings = nif->getArray<QString>( iHeader, "Strings" );
 
@@ -389,18 +402,18 @@ public:
 		};
 
 		for ( int i = 0; i < nif->getBlockCount(); i++ ) {
-			QModelIndex iBlock = nif->getBlock( i );
-			if ( !(nif->inherits( iBlock, "NiObjectNET" ) || nif->inherits( iBlock, "NiExtraData" )) )
+			QModelIndex iBlock = nif->getBlockIndex( i );
+			if ( !(nif->blockInherits( iBlock, "NiObjectNET" ) || nif->blockInherits( iBlock, "NiExtraData" )) )
 				continue;
 
 			auto nameIdx = nif->get<int>( iBlock, "Name" );
 			auto nameString = nif->get<QString>( iBlock, "Name" );
 
 			// Ignore Editor Markers and AddOnNodes
-			if ( nameString.contains( "EditorMarker" ) || nif->inherits( iBlock, "BSValueNode" ) )
+			if ( nameString.contains( "EditorMarker" ) || nif->blockInherits( iBlock, "BSValueNode" ) )
 				continue;
 
-			QModelIndex iBlockParent = nif->getBlock( nif->getParent( i ) );
+			QModelIndex iBlockParent = nif->getBlockIndex( nif->getParent( i ) );
 			auto parentNameString = nif->get<QString>( iBlockParent, "Name" );
 			if ( !iBlockParent.isValid() ) {
 				parentNameString = nif->getFilename();
@@ -411,7 +424,7 @@ public:
 			bool isOutOfBounds = nameIdx >= numStrings;
 			bool isProp = nif->isNiBlock( iBlock, 
 										{ "BSLightingShaderProperty", "BSEffectShaderProperty", "NiAlphaProperty" } );
-			bool isNiAV = nif->inherits( iBlock, "NiAVObject" );
+			bool isNiAV = nif->blockInherits( iBlock, "NiAVObject" );
 
 			// Fix 'BSX' strings
 			if ( nif->isNiBlock( iBlock, "BSXFlags" ) ) {
@@ -433,21 +446,21 @@ public:
 				shapeNames << nameString;
 			}
 
-			// Fix "Wet Material" field
-			if ( isProp && nif->getIndex( iBlock, "Wet Material" ).isValid() ) {
-				auto wetIdx = nif->get<int>( iBlock, "Wet Material" );
-				auto wetString = nif->get<QString>( iBlock, "Wet Material" );
+			// Fix "Root Material" field
+			if ( nif->getBSVersion() < 172 && isProp && nif->getIndex(iBlock, "Root Material").isValid() ) {
+				auto rootIdx = nif->get<int>(iBlock, "Root Material");
+				auto rootString = nif->get<QString>(iBlock, "Root Material");
 
-				int newWetIdx = -1;
+				int newRootIdx = -1;
 
-				bool invalidString = !wetString.isEmpty() && !wetString.endsWith( ".bgsm", Qt::CaseInsensitive );
-				if ( wetIdx >= numStrings || invalidString ) {
-					rename( newWetIdx, "" );
+				bool invalidString = !rootString.isEmpty() && !rootString.endsWith(".bgsm", Qt::CaseInsensitive);
+				if ( rootIdx >= numStrings || invalidString ) {
+					rename(newRootIdx, "");
 				}
 
-				if ( newWetIdx > -1 ) {
-					nif->set<int>( iBlock, "Wet Material", newWetIdx );
-					modifiedBlocks.insert( nif->getIndex( iBlock, "Wet Material" ), "Wet Material" );
+				if ( newRootIdx > -1 ) {
+					nif->set<int>(iBlock, "Root Material", newRootIdx);
+					modifiedBlocks.insert(nif->getIndex(iBlock, "Root Material"), "Root Material");
 				}
 			}
 
@@ -468,8 +481,8 @@ public:
 					rename( newIdx, "" );
 				} else {
 					auto ci = Qt::CaseInsensitive;
-					if ( !(nameString.endsWith( ".bgsm", ci ) || nameString.endsWith( ".bgem", ci )) ) {
-						rename( newIdx, "" );
+					if ( !(nameString.endsWith(".bgsm", ci) || nameString.endsWith(".bgem", ci) || nameString.endsWith(".mat", ci)) ) {
+						rename(newIdx, "");
 					}
 				}
 			}
@@ -488,7 +501,7 @@ public:
 
 		// Update header
 		nif->set<int>( iHeader, "Num Strings", strings.count() );
-		nif->updateArray( iHeader, "Strings" );
+		nif->updateArraySize( iHeader, "Strings" );
 		nif->setArray<QString>( iHeader, "Strings", strings );
 		
 		nif->updateHeader();
@@ -516,14 +529,14 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		return nif && nif->getIndex( nif->getHeader(), "Num Strings" ).isValid() && !index.isValid();
+		return nif && nif->getIndex( nif->getHeaderIndex(), "Num Strings" ).isValid() && !index.isValid();
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
 	{
 		QVector<QString> modifiedNames;
 
-		auto iHeader = nif->getHeader();
+		auto iHeader = nif->getHeaderIndex();
 		auto numStrings = nif->get<int>( iHeader, "Num Strings" );
 		auto strings = nif->getArray<QString>( iHeader, "Strings" );
 
@@ -543,8 +556,8 @@ public:
 		}
 
 		for ( int i = 0; i < nif->getBlockCount(); i++ ) {
-			QModelIndex iBlock = nif->getBlock( i );
-			if ( !(nif->inherits( iBlock, "NiControllerSequence" )) )
+			QModelIndex iBlock = nif->getBlockIndex( i );
+			if ( !(nif->blockInherits( iBlock, "NiControllerSequence" )) )
 				continue;
 
 			auto controlledBlocks = nif->getIndex( iBlock, "Controlled Blocks" );
@@ -564,7 +577,7 @@ public:
 
 		// Update header
 		nif->set<int>( iHeader, "Num Strings", strings.count() );
-		nif->updateArray( iHeader, "Strings" );
+		nif->updateArraySize( iHeader, "Strings" );
 		nif->setArray<QString>( iHeader, "Strings", strings );
 
 		nif->updateHeader();
@@ -579,3 +592,150 @@ public:
 };
 
 REGISTER_SPELL( spFillBlankControllerTypes )
+
+
+/*
+ *  Error Checking
+ */
+
+bool spErrorNoneRefs::isApplicable( const NifModel *, const QModelIndex & index )
+{
+	return !index.isValid();
+}
+
+QModelIndex spErrorNoneRefs::cast( NifModel * nif, const QModelIndex & )
+{
+	for ( int i = 0; i < nif->getBlockCount(); i++ ) {
+		auto iNiAV = nif->getBlockIndex( i, "NiAVObject" );
+		if ( iNiAV.isValid() )
+			checkArray( nif, iNiAV, {"Properties"} ); // "Children"
+
+		auto iNiNET = nif->getBlockIndex( i, "NiObjectNET" );
+		if ( iNiNET.isValid() )
+			checkArray( nif, iNiNET, {"Extra Data List"} );
+
+		auto iBSSI = nif->getBlockIndex( i, "BSSkin::Instance" );
+		if ( iBSSI.isValid() )
+			checkRef( nif, iBSSI, "Skeleton Root" );
+	}
+
+	return QModelIndex();
+}
+
+void spErrorNoneRefs::checkArray( NifModel * nif, const QModelIndex & idx, QVector<QString> rows )
+{
+	int i = nif->getBlockNumber( idx );
+	for ( const auto & r : rows ) {
+		auto links = nif->getLinkArray( idx, r );
+		auto noneCount = links.count( -1 );
+		if ( links.size() > 0 && noneCount > 0 ) {
+			auto err = tr( "[%1] '%2' link array contains %3 None Refs." ).arg( i ).arg( r ).arg( noneCount );
+			nif->logMessage( message(), err, QMessageBox::Critical );
+		}
+	}
+}
+
+void spErrorNoneRefs::checkRef( NifModel * nif, const QModelIndex & idx, const QString & name )
+{
+	int i = nif->getBlockNumber( idx );
+	if ( nif->getLink( idx, name ) == -1 ) {
+		nif->logMessage( message(), tr( "[%1] '%2' link is None." ).arg( i ).arg( name ), QMessageBox::Critical );
+	}
+}
+
+REGISTER_SPELL( spErrorNoneRefs )
+
+bool spErrorInvalidPaths::isApplicable( const NifModel *, const QModelIndex & index )
+{
+	return !index.isValid();
+}
+
+QModelIndex spErrorInvalidPaths::cast( NifModel * nif, const QModelIndex & )
+{
+	for ( int i = 0; i < nif->getBlockCount(); i++ ) {
+		auto iBSSTS = nif->getBlockIndex( i, "BSShaderTextureSet" );
+		if ( iBSSTS.isValid() )
+			checkPath( nif, iBSSTS, "Textures" );
+		
+		auto iBSSNLP = nif->getBlockIndex( i, "BSShaderNoLightingProperty" );
+		if ( iBSSNLP.isValid() )
+			checkPath( nif, iBSSNLP, "File Name" );
+
+		auto iBSLSP = nif->getBlockIndex( i, "BSLightingShaderProperty" );
+		if ( iBSLSP.isValid() ) {
+			checkPath( nif, iBSLSP, "Name", P_NO_EXT );
+			if ( nif->getBSVersion() < 172 )
+				checkPath( nif, iBSLSP, "Root Material", P_NO_EXT );
+		}
+
+		auto iBSESP = nif->getBlockIndex( i, "BSEffectShaderProperty" );
+		if ( iBSESP.isValid() ) {
+			checkPath( nif, iBSESP, "Source Texture" );
+			checkPath( nif, iBSESP, "Greyscale Texture" );
+			checkPath( nif, iBSESP, "Env Map Texture" );
+			checkPath( nif, iBSESP, "Normal Texture" );
+			checkPath( nif, iBSESP, "Env Mask Texture" );
+		}
+
+		auto iNiST = nif->getBlockIndex( i, "NiSourceTexture" );
+		if ( iNiST.isValid() )
+			checkPath( nif, iNiST, "File Name" );
+	}
+
+	return QModelIndex();
+}
+
+void spErrorInvalidPaths::checkPath( NifModel * nif, const QModelIndex & idx, const QString & name, InvalidPath invalid )
+{
+	auto iString = nif->getIndex( idx, name );
+	if ( !iString.isValid() )
+		return;
+
+	int i = nif->getBlockNumber( idx );
+	QVector<QString> paths;
+	if ( nif->isArray( iString ) )
+		paths << nif->getArray<QString>( iString );
+	else
+		paths << nif->get<QString>( iString );
+
+	for ( const auto & path : paths ) {
+		if ( (invalid & P_EMPTY) && path.isEmpty() )
+			nif->logMessage( message(), tr( "[%1] '%2' cannot have empty filepaths." ).arg( i ).arg( name ) );
+		else if ( path.isEmpty() )
+			return;
+
+		if ( (invalid & P_NO_EXT) && !path.contains( '.' ) )
+			nif->logMessage( message(), tr( "[%1] '%2' has a filepath without a file extension." ).arg( i ).arg( name ) );
+		else if ( (invalid & P_ABSOLUTE) && path.size() > 2 && path.at( 1 ) == ':' )
+			nif->logMessage( message(), tr( "[%1] '%2' has an absolute filepath." ).arg( i ).arg( name ) );
+	}
+}
+
+REGISTER_SPELL( spErrorInvalidPaths )
+
+bool spWarningEnvironmentMapping::isApplicable(const NifModel * nif, const QModelIndex & index)
+{
+	return nif->getBSVersion() > 0 && !index.isValid();
+}
+
+QModelIndex spWarningEnvironmentMapping::cast(NifModel * nif, const QModelIndex & idx)
+{
+	for ( int i = 0; i < nif->getBlockCount(); i++ ) {
+		if ( nif->getBSVersion() < 83 ) {
+			auto iBSSP = nif->getBlockIndex(i, "BSShaderPPLightingProperty");
+			if ( iBSSP.isValid() ) {
+				auto sf1 = nif->get<quint32>(iBSSP, "Shader Flags");
+				auto sf2 = nif->get<quint32>(iBSSP, "Shader Flags 2");
+
+				if ( sf1 & 0x80 && !(sf2 & 0x8000) )
+					nif->logMessage(message(), tr("[%1] Flags lack 'Envmap_Light_Fade' which may be a mistake.").arg(i));
+			}
+		} else {
+		
+		}
+	}
+	return QModelIndex();
+}
+
+
+REGISTER_SPELL(spWarningEnvironmentMapping)

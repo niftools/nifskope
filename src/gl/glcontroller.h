@@ -126,9 +126,8 @@ protected:
 
 template <typename T> bool Controller::interpolate( T & value, const QModelIndex & data, const QString & arrayid, float time, int & lastindex )
 {
-	const NifModel * nif = static_cast<const NifModel *>( data.model() );
-
-	if ( nif && data.isValid() ) {
+	auto nif = NifModel::fromValidIndex(data);
+	if ( nif ) {
 		QModelIndex array = nif->getIndex( data, arrayid );
 		return interpolate( value, array, time, lastindex );
 	}

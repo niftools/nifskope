@@ -18,15 +18,11 @@ AboutDialog::AboutDialog( QWidget * parent )
 	<p>NifSkope is free software available under a BSD license.
 	The source is available via <a href='https://github.com/niftools/nifskope'>GitHub</a></p>
 
-	<p>For more information visit the <a href='https://discord.gg/ZFjdN4x'>NifTools Discord</a> or <a href='https://forum.niftools.org'>NifTools forum</a>.<br>
-	To receive support for NifSkope please use the Discord or the 
-	<a href='https://forum.niftools.org/24-nifskope/'>NifSkope Help subforum</a>.</p>
-
 	<p>The most recent version of NifSkope can be downloaded from the <a href='https://github.com/niftools/nifskope/releases'>
 	official GitHub release page</a>.</p>
 	
 	<p>A detailed changelog and the latest developmental builds of NifSkope 
-	<a href='https://github.com/jonwd7/nifskope/releases'>can be found here</a>.</p>
+	<a href='https://github.com/hexabits/nifskope/releases'>can be found here</a>.</p>
 	
 	<p>For the decompression of BSA (Version 105) files, NifSkope uses <a href='https://github.com/lz4/lz4'>LZ4</a>:<br>
 	LZ4 Library<br>

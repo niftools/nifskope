@@ -401,7 +401,7 @@ void InspectView::update()
 	mat.toEuler( x, y, z );
 
 	impl->nameText->setText( nif->get<QString>( selection, "Name" ) );
-	impl->typeText->setText( nif->getBlockName( selection ) );
+	impl->typeText->setText( nif->itemName( selection ) );
 	impl->timeText->setText( QString( "%1" ).Farg( impl->time ) );
 
 	impl->posXText->setText( QString( "%1" ).Farg( tm.translation[0] ) );
@@ -413,9 +413,9 @@ void InspectView::update()
 	impl->rotYText->setText( QString( "%1" ).Farg( q[2] ) );
 	impl->rotZText->setText( QString( "%1" ).Farg( q[3] ) );
 
-	impl->eulXText->setText( QString( "%1" ).Farg( x * 180.0f / PI ) );
-	impl->eulYText->setText( QString( "%1" ).Farg( y * 180.0f / PI ) );
-	impl->eulZText->setText( QString( "%1" ).Farg( z * 180.0f / PI ) );
+	impl->eulXText->setText( QString( "%1" ).Farg( rad2deg(x) ) );
+	impl->eulYText->setText( QString( "%1" ).Farg( rad2deg(y) ) );
+	impl->eulZText->setText( QString( "%1" ).Farg( rad2deg(z) ) );
 
 	impl->matText->setText(
 		QString( "[%1, %2, %3]\n[%4, %5, %6]\n[%7, %8, %9]\n" )

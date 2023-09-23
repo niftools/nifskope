@@ -2,10 +2,11 @@
 
 checkgroup begin and
 	# Fallout 4
-    check HEADER/User Version 2 >= 130
+    check HEADER/BS Header/BS Version == 130
     check BSLightingShaderProperty
-    #check BSLightingShaderProperty/Skyrim Shader Type != 1
-    #check BSLightingShaderProperty/Skyrim Shader Type != 16
+    #check BSLightingShaderProperty/Shader Type != 1
+    #check BSLightingShaderProperty/Shader Type != 16
+    check BSLightingShaderProperty/Shader Type != 18
     checkgroup begin or
         check BSTriShape
         check BSSubIndexTriShape

@@ -33,6 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLTEX_H
 #define GLTEX_H
 
+#include "gamemanager.h"
+
 #include <QObject> // Inherited
 #include <QByteArray>
 #include <QHash>
@@ -97,9 +99,9 @@ public:
 	~TexCache();
 
 	//! Bind a texture from filename
-	int bind( const QString & fname );
+	int bind( const QString & fname, Game::GameMode game = Game::OTHER );
 	//! Bind a texture from pixel data
-	int bind( const QModelIndex & iSource );
+	int bind( const QModelIndex & iSource, Game::GameMode game = Game::OTHER );
 
 	//! Debug function for getting info about a texture
 	QString info( const QModelIndex & iSource );
@@ -110,8 +112,8 @@ public:
 	bool importFile( NifModel * nif, const QModelIndex & iSource, QModelIndex & iData );
 
 	//! Find a texture based on its filename
-	static QString find( const QString & file, const QString & nifFolder );
-	static QString find( const QString & file, const QString & nifFolder, QByteArray & data );
+	static QString find( const QString & file, const QString & nifFolder, Game::GameMode game = Game::OTHER );
+	static QString find( const QString & file, const QString & nifFolder, QByteArray & data, Game::GameMode game = Game::OTHER );
 	//! Remove the path from a filename
 	static QString stripPath( const QString & file, const QString & nifFolder );
 	//! Checks whether the given file can be loaded

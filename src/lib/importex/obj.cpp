@@ -62,7 +62,7 @@ static void writeData( const NifModel * nif, const QModelIndex & iData, QTextStr
 {
 	// copy vertices
 
-	if ( nif->getUserVersion2() < 100 ) {
+	if ( nif->getBSVersion() < 100 ) {
 		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
 		foreach( Vector3 v, verts )
 		{
@@ -73,10 +73,6 @@ static void writeData( const NifModel * nif, const QModelIndex & iData, QTextStr
 		// copy texcoords
 
 		QModelIndex iUV = nif->getIndex( iData, "UV Sets" );
-
-		if ( !iUV.isValid() )
-			iUV = nif->getIndex( iData, "UV Sets 2" );
-
 		QVector<Vector2> texco = nif->getArray<Vector2>( iUV.child( 0, 0 ) );
 		foreach( Vector2 t, texco )
 		{
@@ -209,7 +205,7 @@ static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextS
 		return;
 
 	foreach ( qint32 link, nif->getChildLinks( nif->getBlockNumber( iShape ) ) ) {
-		QModelIndex iProp = nif->getBlock( link );
+		QModelIndex iProp = nif->getBlockIndex( link );
 
 		if ( nif->isNiBlock( iProp, "NiMaterialProperty" ) ) {
 			mata = nif->get<Color3>( iProp, "Ambient Color" );
@@ -219,16 +215,16 @@ static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextS
 			matg = nif->get<float>( iProp, "Glossiness" );
 			//matn = nif->get<QString>( iProp, "Name" );
 		} else if ( nif->isNiBlock( iProp, "NiTexturingProperty" ) ) {
-			QModelIndex iBase = nif->getBlock( nif->getLink( nif->getIndex( iProp, "Base Texture" ), "Source" ), "NiSourceTexture" );
+			QModelIndex iBase = nif->getBlockIndex( nif->getLink( nif->getIndex( iProp, "Base Texture" ), "Source" ), "NiSourceTexture" );
 			map_Kd = TexCache::find( nif->get<QString>( iBase, "File Name" ), nif->getFolder() );
 
-			QModelIndex iDark = nif->getBlock( nif->getLink( nif->getIndex( iProp, "Decal Texture 1" ), "Source" ), "NiSourceTexture" );
+			QModelIndex iDark = nif->getBlockIndex( nif->getLink( nif->getIndex( iProp, "Decal Texture 1" ), "Source" ), "NiSourceTexture" );
 			decal = TexCache::find( nif->get<QString>( iDark, "File Name" ), nif->getFolder() );
 
-			QModelIndex iBump = nif->getBlock( nif->getLink( nif->getIndex( iProp, "Bump Map Texture" ), "Source" ), "NiSourceTexture" );
+			QModelIndex iBump = nif->getBlockIndex( nif->getLink( nif->getIndex( iProp, "Bump Map Texture" ), "Source" ), "NiSourceTexture" );
 			bump = TexCache::find( nif->get<QString>( iBump, "File Name" ), nif->getFolder() );
 		} else if ( nif->isNiBlock( iProp, "NiTextureProperty" ) ) {
-			QModelIndex iSource = nif->getBlock( nif->getLink( iProp, "Image" ), "NiImage" );
+			QModelIndex iSource = nif->getBlockIndex( nif->getLink( iProp, "Image" ), "NiImage" );
 			map_Kd = TexCache::find( nif->get<QString>( iSource, "File Name" ), nif->getFolder() );
 		} else if ( nif->isNiBlock( iProp, "NiSkinInstance" ) ) {
 			QMessageBox::warning(
@@ -243,7 +239,7 @@ static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextS
 		} else if ( nif->isNiBlock( iProp, "BSEffectShaderProperty" ) ) {
 			map_Kd = TexCache::find( nif->get<QString>( iProp, "Source Texture" ), nif->getFolder() );
 		} else if ( nif->isNiBlock( iProp, { "BSShaderPPLightingProperty", "Lighting30ShaderProperty", "BSLightingShaderProperty" } ) ) {
-			QModelIndex iArray = nif->getIndex( nif->getBlock( nif->getLink( iProp, "Texture Set" ) ), "Textures" );
+			QModelIndex iArray = nif->getIndex( nif->getBlockIndex( nif->getLink( iProp, "Texture Set" ) ), "Textures" );
 			map_Kd = TexCache::find( nif->get<QString>( iArray.child( 0, 0 ) ), nif->getFolder() );
 			map_Kn = TexCache::find( nif->get<QString>( iArray.child( 1, 0 ) ), nif->getFolder() );
 
@@ -288,8 +284,8 @@ static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextS
 
 	obj << "\r\n# " << name << "\r\n\r\ng " << name << "\r\n" << "usemtl " << matn << "\r\n\r\n";
 
-	if ( nif->getUserVersion2() < 100 )
-		writeData( nif, nif->getBlock( nif->getLink( iShape, "Data" ) ), obj, ofs, t );
+	if ( nif->getBSVersion() < 100 )
+		writeData( nif, nif->getBlockIndex( nif->getLink( iShape, "Data" ) ), obj, ofs, t );
 	else
 		writeData( nif, iShape, obj, ofs, t );
 }
@@ -302,16 +298,16 @@ static void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextS
 
 	t = t * Transform( nif, iNode );
 	foreach ( int l, nif->getChildLinks( nif->getBlockNumber( iNode ) ) ) {
-		QModelIndex iChild = nif->getBlock( l );
+		QModelIndex iChild = nif->getBlockIndex( l );
 
-		if ( nif->inherits( iChild, "NiNode" ) )
+		if ( nif->blockInherits( iChild, "NiNode" ) )
 			writeParent( nif, iChild, obj, mtl, ofs, t );
 		else if ( nif->isNiBlock( iChild, { "NiTriShape", "NiTriStrips" } ) )
 			writeShape( nif, iChild, obj, mtl, ofs, t * Transform( nif, iChild ) );
 		else if ( nif->isNiBlock( iChild, { "BSTriShape", "BSSubIndexTriShape", "BSMeshLODTriShape" } ) )
 			writeShape( nif, iChild, obj, mtl, ofs, t * Transform( nif, iChild ) );
-		else if ( nif->inherits( iChild, "NiCollisionObject" ) ) {
-			QModelIndex iBody = nif->getBlock( nif->getLink( iChild, "Body" ) );
+		else if ( nif->blockInherits( iChild, "NiCollisionObject" ) ) {
+			QModelIndex iBody = nif->getBlockIndex( nif->getLink( iChild, "Body" ) );
 
 			if ( iBody.isValid() ) {
 				Transform bt;
@@ -322,13 +318,13 @@ static void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextS
 					bt.translation = Vector3( nif->get<Vector4>( iBody, "Translation" ) * 7 );
 				}
 
-				QModelIndex iShape = nif->getBlock( nif->getLink( iBody, "Shape" ) );
+				QModelIndex iShape = nif->getBlockIndex( nif->getLink( iBody, "Shape" ) );
 
 				if ( nif->isNiBlock( iShape, "bhkMoppBvTreeShape" ) ) {
-					iShape = nif->getBlock( nif->getLink( iShape, "Shape" ) );
+					iShape = nif->getBlockIndex( nif->getLink( iShape, "Shape" ) );
 
 					if ( nif->isNiBlock( iShape, "bhkPackedNiTriStripsShape" ) ) {
-						QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
+						QModelIndex iData = nif->getBlockIndex( nif->getLink( iShape, "Data" ) );
 
 						if ( nif->isNiBlock( iData, "hkPackedNiTriStripsData" ) ) {
 							bt = t * bt;
@@ -370,7 +366,7 @@ static void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextS
 					QModelIndex iStrips = nif->getIndex( iShape, "Strips Data" );
 
 					for ( int r = 0; r < nif->rowCount( iStrips ); r++ )
-						writeData( nif, nif->getBlock( nif->getLink( iStrips.child( r, 0 ) ), "NiTriStripsData" ), obj, ofs, t * bt );
+						writeData( nif, nif->getBlockIndex( nif->getLink( iStrips.child( r, 0 ) ), "NiTriStripsData" ), obj, ofs, t * bt );
 				}
 			}
 		}
@@ -384,14 +380,14 @@ void exportObj( const NifModel * nif, const QModelIndex & index )
 
 	//--Determine how the file will export, and be sure the user wants to continue--//
 	QList<int> roots;
-	QModelIndex iBlock = nif->getBlock( index );
+	QModelIndex iBlock = nif->getBlockIndex( index );
 
 	QString question;
 
 	if ( iBlock.isValid() ) {
 		roots.append( nif->getBlockNumber( index ) );
 
-		if ( nif->inherits( index, "NiNode" ) ) {
+		if ( nif->blockInherits( index, "NiNode" ) ) {
 			question = tr( "NiNode selected.  All children of selected node will be exported." );
 		} else if ( nif->itemName( index ) == "NiTriShape" || nif->itemName( index ) == "NiTriStrips" ) {
 			question = nif->itemName( index ) + tr( " selected.  Selected mesh will be exported." );
@@ -454,9 +450,9 @@ void exportObj( const NifModel * nif, const QModelIndex & index )
 		1, 1, 1
 	};
 	foreach ( int l, roots ) {
-		QModelIndex iBlock = nif->getBlock( l );
+		QModelIndex iBlock = nif->getBlockIndex( l );
 
-		if ( nif->inherits( iBlock, "NiNode" ) )
+		if ( nif->blockInherits( iBlock, "NiNode" ) )
 			writeParent( nif, iBlock, sobj, smtl, ofs, Transform() );
 		else if ( nif->isNiBlock( iBlock, { "NiTriShape", "NiTriStrips" } ) )
 			writeShape( nif, iBlock, sobj, smtl, ofs, Transform() );
@@ -562,17 +558,17 @@ static void addLink( NifModel * nif, const QModelIndex & iBlock, const QString &
 	QModelIndex iSize  = nif->getIndex( iBlock, QString( "Num %1" ).arg( name ) );
 	int numIndices = nif->get<int>( iSize );
 	nif->set<int>( iSize, numIndices + 1 );
-	nif->updateArray( iArray );
+	nif->updateArraySize( iArray );
 	nif->setLink( iArray.child( numIndices, 0 ), link );
 }
 
-void importObj( NifModel * nif, const QModelIndex & index )
+void importObj( NifModel * nif, const QModelIndex & index, bool collision )
 {
 	//--Determine how the file will import, and be sure the user wants to continue--//
 
 	// If no existing node is selected, create a group node.  Otherwise use selected node
-	QPersistentModelIndex iNode, iShape, iMaterial, iData, iTexProp, iTexSource;
-	QModelIndex iBlock = nif->getBlock( index );
+	QPersistentModelIndex iNode, iShape, iStripsShape, iMaterial, iData, iTexProp, iTexSource;
+	QModelIndex iBlock = nif->getBlockIndex( index );
 	bool cBSShaderPPLightingProperty = false;
 
 	//Be sure the user hasn't clicked on a NiTriStrips object
@@ -581,15 +577,17 @@ void importObj( NifModel * nif, const QModelIndex & index )
 		return;
 	}
 
-	if ( iBlock.isValid() && nif->inherits( iBlock, "NiNode" ) ) {
+	if ( iBlock.isValid() && nif->blockInherits( iBlock, "NiNode" ) ) {
 		iNode = iBlock;
-	} else if ( iBlock.isValid() && nif->itemName( iBlock ) == "NiTriShape" ) {
+	} else if ( iBlock.isValid()
+				&& (nif->itemName( iBlock ) == "NiTriShape"
+					 || (collision && nif->blockInherits( iBlock, "BSTriShape" ))) ) {
 		iShape = iBlock;
 		//Find parent of NiTriShape
 		int par_num = nif->getParent( nif->getBlockNumber( iBlock ) );
 
 		if ( par_num != -1 ) {
-			iNode = nif->getBlock( par_num );
+			iNode = nif->getBlockIndex( par_num );
 		}
 
 		//Find material, texture, and data objects
@@ -597,7 +595,7 @@ void importObj( NifModel * nif, const QModelIndex & index )
 
 		for ( const auto child : children ) {
 			if ( child != -1 ) {
-				QModelIndex temp = nif->getBlock( child );
+				QModelIndex temp = nif->getBlockIndex( child );
 				QString type = nif->itemName( temp );
 
 				if ( type == "BSShaderPPLightingProperty" ) {
@@ -615,7 +613,7 @@ void importObj( NifModel * nif, const QModelIndex & index )
 					QList<int> chn = nif->getChildLinks( nif->getBlockNumber( iTexProp ) );
 
 					for ( const auto c : chn ) {
-						QModelIndex temp = nif->getBlock( c );
+						QModelIndex temp = nif->getBlockIndex( c );
 						QString type = nif->itemName( temp );
 
 						if ( (type == "NiSourceTexture") || (type == "NiImage") ) {
@@ -629,14 +627,21 @@ void importObj( NifModel * nif, const QModelIndex & index )
 
 	QString question;
 
-	if ( iNode.isValid() == true ) {
-		if ( iShape.isValid() == true ) {
-			question = tr( "NiTriShape selected.  The first imported mesh will replace the selected one." );
+	if ( !collision ) {
+		if ( iNode.isValid() ) {
+			if ( iShape.isValid() ) {
+				question = tr( "NiTriShape selected.  The first imported mesh will replace the selected one." );
+			} else {
+				question = tr( "NiNode selected.  Meshes will be attached to the selected node." );
+			}
 		} else {
-			question = tr( "NiNode selected.  Meshes will be attached to the selected node." );
+			question = tr( "No NiNode or NiTriShape selected.  Meshes will be imported to the root of the file." );
 		}
 	} else {
-		question = tr( "No NiNode or NiTriShape selected.  Meshes will be imported to the root of the file." );
+		if ( iNode.isValid() || iShape.isValid() ) {
+			question = tr( "The Havok collision will be added to this object." );
+		}
+		question = tr( "The Havok collision will be added to the root of the file." );
 	}
 
 	int result = QMessageBox::question( 0, tr( "Import OBJ" ), question, QMessageBox::Ok, QMessageBox::Cancel );
@@ -753,13 +758,15 @@ void importObj( NifModel * nif, const QModelIndex & index )
 	bool first_tri_shape = true;
 	QMapIterator<QString, QVector<ObjFace> *> it( ofaces );
 
+	nif->holdUpdates( true );
+
 	while ( it.hasNext() ) {
 		it.next();
 
 		if ( !it.value()->count() )
 			continue;
 
-		if ( it.key() != "collision" ) {
+		if ( !collision ) {
 			//If we are on the first shape, and one was selected in the 3D view, use the existing one
 			bool newiShape = false;
 
@@ -783,7 +790,7 @@ void importObj( NifModel * nif, const QModelIndex & index )
 
 			QModelIndex shaderProp;
 			// add material property, for non-Skyrim versions
-			if ( nif->getUserVersion2() <= 34 ) {
+			if ( nif->getBSVersion() <= 34 ) {
 				bool newiMaterial = false;
 
 				if ( iMaterial.isValid() == false || first_tri_shape == false ) {
@@ -814,24 +821,24 @@ void importObj( NifModel * nif, const QModelIndex & index )
 			}
 
 			if ( !mtl.map_Kd.isEmpty() ) {
-				if ( nif->getUserVersion2() > 34 && shaderProp.isValid() ) {
+				if ( nif->getBSVersion() > 34 && shaderProp.isValid() ) {
 					auto textureSet = nif->insertNiBlock( "BSShaderTextureSet" );
 					nif->setLink( shaderProp, "Texture Set", nif->getBlockNumber( textureSet ) );
 
-					if ( nif->getUserVersion2() == 130 )
+					if ( nif->getBSVersion() == 130 )
 						nif->set<uint>( textureSet, "Num Textures", 10 );
 					else
 						nif->set<uint>( textureSet, "Num Textures", 9 );
 
 					auto iTextures = nif->getIndex( textureSet, "Textures" );
-					nif->updateArray( iTextures );
+					nif->updateArraySize( iTextures );
 
 					QVector<QString> texturePaths { mtl.map_Kd, mtl.map_Kn };
 					nif->setArray<QString>( iTextures, texturePaths );
-					nif->updateArray( iTextures );
+					nif->updateArraySize( iTextures );
 				} else if ( nif->getVersionNumber() >= 0x0303000D ) {
 					//Newer versions use NiTexturingProperty and NiSourceTexture
-					if ( iTexProp.isValid() == false || first_tri_shape == false || nif->itemType( iTexProp ) != "NiTexturingProperty" ) {
+					if ( iTexProp.isValid() == false || first_tri_shape == false || nif->itemStrType( iTexProp ) != "NiTexturingProperty" ) {
 						if ( !cBSShaderPPLightingProperty ) // no need of NiTexturingProperty when BSShaderPPLightingProperty is present
 							iTexProp = nif->insertNiBlock( "NiTexturingProperty" );
 					}
@@ -848,7 +855,7 @@ void importObj( NifModel * nif, const QModelIndex & index )
 						nif->set<int>( iBaseMap, "Filter Mode", 2 );
 					}
 
-					if ( iTexSource.isValid() == false || first_tri_shape == false || nif->itemType( iTexSource ) != "NiSourceTexture" ) {
+					if ( iTexSource.isValid() == false || first_tri_shape == false || nif->itemStrType( iTexSource ) != "NiSourceTexture" ) {
 						if ( !cBSShaderPPLightingProperty )
 							iTexSource = nif->insertNiBlock( "NiSourceTexture" );
 					}
@@ -867,13 +874,13 @@ void importObj( NifModel * nif, const QModelIndex & index )
 					}
 				} else {
 					//Older versions use NiTextureProperty and NiImage
-					if ( iTexProp.isValid() == false || first_tri_shape == false || nif->itemType( iTexProp ) != "NiTextureProperty" ) {
+					if ( iTexProp.isValid() == false || first_tri_shape == false || nif->itemStrType( iTexProp ) != "NiTextureProperty" ) {
 						iTexProp = nif->insertNiBlock( "NiTextureProperty" );
 					}
 
 					addLink( nif, iShape, "Properties", nif->getBlockNumber( iTexProp ) );
 
-					if ( iTexSource.isValid() == false || first_tri_shape == false || nif->itemType( iTexSource ) != "NiImage" ) {
+					if ( iTexSource.isValid() == false || first_tri_shape == false || nif->itemStrType( iTexSource ) != "NiImage" ) {
 						iTexSource = nif->insertNiBlock( "NiImage" );
 					}
 
@@ -924,34 +931,30 @@ void importObj( NifModel * nif, const QModelIndex & index )
 
 			nif->set<int>( iData, "Num Vertices", verts.count() );
 			nif->set<int>( iData, "Has Vertices", 1 );
-			nif->updateArray( iData, "Vertices" );
+			nif->updateArraySize( iData, "Vertices" );
 			nif->setArray<Vector3>( iData, "Vertices", verts );
 			nif->set<int>( iData, "Has Normals", 1 );
-			nif->updateArray( iData, "Normals" );
+			nif->updateArraySize( iData, "Normals" );
 			nif->setArray<Vector3>( iData, "Normals", norms );
 			nif->set<int>( iData, "Has UV", 1 );
 			nif->set<int>( iData, "Num UV Sets", 1 );
-			nif->set<int>( iData, "Vector Flags", 4097 );
-			nif->set<int>( iData, "BS Vector Flags", 4097 );
+			nif->set<int>( iData, "Data Flags", 4097 );
+			nif->set<int>( iData, "BS Data Flags", 4097 );
 
-			if ( nif->getUserVersion2() > 34 ) {
+			if ( nif->getBSVersion() > 34 ) {
 				nif->set<int>( iData, "Has Vertex Colors", 1 );
-				nif->updateArray( iData, "Vertex Colors" );
+				nif->updateArraySize( iData, "Vertex Colors" );
 			}
 
 			QModelIndex iTexCo = nif->getIndex( iData, "UV Sets" );
-
-			if ( !iTexCo.isValid() )
-				iTexCo = nif->getIndex( iData, "UV Sets 2" );
-
-			nif->updateArray( iTexCo );
-			nif->updateArray( iTexCo.child( 0, 0 ) );
+			nif->updateArraySize( iTexCo );
+			nif->updateArraySize( iTexCo.child( 0, 0 ) );
 			nif->setArray<Vector2>( iTexCo.child( 0, 0 ), texco );
 
 			nif->set<int>( iData, "Has Triangles", 1 );
 			nif->set<int>( iData, "Num Triangles", triangles.count() );
 			nif->set<int>( iData, "Num Triangle Points", triangles.count() * 3 );
-			nif->updateArray( iData, "Triangles" );
+			nif->updateArraySize( iData, "Triangles" );
 			nif->setArray<Triangle>( iData, "Triangles", triangles );
 
 			// "find me a center": see nif.xml for details
@@ -994,7 +997,7 @@ void importObj( NifModel * nif, const QModelIndex & index )
 			nif->set<float>( iData, "Radius", radius );
 
 			nif->set<int>( iData, "Unknown Short 2", 0x4000 );
-		} else if ( nif->getVersionNumber() == 0x14000005 ) {
+		} else if ( nif->getBSVersion() > 0 ) {
 			// create experimental havok collision mesh
 			QVector<Vector3> verts;
 			QVector<Vector3> norms;
@@ -1002,7 +1005,9 @@ void importObj( NifModel * nif, const QModelIndex & index )
 
 			QVector<ObjPoint> points;
 
-			foreach ( ObjFace oface, *( it.value() ) ) {
+			shapecount++;
+
+			for ( const ObjFace & oface : *( it.value() ) ) {
 				Triangle tri;
 
 				for ( int t = 0; t < 3; t++ ) {
@@ -1030,14 +1035,14 @@ void importObj( NifModel * nif, const QModelIndex & index )
 
 			nif->set<int>( iData, "Num Vertices", verts.count() );
 			nif->set<int>( iData, "Has Vertices", 1 );
-			nif->updateArray( iData, "Vertices" );
+			nif->updateArraySize( iData, "Vertices" );
 			nif->setArray<Vector3>( iData, "Vertices", verts );
 			nif->set<int>( iData, "Has Normals", 1 );
-			nif->updateArray( iData, "Normals" );
+			nif->updateArraySize( iData, "Normals" );
 			nif->setArray<Vector3>( iData, "Normals", norms );
 
 			Vector3 center;
-			foreach ( Vector3 v, verts ) {
+			for ( const Vector3 & v : verts ) {
 				center += v;
 			}
 
@@ -1046,7 +1051,7 @@ void importObj( NifModel * nif, const QModelIndex & index )
 
 			nif->set<Vector3>( iData, "Center", center );
 			float radius = 0;
-			foreach ( Vector3 v, verts ) {
+			for ( const Vector3 & v : verts ) {
 				float d = ( center - v ).length();
 
 				if ( d > radius )
@@ -1055,7 +1060,7 @@ void importObj( NifModel * nif, const QModelIndex & index )
 			nif->set<float>( iData, "Radius", radius );
 
 			// do not stitch, because it looks better in the cs
-			QVector<QVector<quint16> > strips = stripify( triangles, false );
+			QVector<QVector<quint16> > strips = stripify( triangles );
 
 			nif->set<int>( iData, "Num Strips", strips.count() );
 			nif->set<int>( iData, "Has Points", 1 );
@@ -1064,14 +1069,14 @@ void importObj( NifModel * nif, const QModelIndex & index )
 			QModelIndex iPoints  = nif->getIndex( iData, "Points" );
 
 			if ( iLengths.isValid() && iPoints.isValid() ) {
-				nif->updateArray( iLengths );
-				nif->updateArray( iPoints );
+				nif->updateArraySize( iLengths );
+				nif->updateArraySize( iPoints );
 				int x = 0;
 				int z = 0;
-				foreach ( QVector<quint16> strip, strips ) {
+				for ( const QVector<quint16> & strip : strips ) {
 					nif->set<int>( iLengths.child( x, 0 ), strip.count() );
 					QModelIndex iStrip = iPoints.child( x, 0 );
-					nif->updateArray( iStrip );
+					nif->updateArraySize( iStrip );
 					nif->setArray<quint16>( iStrip, strip );
 					x++;
 					z += strip.count() - 2;
@@ -1079,25 +1084,36 @@ void importObj( NifModel * nif, const QModelIndex & index )
 				nif->set<int>( iData, "Num Triangles", z );
 			}
 
-			QPersistentModelIndex iShape = nif->insertNiBlock( "bhkNiTriStripsShape" );
+			if ( shapecount == 1 ) {
+				iStripsShape = nif->insertNiBlock( "bhkNiTriStripsShape" );
 
-			nif->setArray<float>( iShape, "Unknown Floats 1", { 0.1f, 0.0f } );
-			nif->setArray<int>( iShape, "Unknown Ints 1", { 0, 0, 0, 0, 1 } );
-			nif->set<Vector3>( iShape, "Scale", { 1.0, 1.0, 1.0 } );
-			addLink( nif, iShape, "Strips Data", nif->getBlockNumber( iData ) );
-			nif->set<int>( iShape, "Num Data Layers", 1 );
-			nif->updateArray( iShape, "Data Layers" );
-			nif->setArray<int>( iShape, "Data Layers", { 1 } );
+				// For some reason need to update all the fixed arrays...
+				nif->updateArraySize( iStripsShape, "Unused" );
+				nif->set<int>( iStripsShape, "Num Strips Data", 0 );
+				nif->updateArraySize( iStripsShape, "Strips Data" );
 
-			QPersistentModelIndex iBody = nif->insertNiBlock( "bhkRigidBody" );
-			nif->setLink( iBody, "Shape", nif->getBlockNumber( iShape ) );
+				QPersistentModelIndex iBody = nif->insertNiBlock( "bhkRigidBody" );
+				nif->setLink( iBody, "Shape", nif->getBlockNumber( iStripsShape ) );
+				for( int i = 0; i < nif->rowCount( iBody ); i++ ) {
+					auto iChild = iBody.child( i, 0 );
+					if ( nif->isArray( iChild ) )
+						nif->updateArraySize( iChild );
+				}
 
-			QPersistentModelIndex iObject = nif->insertNiBlock( "bhkCollisionObject" );
-			nif->setLink( iObject, "Parent", nif->getBlockNumber( iNode ) );
-			nif->set<int>( iObject, "Unknown Short", 1 );
-			nif->setLink( iObject, "Body", nif->getBlockNumber( iBody ) );
+				QPersistentModelIndex iObject = nif->insertNiBlock( "bhkCollisionObject" );
 
-			nif->setLink( iNode, "Collision Object", nif->getBlockNumber( iObject ) );
+				QPersistentModelIndex iParent = (iShape.isValid()) ? iShape : iNode;
+				nif->setLink( iObject, "Target", nif->getBlockNumber( iParent ) );
+				nif->setLink( iObject, "Body", nif->getBlockNumber( iBody ) );
+
+				nif->setLink( iParent, "Collision Object", nif->getBlockNumber( iObject ) );
+			}
+			
+			if ( shapecount >= 1 ) {
+				addLink( nif, iStripsShape, "Strips Data", nif->getBlockNumber( iData ) );
+				nif->set<int>( iStripsShape, "Num Filters", shapecount );
+				nif->updateArraySize( iStripsShape, "Filters" );
+			}
 		}
 
 		spTangentSpace TSpacer;
@@ -1106,6 +1122,7 @@ void importObj( NifModel * nif, const QModelIndex & index )
 		//Finished with the first shape which is the only one that can import over the top of existing data
 		first_tri_shape = false;
 	}
+	nif->holdUpdates( false );
 
 	qDeleteAll( ofaces );
 

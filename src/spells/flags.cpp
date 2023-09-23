@@ -21,6 +21,7 @@ class spEditFlags : public Spell
 {
 public:
 	QString name() const override { return Spell::tr( "Flags" ); }
+	bool constant() const override { return true; }
 	bool instant() const override { return true; }
 	QIcon icon() const override { return QIcon( ":/img/flag" ); }
 
@@ -52,19 +53,19 @@ public:
 		if ( nif->isNiBlock( index ) )
 			return nif->getIndex( index, "Flags" );
 
-		if ( nif->inherits( nif->getBlock( index ), "bhkRigidBody" ) ) {
-			QModelIndex iFlags = nif->getIndex( nif->getBlock( index ), "Col Filter" );
+		if ( nif->blockInherits( index, "bhkRigidBody" ) ) {
+			QModelIndex iFlags = nif->getIndex( nif->getBlockIndex( index ), "Col Filter" );
 			iFlags = iFlags.sibling( iFlags.row(), NifModel::ValueCol );
 
 			if ( index == iFlags )
 				return iFlags;
-		} else if ( nif->inherits( nif->getBlock( index ), "BSXFlags" ) ) {
-			QModelIndex iFlags = nif->getIndex( nif->getBlock( index ), "Integer Data" );
+		} else if ( nif->blockInherits( index, "BSXFlags" ) ) {
+			QModelIndex iFlags = nif->getIndex( nif->getBlockIndex( index ), "Integer Data" );
 			iFlags = iFlags.sibling( iFlags.row(), NifModel::ValueCol );
 
 			if ( index == iFlags )
 				return iFlags;
-		} else if ( nif->itemName( index ) == "Flags" && nif->itemType( index.parent() ) == "TexDesc" ) {
+		} else if ( nif->itemName( index ) == "Flags" && nif->itemStrType( index.parent() ) == "TexDesc" ) {
 			return index;
 		}
 
@@ -95,7 +96,7 @@ public:
 				return Shape;
 			} else if ( name == "NiStencilProperty" ) {
 				return Stencil;
-			} else if ( nif->itemType( index.parent() ) == "TexDesc" ) {
+			} else if ( nif->itemStrType( index.parent() ) == "TexDesc" ) {
 				return TexDesc;
 			} else if ( name == "NiVertexColorProperty" ) {
 				return VertexColor;
@@ -103,7 +104,7 @@ public:
 				return ZBuffer;
 			} else if ( name == "BSXFlags" ) {
 				return BSX;
-			} else if ( nif->inherits( index.parent(), "NiAVObject" ) && nif->getVersionNumber() == 0x14020007 ) {
+			} else if ( nif->blockInherits( index.parent(), "NiAVObject" ) && nif->getVersionNumber() == 0x14020007 ) {
 				return NiAVObject;
 			}
 		}
@@ -225,7 +226,7 @@ public:
 		cmbTest->setCurrentIndex( flags >> 10 & 0x07 );
 
 		QSpinBox * spnTest = dlgSpin( vbox, Spell::tr( "Alpha Test Threshold" ), 0x00, 0xff );
-		spnTest->setValue( nif->get<int>( nif->getBlock( index ), "Threshold" ) );
+		spnTest->setValue( nif->get<int>( nif->getBlockIndex( index ), "Threshold" ) );
 
 		QCheckBox * chkSort = dlgCheck( vbox, Spell::tr( "No Sorter" ) );
 		chkSort->setChecked( ( flags & 0x2000 ) != 0 );
@@ -249,7 +250,7 @@ public:
 			}
 
 			flags = ( flags & 0xe3ff ) | ( cmbTest->currentIndex() << 10 );
-			nif->set<int>( nif->getBlock( index ), "Threshold", spnTest->value() );
+			nif->set<int>( nif->getBlockIndex( index ), "Threshold", spnTest->value() );
 
 			flags = ( flags & 0xdfff ) | ( chkSort->isChecked() ? 0x2000 : 0 );
 
@@ -426,7 +427,7 @@ public:
 		QComboBox * cmbFunc = dlgCombo( vbox, Spell::tr( "Z Buffer Test Function" ), compareFunc, chkEnable );
 
 		if ( nif->checkVersion( 0x0401000C, 0x14000005 ) )
-			cmbFunc->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Function" ) );
+			cmbFunc->setCurrentIndex( nif->get<int>( nif->getBlockIndex( index ), "Function" ) );
 		else
 			cmbFunc->setCurrentIndex( ( flags >> 2 ) & 0x07 );
 
@@ -446,7 +447,7 @@ public:
 			flags = ( flags & 0xfffd ) | ( chkROnly->isChecked() ? 0 : 2 );
 
 			if ( nif->checkVersion( 0x0401000C, 0x14000005 ) ) {
-				nif->set<int>( nif->getBlock( index ), "Function", cmbFunc->currentIndex() );
+				nif->set<int>( nif->getBlockIndex( index ), "Function", cmbFunc->currentIndex() );
 			}
 
 			if ( nif->checkVersion( 0x14010003, 0 ) || ( setFlags != 0 && setFlags->isChecked() ) ) {
@@ -523,7 +524,7 @@ public:
 			Spell::tr( "Save External Geom Data" ),         // 512
 			Spell::tr( "No Decals" ),                       // 1024
 			Spell::tr( "Always Draw" ),                     // 2048
-			Spell::tr( "Mesh LOD" ),                        // 4096
+			Spell::tr( "Mesh LOD (FO4)" ),                  // 4096
 			Spell::tr( "Fixed Bound" ),                     // 8192
 			Spell::tr( "Top Fade Node" ),                   // 16384
 			Spell::tr( "Ignore Fade" ),                     // 32768
@@ -538,7 +539,7 @@ public:
 			Spell::tr( "High Detail" ),                     // 1 << 24
 			Spell::tr( "Force Update" ),                    // 1 << 25
 			Spell::tr( "Pre-Processed Node" ),              // 1 << 26
-			Spell::tr( "Bit 27" ),                          // 1 << 27
+			Spell::tr( "Mesh LOD (Skyrim)" ),               // 1 << 27
 			Spell::tr( "Bit 28" ),                          // 1 << 28
 			Spell::tr( "Bit 29" ),                          // 1 << 29
 			Spell::tr( "Bit 30" ),                          // 1 << 30
@@ -606,7 +607,7 @@ public:
 			// this value doesn't exist before 10.1.0.0
 			// ROTATE_ABOUT_UP2 is too hard to put in and possibly meaningless
 			cmbMode->addItem( Spell::tr( "Rigid Face Center" ) );
-			cmbMode->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Billboard Mode" ) );
+			cmbMode->setCurrentIndex( nif->get<int>( nif->getBlockIndex( index ), "Billboard Mode" ) );
 		} else {
 			cmbMode->setCurrentIndex( flags >> 5 & 3 );
 		}
@@ -618,7 +619,7 @@ public:
 			flags = ( flags & 0xfff9 ) | ( cmbCollision->currentIndex() << 1);
 
 			if ( nif->checkVersion( 0x0A010000, 0 ) ) {
-				nif->set<int>( nif->getBlock( index ), "Billboard Mode", cmbMode->currentIndex() );
+				nif->set<int>( nif->getBlockIndex( index ), "Billboard Mode", cmbMode->currentIndex() );
 			} else {
 				flags = ( flags & 0xff9f ) | ( cmbMode->currentIndex() << 5 );
 				flags = ( flags & 0xfff7 ) | 8; // seems to always be set but has no known effect
@@ -683,12 +684,12 @@ public:
 		if ( nif->checkVersion( 0, 0x14000005 ) ) {
 			// set based on Stencil Enabled, Stencil Function, Fail Action, Z Fail Action, Pass Action, Draw Mode
 			// Possibly include Stencil Ref and Stencil Mask except they don't seem to ever vary from the default
-			chkEnable->setChecked( nif->get<bool>( nif->getBlock( index ), "Stencil Enabled" ) );
-			cmbFail->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Fail Action" ) );
-			cmbZFail->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Z Fail Action" ) );
-			cmbPass->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Pass Action" ) );
-			cmbDrawMode->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Draw Mode" ) );
-			cmbFunc->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Stencil Function" ) );
+			chkEnable->setChecked( nif->get<bool>( nif->getBlockIndex( index ), "Stencil Enabled" ) );
+			cmbFail->setCurrentIndex( nif->get<int>( nif->getBlockIndex( index ), "Fail Action" ) );
+			cmbZFail->setCurrentIndex( nif->get<int>( nif->getBlockIndex( index ), "Z Fail Action" ) );
+			cmbPass->setCurrentIndex( nif->get<int>( nif->getBlockIndex( index ), "Pass Action" ) );
+			cmbDrawMode->setCurrentIndex( nif->get<int>( nif->getBlockIndex( index ), "Draw Mode" ) );
+			cmbFunc->setCurrentIndex( nif->get<int>( nif->getBlockIndex( index ), "Stencil Function" ) );
 		} else {
 			// set based on flags itself
 			chkEnable->setChecked( flags & 1 );
@@ -703,12 +704,12 @@ public:
 
 		if ( dlg.exec() == QDialog::Accepted ) {
 			if ( nif->checkVersion( 0, 0x14000005 ) ) {
-				nif->set<bool>( nif->getBlock( index ), "Stencil Enabled", chkEnable->isChecked() );
-				nif->set<int>( nif->getBlock( index ), "Fail Action", cmbFail->currentIndex() );
-				nif->set<int>( nif->getBlock( index ), "Z Fail Action", cmbZFail->currentIndex() );
-				nif->set<int>( nif->getBlock( index ), "Pass Action", cmbPass->currentIndex() );
-				nif->set<int>( nif->getBlock( index ), "Draw Mode", cmbDrawMode->currentIndex() );
-				nif->set<int>( nif->getBlock( index ), "Stencil Function", cmbFunc->currentIndex() );
+				nif->set<bool>( nif->getBlockIndex( index ), "Stencil Enabled", chkEnable->isChecked() );
+				nif->set<int>( nif->getBlockIndex( index ), "Fail Action", cmbFail->currentIndex() );
+				nif->set<int>( nif->getBlockIndex( index ), "Z Fail Action", cmbZFail->currentIndex() );
+				nif->set<int>( nif->getBlockIndex( index ), "Pass Action", cmbPass->currentIndex() );
+				nif->set<int>( nif->getBlockIndex( index ), "Draw Mode", cmbDrawMode->currentIndex() );
+				nif->set<int>( nif->getBlockIndex( index ), "Stencil Function", cmbFunc->currentIndex() );
 			} else {
 				flags = ( flags & 0xfffe ) | ( chkEnable->isChecked() ? 1 : 0 );
 				flags = ( flags & 0xfff1 ) | ( cmbFail->currentIndex() << 1 );
@@ -755,8 +756,8 @@ public:
 
 		// Use enums in preference to flags since they probably have a higher priority
 		if ( nif->checkVersion( 0, 0x14000005 ) ) {
-			cmbLight->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Lighting Mode" ) );
-			cmbVert->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Vertex Mode" ) );
+			cmbLight->setCurrentIndex( nif->get<int>( nif->getBlockIndex( index ), "Lighting Mode" ) );
+			cmbVert->setCurrentIndex( nif->get<int>( nif->getBlockIndex( index ), "Vertex Mode" ) );
 		} else {
 			cmbLight->setCurrentIndex( flags >> 3 & 1 );
 			cmbVert->setCurrentIndex( flags >> 4 & 3 );
@@ -766,8 +767,8 @@ public:
 
 		if ( dlg.exec() == QDialog::Accepted ) {
 			if ( nif->checkVersion( 0, 0x14000005 ) ) {
-				nif->set<int>( nif->getBlock( index ), "Lighting Mode", cmbLight->currentIndex() );
-				nif->set<int>( nif->getBlock( index ), "Vertex Mode", cmbVert->currentIndex() );
+				nif->set<int>( nif->getBlockIndex( index ), "Lighting Mode", cmbLight->currentIndex() );
+				nif->set<int>( nif->getBlockIndex( index ), "Vertex Mode", cmbVert->currentIndex() );
 			}
 
 			if ( nif->checkVersion( 0x14010003, 0 ) || ( setFlags != 0 && setFlags->isChecked() ) ) {
@@ -806,7 +807,7 @@ public:
 
 		// Target Color enum exists as of 10.1.0.0
 		if ( nif->checkVersion( 0x0A010000, 0 ) ) {
-			cmbColor->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Target Color" ) );
+			cmbColor->setCurrentIndex( nif->get<int>( nif->getBlockIndex( index ), "Target Color" ) );
 		} else {
 			cmbColor->setCurrentIndex( flags >> 4 & 3 );
 		}
@@ -818,7 +819,7 @@ public:
 			flags = ( flags & 0xfff9 ) | ( cmbLoop->currentIndex() << 1 );
 
 			if ( nif->checkVersion( 0x0A010000, 0 ) ) {
-				nif->set<int>( nif->getBlock( index ), "Target Color", cmbColor->currentIndex() );
+				nif->set<int>( nif->getBlockIndex( index ), "Target Color", cmbColor->currentIndex() );
 			} else {
 				flags = ( flags & 0xffcf ) | ( cmbColor->currentIndex() << 4 );
 			}
@@ -970,14 +971,13 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		return nif->inherits( index.parent(), "BSTriShape" ) && nif->itemName( index ) == "Vertex Desc";
+		return nif->blockInherits( index.parent(), "BSTriShape" ) && nif->itemName( index ) == "Vertex Desc";
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		auto desc = nif->get<BSVertexDesc>( index );
-		uint stream = nif->getUserVersion2();
-		bool dynamic = nif->inherits( index.parent(), "BSDynamicTriShape" );
+		bool dynamic = nif->blockInherits( index.parent(), "BSDynamicTriShape" );
 
 		QStringList flagNames {
 			Spell::tr( "Vertex" ),	  // VA_POSITION = 0x0,
@@ -1021,7 +1021,7 @@ public:
 			}
 
 			// Make sure sizes and offsets in rest of vertexDesc are updated from flags
-			desc.ResetAttributeOffsets( stream );
+			desc.ResetAttributeOffsets( nif->getBSVersion() );
 			if ( dynamic )
 				desc.MakeDynamic();
 
@@ -1033,7 +1033,7 @@ public:
 				if ( iDataSize.isValid() )
 					nif->set<uint>( iDataSize, desc.GetVertexSize() * numVerts + 6 * numTris );
 
-				nif->updateArray( index.parent(), "Vertex Data" );
+				nif->updateArraySize( index.parent(), "Vertex Data" );
 			}
 
 		}

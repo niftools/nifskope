@@ -2,7 +2,7 @@
 
 checkgroup begin and
 	# Fallout 4
-    check HEADER/User Version 2 >= 130
+    check HEADER/BS Header/BS Version == 130
 	check BSEffectShaderProperty
 checkgroup end
 

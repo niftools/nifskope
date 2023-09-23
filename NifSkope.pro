@@ -2,7 +2,7 @@
 ## BUILD OPTIONS
 ###############################
 
-TEMPLATE = app
+TEMPLATE = vcapp
 TARGET   = NifSkope
 
 QT += xml opengl network widgets
@@ -13,8 +13,8 @@ contains(QT_VERSION, ^5\\.[0-6]\\..*) {
 	error("Minimum required version is Qt 5.7")
 }
 
-# C++11/14 Support
-CONFIG += c++14
+# C++ Standard Support
+CONFIG += c++20
 
 # Dependencies
 CONFIG += nvtristrip qhull zlib lz4 fsengine gli
@@ -40,6 +40,7 @@ CONFIG(debug, debug|release) {
 
 # Require explicit
 DEFINES += \
+	_USE_MATH_DEFINES \ # Define M_PI, etc. in cmath
 	QT_NO_CAST_FROM_BYTEARRAY \ # QByteArray deprecations
 	QT_NO_URL_CAST_FROM_STRING \ # QUrl deprecations
 	QT_DISABLE_DEPRECATED_BEFORE=0x050300 #\ # Disable all functions deprecated as of 5.3
@@ -143,6 +144,7 @@ HEADERS += \
 	src/data/nifvalue.h \
 	src/gl/marker/constraints.h \
 	src/gl/marker/furniture.h \
+	srg/gl/BSMesh.h \
 	src/gl/bsshape.h \
 	src/gl/controllers.h \
 	src/gl/glcontroller.h \
@@ -152,12 +154,14 @@ HEADERS += \
 	src/gl/glparticles.h \
 	src/gl/glproperty.h \
 	src/gl/glscene.h \
+	src/gl/glshape.h \
 	src/gl/gltex.h \
 	src/gl/gltexloaders.h \
 	src/gl/gltools.h \
 	src/gl/icontrollable.h \
 	src/gl/renderer.h \
 	src/io/material.h \
+	src/io/MeshFile.h \
 	src/io/nifstream.h \
 	src/lib/importex/3ds.h \
 	src/lib/nvtristripwrapper.h \
@@ -195,6 +199,8 @@ HEADERS += \
 	src/ui/settingsdialog.h \
 	src/ui/settingspane.h \
 	src/xml/nifexpr.h \
+	src/xml/xmlconfig.h \
+	src/gamemanager.h \
 	src/glview.h \
 	src/message.h \
 	src/nifskope.h \
@@ -202,11 +208,17 @@ HEADERS += \
 	src/version.h \
 	lib/dds.h \
 	lib/dxgiformat.h \
-	lib/half.h
+	lib/half.h \
+	lib/json.hpp \
+	lib/stb_image.h \
+	lib/stb_image_write.h \
+	lib/tiny_gltf.h
 
 SOURCES += \
+	src/data/nifitem.cpp \
 	src/data/niftypes.cpp \
 	src/data/nifvalue.cpp \
+	srg/gl/BSMesh.cpp \
 	src/gl/bsshape.cpp \
 	src/gl/controllers.cpp \
 	src/gl/glcontroller.cpp \
@@ -216,16 +228,19 @@ SOURCES += \
 	src/gl/glparticles.cpp \
 	src/gl/glproperty.cpp \
 	src/gl/glscene.cpp \
+	src/gl/glshape.cpp \
 	src/gl/gltex.cpp \
 	src/gl/gltexloaders.cpp \
 	src/gl/gltools.cpp \
 	src/gl/renderer.cpp \
 	src/io/material.cpp \
+	src/io/MeshFile.cpp \
 	src/io/nifstream.cpp \
 	src/lib/importex/3ds.cpp \
 	src/lib/importex/importex.cpp \
 	src/lib/importex/obj.cpp \
 	src/lib/importex/col.cpp \
+	src/lib/importex/gltf.cpp \
 	src/lib/nvtristripwrapper.cpp \
 	src/lib/qhull.cpp \
 	src/model/basemodel.cpp \
@@ -278,6 +293,7 @@ SOURCES += \
 	src/xml/kfmxml.cpp \
 	src/xml/nifexpr.cpp \
 	src/xml/nifxml.cpp \
+	src/gamemanager.cpp \
 	src/glview.cpp \
 	src/main.cpp \
 	src/message.cpp \
@@ -309,12 +325,10 @@ fsengine {
 	INCLUDEPATH += lib/fsengine
 	HEADERS += \
 		lib/fsengine/bsa.h \
-		lib/fsengine/fsengine.h \
-		lib/fsengine/fsmanager.h
+		lib/fsengine/fsengine.h
 	SOURCES += \
 		lib/fsengine/bsa.cpp \
-		lib/fsengine/fsengine.cpp \
-		lib/fsengine/fsmanager.cpp
+		lib/fsengine/fsengine.cpp
 }
 
 nvtristrip {
@@ -346,6 +360,9 @@ gli {
 }
 
 zlib {
+	macx {
+        DEFINES += Z_HAVE_UNISTD_H
+    }
     !*msvc*:QMAKE_CFLAGS += -isystem ../nifskope/lib/zlib
     !*msvc*:QMAKE_CXXFLAGS += -isystem ../nifskope/lib/zlib
     else:INCLUDEPATH += lib/zlib
@@ -406,7 +423,7 @@ win32 {
 
 	# Standards conformance to match GCC and clang
 	!isEmpty(_MSC_VER):greaterThan(_MSC_VER, 1900) {
-		QMAKE_CXXFLAGS += /permissive- /std:c++latest
+		QMAKE_CXXFLAGS += /permissive- /std:c++20
 	}
 
 	# LINKER FLAGS
@@ -430,8 +447,8 @@ win32 {
 	QMAKE_CXXFLAGS_DEBUG *= -Og -g3
 	QMAKE_CXXFLAGS_RELEASE *= -O3 -mfpmath=sse
 
-	# C++11 Support
-	QMAKE_CXXFLAGS_RELEASE *= -std=c++14
+	# C++ Standard Support
+	QMAKE_CXXFLAGS_RELEASE *= -std=c++20
 
 	#  Extension flags
 	QMAKE_CXXFLAGS_RELEASE *= -msse2 -msse
@@ -479,7 +496,7 @@ win32:contains(QT_ARCH, i386) {
 }
 
 	XML += \
-		build/docsys/nifxml/nif.xml \
+		build/nif.xml \
 		build/docsys/kfmxml/kfm.xml
 
 	QSS += \
@@ -494,7 +511,8 @@ win32:contains(QT_ARCH, i386) {
 	READMES += \
 		CHANGELOG.md \
 		LICENSE.md \
-		README.md
+		README.md \
+		README_GLTF.md
 
 	copyDirs( $$SHADERS, shaders )
 	#copyDirs( $$LANG, lang )
@@ -516,8 +534,12 @@ win32:contains(QT_ARCH, i386) {
 			$$[QT_INSTALL_PLUGINS]/imageformats/qtga$${DLLEXT} \
 			$$[QT_INSTALL_PLUGINS]/imageformats/qwebp$${DLLEXT}
 
+		styles += \
+			$$[QT_INSTALL_PLUGINS]/styles/qwindowsvistastyle$${DLLEXT}
+
 		copyFiles( $$platforms, platforms, true )
 		copyFiles( $$imageformats, imageformats, true )
+		copyFiles( $$styles, styles, true )
 	}
 
 } # end build_pass

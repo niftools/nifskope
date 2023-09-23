@@ -73,10 +73,14 @@ public:
 	virtual QString hint() const { return QString(); }
 	//! Icon displayed in block view
 	virtual QIcon icon() const { return QIcon(); }
+	//! Whether the spell does not modify the file
+	virtual bool constant() const { return false; }
 	//! Whether the spell shows up in block list instead of a context menu
 	virtual bool instant() const { return false; }
 	//! Whether the spell performs a sanitizing function
 	virtual bool sanity() const { return false; }
+	//! Whether the spell performs an error checking function
+	virtual bool checker() const { return false; }
 	//! Whether the spell has a high processing cost
 	virtual bool batch() const { return (page() == "Batch") || (page() == "Block") || (page() == "Mesh"); }
 	//! Hotkey sequence
@@ -135,6 +139,14 @@ public:
 	//! Cast all sanitizing spells
 	static QModelIndex sanitize( NifModel * nif );
 
+	//! Cast all checking spells
+	static QModelIndex check(NifModel * nif);
+
+	static QList<SpellPtr> & spells();
+	static QList<SpellPtr> & instants();
+	static QList<SpellPtr> & sanitizers();
+	static QList<SpellPtr> & checkers();
+
 public slots:
 	void sltNif( NifModel * nif );
 
@@ -159,11 +171,8 @@ protected:
 	void checkActions( QMenu * menu, const QString & page );
 
 private:
-	static QList<SpellPtr> & spells();
 	static QList<SpellBook *> & books();
 	static QMultiHash<QString, SpellPtr> & hash();
-	static QList<SpellPtr> & instants();
-	static QList<SpellPtr> & sanitizers();
 };
 
 //! SpellBook manager

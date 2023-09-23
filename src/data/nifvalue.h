@@ -58,6 +58,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //! Increment when editing color types (Color3, Color4)
 #define COLOR_STEP 0.01
 
+class BaseModel;
+class NifItem;
 
 /*! A generic class used for storing a value of any type.
  *
@@ -80,53 +82,57 @@ public:
 	enum Type
 	{
 		// all count types should come between tBool and tUInt
-		tBool           = 0,
-		tByte           = 1,
-		tWord           = 2,
-		tFlags          = 3,
-		tStringOffset   = 4,
-		tStringIndex    = 5,
-		tBlockTypeIndex = 6,
-		tInt            = 7,
-		tShort          = 8,
-		tULittle32      = 9,
-		tUInt           = 10,
-		//
-		tLink   = 11,
-		tUpLink = 12,
-		tFloat  = 13,
+		tBool = 0,
+		tByte,
+		tWord,
+		tFlags,
+		tStringOffset,
+		tStringIndex,
+		tBlockTypeIndex,
+		tInt,
+		tShort,
+		tULittle32,
+		tInt64,
+		tUInt64,
+		tUInt,
+		// all count types should come between tBool and tUInt
+		tLink,
+		tUpLink,
+		tFloat,
 		// all string types should come between tSizedString and tChar8String
-		tSizedString   = 14,
-		tText          = 15,
-		tShortString   = 16,
-		tHeaderString  = 18,
-		tLineString    = 19,
-		tChar8String   = 20,
-		//
-		tColor3        = 21,
-		tColor4        = 22,
-		tVector3       = 23,
-		tQuat          = 24,
-		tQuatXYZW      = 25,
-		tMatrix        = 26,
-		tMatrix4       = 27,
-		tVector2       = 28,
-		tVector4       = 29,
-		tTriangle      = 30,
-		tFileVersion   = 31,
-		tByteArray     = 32,
-		tStringPalette = 33,
-		tString        = 34, //!< not a regular string: an integer for nif versions 20.1.0.3 and up
-		tFilePath      = 35, //!< not a string: requires special handling for slash/backslash etc.
-		tByteMatrix    = 36,
-		tBlob          = 37,
-		tHfloat        = 38,
-		tHalfVector3   = 39,
-		tByteVector3   = 40,
-		tHalfVector2   = 41,
-		tByteColor4    = 42,
-		tBSVertexDesc  = 43,
-		tNone          = 0xff
+		tSizedString,
+		tText,
+		tShortString,
+		tHeaderString,
+		tLineString,
+		tChar8String,
+		// all string types should come between tSizedString and tChar8String
+		tColor3,
+		tColor4,
+		tVector3,
+		tQuat,
+		tQuatXYZW,
+		tMatrix,
+		tMatrix4,
+		tVector2,
+		tVector4,
+		tTriangle,
+		tFileVersion,
+		tByteArray,
+		tStringPalette,
+		tString,   //!< not a regular string: an integer for nif versions 20.1.0.3 and up
+		tFilePath, //!< not a string: requires special handling for slash/backslash etc.
+		tByteMatrix,
+		tBlob,
+		tHfloat,
+		tHalfVector3,
+		tUshortVector3,
+		tByteVector3,
+		tHalfVector2,
+		tByteColor4,
+		tBSVertexDesc,
+		tNormbyte,
+		tNone= 0xff
 	};
 
 	enum EnumType
@@ -249,7 +255,7 @@ public:
 	//! Check if the type of the data is a flag type (Flags in xml).
 	bool isFlags() const { return typ == tFlags; }
 	//! Check if the type of the data is a float type (Float in xml).
-	bool isFloat() const { return (typ == tFloat) || (typ == tHfloat); }
+	bool isFloat() const { return (typ == tFloat) || (typ == tHfloat) || (typ == tNormbyte); }
 	//! Check if the type of the data is of a link type (Ref or Ptr in xml).
 	bool isLink() const { return typ == tLink || typ == tUpLink; }
 	//! Check if the type of the data is a 3x3 matrix type (Matrix33 in xml).
@@ -282,15 +288,15 @@ public:
 	bool isByteMatrix() const { return typ == tByteMatrix; }
 
 	//! Return the value of the data as a QColor, if applicable.
-	QColor toColor() const;
+	QColor toColor( const BaseModel * model, const NifItem * item ) const;
 	//! Return the value of the data as a count.
-	quint32 toCount() const;
+	quint64 toCount( const BaseModel * model, const NifItem * item ) const;
 	//! Return the value of the data as a float.
-	float toFloat() const;
+	float toFloat( const BaseModel * model, const NifItem * item ) const;
 	//! Return the value of the data as a link, if applicable.
-	qint32 toLink() const;
+	qint32 toLink( const BaseModel * model, const NifItem * item ) const;
 	//! Return the value of the data as a file version, if applicable.
-	quint32 toFileVersion() const;
+	quint32 toFileVersion( const BaseModel * model, const NifItem * item ) const;
 
 	//! Return a string which represents the value of the data.
 	QString toString() const;
@@ -301,31 +307,31 @@ public:
 	 *
 	 * @return True if applicable, false otherwise
 	 */
-	bool setCount( quint32 );
+	bool setCount( quint64 c, const BaseModel * model, const NifItem * item );
 
 	/*! Set this value to a float.
 	 *
 	 * @return True if applicable, false otherwise
 	 */
-	bool setFloat( float );
+	bool setFloat( float f, const BaseModel * model, const NifItem * item );
 
 	/*! Set this value to a link.
 	 *
 	 * @return True if applicable, false otherwise
 	 */
-	bool setLink( int );
+	bool setLink( qint32 link, const BaseModel * model, const NifItem * item );
 
 	/*! Set this value to a file version.
 	 *
 	 * @return True if applicable, false otherwise
 	 */
-	bool setFileVersion( quint32 );
+	bool setFileVersion( quint32 v, const BaseModel * model, const NifItem * item );
 
 	/*! Set this value from a string.
 	 *
 	 * @return True if applicable, false otherwise
 	 */
-	bool setFromString( const QString & );
+	bool setFromString( const QString & s, const BaseModel * model, const NifItem * item );
 
 	/*! Set this value from a QVariant.
 	 *
@@ -333,12 +339,10 @@ public:
 	 */
 	bool setFromVariant( const QVariant & );
 
-	//! Check whether the data is of type T.
-	template <typename T> bool ask( T * t = 0 ) const;
 	//! Get the data in the form of something of type T.
-	template <typename T> T get() const;
+	template <typename T> T get( const BaseModel * model, const NifItem * item ) const;
 	//! Set the data from an instance of type T. Return true if successful.
-	template <typename T> bool set( const T & x );
+	template <typename T> bool set( const T & x, const BaseModel * model, const NifItem * item );
 
 protected:
 	//! The type of this data.
@@ -351,6 +355,8 @@ protected:
 		quint16 u16;
 		quint32 u32;
 		qint32 i32;
+		quint64 u64;
+		qint64 i64;
 		float f32;
 		void * data;
 	};
@@ -363,14 +369,14 @@ protected:
 	 * If the type t is not equal to the actual type of the data, then return T(). Serves
 	 * as a helper function for get, intended for internal use only.
 	 */
-	template <typename T> T getType( Type t ) const;
+	template <typename T> T getType( Type t, const BaseModel * model, const NifItem * item ) const;
 
 	/*! Set the data from an object of type T.
 	 *
 	 * If the type t is not equal to the actual type of the data, then return false, else
 	 * return true. Helper function for set, intended for internal use only.
 	 */
-	template <typename T> bool setType( Type t, T v );
+	template <typename T> bool setType( Type t, T v, const BaseModel * model, const NifItem * item );
 
 	//! A dictionary yielding the Type from a type string.
 	static QHash<QString, Type> typeMap;
@@ -393,6 +399,12 @@ protected:
 	 * This dictionary allows that type to be exposed, eg. for NifValue::typeDescription().
 	 */
 	static QHash<QString, QString> aliasMap;
+
+	static void reportModelError( const BaseModel * model, const NifItem * item, const QString & msg );
+	static QString getTypeDebugStr( NifValue::Type t );
+public:
+	void reportConvertToError( const BaseModel * model, const NifItem * item, const QString & toType ) const;
+	void reportConvertFromError( const BaseModel * model, const NifItem * item, const QString & fromType ) const;
 };
 
 Q_DECLARE_METATYPE( NifValue )
@@ -404,323 +416,378 @@ Q_DECLARE_METATYPE( NifValue )
 // documented above; should this really be inlined?
 // GCC only allows type punning via union (http://gcc.gnu.org/onlinedocs/gcc-4.2.1/gcc/Optimize-Options.html#index-fstrict_002daliasing-550)
 // This also works on GCC 3.4.5
-inline quint32 NifValue::toCount() const
+inline quint64 NifValue::toCount( const BaseModel * model, const NifItem * item ) const
 {
 	if ( isCount() || isFloat() )
-		return val.u32;
+		return val.u64;
 
+	if ( model )
+		reportConvertToError( model, item, "a number");
 	return 0;
 }
 
-inline float NifValue::toFloat() const
+inline float NifValue::toFloat( const BaseModel * model, const NifItem * item ) const
 {
 	if ( isFloat() )
 		return val.f32;
 
+	if ( model )
+		reportConvertToError(model, item, "a float");
 	return 0.0;
 }
 
-inline qint32 NifValue::toLink() const
+inline qint32 NifValue::toLink( const BaseModel * model, const NifItem * item ) const
 {
 	if ( isLink() )
 		return val.i32;
 
+	if ( model )
+		reportConvertToError(model, item, "a link");
 	return -1;
 }
 
-inline quint32 NifValue::toFileVersion() const
+inline quint32 NifValue::toFileVersion( const BaseModel * model, const NifItem * item ) const
 {
 	if ( isFileVersion() )
 		return val.u32;
 
+	if ( model )
+		reportConvertToError(model, item, "a file version");
 	return 0;
 }
 
-inline bool NifValue::setCount( quint32 c )
+inline bool NifValue::setCount( quint64 c, const BaseModel * model, const NifItem * item )
 {
 	if ( isCount() ) {
-		val.u32 = c; return true;
+		val.u64 = c; return true;
 	}
 
+	if ( model )
+		reportConvertFromError( model, item, "a number" );
 	return false;
 }
 
-inline bool NifValue::setFloat( float f )
+inline bool NifValue::setFloat( float f, const BaseModel * model, const NifItem * item )
 {
 	if ( isFloat() ) {
 		val.f32 = f; return true;
 	}
 
+	if ( model )
+		reportConvertFromError( model, item, "a float" );
 	return false;
 }
 
-inline bool NifValue::setLink( int l )
+inline bool NifValue::setLink( qint32 lnk, const BaseModel * model, const NifItem * item )
 {
 	if ( isLink() ) {
-		val.i32 = l; return true;
+		val.i32 = lnk; return true;
 	}
 
+	if ( model )
+		reportConvertFromError( model, item, "a link" );
 	return false;
 }
 
-inline bool NifValue::setFileVersion( quint32 v )
+inline bool NifValue::setFileVersion( quint32 v, const BaseModel * model, const NifItem * item  )
 {
 	if ( isFileVersion() ) {
 		val.u32 = v; return true;
 	}
 
+	if ( model )
+		reportConvertFromError( model, item, "a file version" );
 	return false;
 }
 
 
 // Templates
 
-template <typename T> inline T NifValue::getType( Type t ) const
+template <typename T> inline T NifValue::getType( Type t, const BaseModel * model, const NifItem * item ) const
 {
 	if ( typ == t )
 		return *static_cast<T *>( val.data ); // WARNING: this throws an exception if the type of v is not the original type by which val.data was initialized; the programmer must make sure that T matches t.
 
+	if ( model )
+		reportConvertToError( model, item, getTypeDebugStr( t ) );
 	return T();
 }
 
-template <typename T> inline bool NifValue::setType( Type t, T v )
+template <typename T> inline bool NifValue::setType( Type t, T v, const BaseModel * model, const NifItem * item )
 {
 	if ( typ == t ) {
 		*static_cast<T *>( val.data ) = v; // WARNING: this throws an exception if the type of v is not the original type by which val.data was initialized; the programmer must make sure that T matches t.
 		return true;
 	}
 
+	if ( model )
+		reportConvertFromError( model, item, getTypeDebugStr(t) );
 	return false;
 }
 
-template <> inline bool NifValue::get() const
+template <> inline bool NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
-	return toCount();
+	return toCount( model, item );
 }
-template <> inline qint32 NifValue::get() const
+template <> inline qint64 NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
-	return toCount();
+	return toCount( model, item );
 }
-template <> inline quint32 NifValue::get() const
+template <> inline quint64 NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
-	return toCount();
+	return toCount( model, item );
 }
-template <> inline qint16 NifValue::get() const
+template <> inline qint32 NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
-	return toCount();
+	return toCount( model, item );
 }
-template <> inline quint16 NifValue::get() const
+template <> inline quint32 NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
-	return toCount();
+	return toCount( model, item );
 }
-template <> inline quint8 NifValue::get() const
+template <> inline qint16 NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
-	return toCount();
+	return toCount( model, item );
 }
-template <> inline float NifValue::get() const
+template <> inline quint16 NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
-	return toFloat();
+	return toCount( model, item );
 }
-template <> inline QColor NifValue::get() const
+template <> inline quint8 NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
-	return toColor();
+	return toCount( model, item );
 }
-template <> inline QVariant NifValue::get() const
+template <> inline float NifValue::get( const BaseModel * model, const NifItem * item ) const
+{
+	return toFloat( model, item );
+}
+template <> inline QColor NifValue::get( const BaseModel * model, const NifItem * item ) const
+{
+	return toColor( model, item );
+}
+template <> inline QVariant NifValue::get( const BaseModel * /* model */, const NifItem * /* item */ ) const
 {
 	return toVariant();
 }
-
-template <> inline Matrix NifValue::get() const
+template <> inline Matrix NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
-	return getType<Matrix>( tMatrix );
+	return getType<Matrix>( tMatrix, model, item );
 }
-template <> inline Matrix4 NifValue::get() const
+template <> inline Matrix4 NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
-	return getType<Matrix4>( tMatrix4 );
+	return getType<Matrix4>( tMatrix4, model, item );
 }
-template <> inline Vector4 NifValue::get() const
+template <> inline Vector4 NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
-	return getType<Vector4>( tVector4 );
+	return getType<Vector4>( tVector4, model, item );
 }
-template <> inline Vector3 NifValue::get() const
+template <> inline Vector3 NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
 	if ( typ == tVector3 || typ == tHalfVector3 )
 		return *static_cast<Vector3 *>(val.data);
 
+	if ( model )
+		reportConvertToError( model, item, "a Vector3" );
 	return Vector3();
 }
-template <> inline HalfVector3 NifValue::get() const
+template <> inline HalfVector3 NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
-	return getType<HalfVector3>( tHalfVector3 );
+	return getType<HalfVector3>( tHalfVector3, model, item );
 }
-template <> inline ByteVector3 NifValue::get() const
+template <> inline UshortVector3 NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
-	return getType<ByteVector3>( tByteVector3 );
+	return getType<UshortVector3>( tUshortVector3, model, item );
 }
-template <> inline HalfVector2 NifValue::get() const
+template <> inline ByteVector3 NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
-	return getType<HalfVector2>( tHalfVector2 );
+	return getType<ByteVector3>( tByteVector3, model, item );
 }
-template <> inline Vector2 NifValue::get() const
+template <> inline HalfVector2 NifValue::get( const BaseModel * model, const NifItem * item ) const
+{
+	return getType<HalfVector2>( tHalfVector2, model, item );
+}
+template <> inline Vector2 NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
 	if ( typ == tVector2 || typ == tHalfVector2 )
 		return *static_cast<Vector2 *>(val.data);
 
+	if ( model )
+		reportConvertToError( model, item, "a Vector2" );
 	return Vector2();
 }
-template <> inline Color3 NifValue::get() const
+template <> inline Color3 NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
-	return getType<Color3>( tColor3 );
+	return getType<Color3>( tColor3, model, item );
 }
-template <> inline ByteColor4 NifValue::get() const
+template <> inline ByteColor4 NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
-	return getType<ByteColor4>( tByteColor4 );
+	return getType<ByteColor4>( tByteColor4, model, item );
 }
-template <> inline Color4 NifValue::get() const
+template <> inline Color4 NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
-	return getType<Color4>( tColor4 );
+	return getType<Color4>( tColor4, model, item );
 }
-template <> inline Triangle NifValue::get() const
+template <> inline Triangle NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
-	return getType<Triangle>( tTriangle );
+	return getType<Triangle>( tTriangle, model, item );
 }
-template <> inline QString NifValue::get() const
+template <> inline QString NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
 	if ( isString() )
 		return *static_cast<QString *>( val.data );
 
+	if ( model )
+		reportConvertToError( model, item, "a string" );
 	return QString();
 }
-template <> inline QByteArray NifValue::get() const
+template <> inline QByteArray NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
 	if ( isByteArray() )
 		return *static_cast<QByteArray *>( val.data );
 
+	if ( model )
+		reportConvertToError( model, item, "a byte array" );
 	return QByteArray();
 }
-template <> inline QByteArray * NifValue::get() const
+template <> inline QByteArray * NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
 	if ( isByteArray() )
 		return static_cast<QByteArray *>( val.data );
 
+	if ( model )
+		reportConvertToError( model, item, "a byte array" );
 	return nullptr;
 }
-template <> inline Quat NifValue::get() const
+template <> inline Quat NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
 	if ( isQuat() )
 		return *static_cast<Quat *>( val.data );
 
+	if ( model )
+		reportConvertToError( model, item, "Quat" );
 	return Quat();
 }
-template <> inline ByteMatrix * NifValue::get() const
+template <> inline ByteMatrix * NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
 	if ( isByteMatrix() )
 		return static_cast<ByteMatrix *>( val.data );
 
+	if ( model )
+		reportConvertToError( model, item, "ByteMatrix" );
 	return nullptr;
 }
-template <> inline BSVertexDesc NifValue::get() const
+template <> inline BSVertexDesc NifValue::get( const BaseModel * model, const NifItem * item ) const
 {
-	return getType<BSVertexDesc>( tBSVertexDesc );
+	if ( isCount() )
+		return BSVertexDesc( val.u64 );
+
+	if ( model )
+		reportConvertToError( model, item, "BSVertexDesc" );
+	return BSVertexDesc( 0 );
 }
 
 //! Set the data from a boolean. Return true if successful.
-template <> inline bool NifValue::set( const bool & b )
+template <> inline bool NifValue::set( const bool & b, const BaseModel * model, const NifItem * item )
 {
-	return setCount( b );
+	return setCount( b, model, item );
 }
 //! Set the data from an integer. Return true if successful.
-template <> inline bool NifValue::set( const int & i )
+template <> inline bool NifValue::set( const int & i, const BaseModel * model, const NifItem * item )
 {
-	return setCount( i );
+	return setCount( i, model, item);
 }
 //! Set the data from an unsigned integer. Return true if successful.
-template <> inline bool NifValue::set( const quint32 & i )
+template <> inline bool NifValue::set( const quint32 & i, const BaseModel * model, const NifItem * item )
 {
-	return setCount( i );
+	return setCount( i, model, item );
 }
 //! Set the data from a short. Return true if successful.
-template <> inline bool NifValue::set( const qint16 & i )
+template <> inline bool NifValue::set( const qint16 & i, const BaseModel * model, const NifItem * item )
 {
-	return setCount( i );
+	return setCount( i, model, item );
 }
 //! Set the data from an unsigned short. Return true if successful.
-template <> inline bool NifValue::set( const quint16 & i )
+template <> inline bool NifValue::set( const quint16 & i, const BaseModel * model, const NifItem * item )
 {
-	return setCount( i );
+	return setCount( i, model, item );
 }
 //! Set the data from an unsigned byte. Return true if successful.
-template <> inline bool NifValue::set( const quint8 & i )
+template <> inline bool NifValue::set( const quint8 & i, const BaseModel * model, const NifItem * item )
 {
-	return setCount( i );
+	return setCount( i, model, item );
 }
 //! Set the data from a float. Return true if successful.
-template <> inline bool NifValue::set( const float & f )
+template <> inline bool NifValue::set( const float & f, const BaseModel * model, const NifItem * item )
 {
-	return setFloat( f );
+	return setFloat( f, model, item );
 }
 //! Set the data from a Matrix. Return true if successful.
-template <> inline bool NifValue::set( const Matrix & x )
+template <> inline bool NifValue::set( const Matrix & x, const BaseModel * model, const NifItem * item )
 {
-	return setType( tMatrix, x );
+	return setType( tMatrix, x, model, item );
 }
 //! Set the data from a Matrix4. Return true if successful.
-template <> inline bool NifValue::set( const Matrix4 & x )
+template <> inline bool NifValue::set( const Matrix4 & x, const BaseModel * model, const NifItem * item )
 {
-	return setType( tMatrix4, x );
+	return setType( tMatrix4, x, model, item );
 }
 //! Set the data from a Vector4. Return true if successful.
-template <> inline bool NifValue::set( const Vector4 & x )
+template <> inline bool NifValue::set( const Vector4 & x, const BaseModel * model, const NifItem * item )
 {
-	return setType( tVector4, x );
+	return setType( tVector4, x, model, item );
 }
 //! Set the data from a Vector3. Return true if successful.
-template <> inline bool NifValue::set( const Vector3 & x )
+template <> inline bool NifValue::set( const Vector3 & x, const BaseModel * model, const NifItem * item )
 {
-	return setType( tVector3, x );
+	return setType( tVector3, x, model, item );
 }
 //! Set the data from a HalfVector3. Return true if successful.
-template <> inline bool NifValue::set( const HalfVector3 & x )
+template <> inline bool NifValue::set( const HalfVector3 & x, const BaseModel * model, const NifItem * item )
 {
-	return setType( tHalfVector3, x );
+	return setType( tHalfVector3, x, model, item );
+}
+//! Set the data from a UshortVector3. Return true if successful.
+template <> inline bool NifValue::set( const UshortVector3 & x, const BaseModel * model, const NifItem * item )
+{
+	return setType( tUshortVector3, x, model, item );
 }
 //! Set the data from a ByteVector3. Return true if successful.
-template <> inline bool NifValue::set( const ByteVector3 & x )
+template <> inline bool NifValue::set( const ByteVector3 & x, const BaseModel * model, const NifItem * item )
 {
-	return setType( tByteVector3, x );
+	return setType( tByteVector3, x, model, item );
 }
 //! Set the data from a HalfVector2. Return true if successful.
-template <> inline bool NifValue::set( const HalfVector2 & x )
+template <> inline bool NifValue::set( const HalfVector2 & x, const BaseModel * model, const NifItem * item )
 {
-	return setType( tHalfVector2, x );
+	return setType( tHalfVector2, x, model, item );
 }
 //! Set the data from a Vector2. Return true if successful.
-template <> inline bool NifValue::set( const Vector2 & x )
+template <> inline bool NifValue::set( const Vector2 & x, const BaseModel * model, const NifItem * item )
 {
-	return setType( tVector2, x );
+	return setType( tVector2, x, model, item );
 }
 //! Set the data from a Color3. Return true if successful.
-template <> inline bool NifValue::set( const Color3 & x )
+template <> inline bool NifValue::set( const Color3 & x, const BaseModel * model, const NifItem * item )
 {
-	return setType( tColor3, x );
+	return setType( tColor3, x, model, item );
 }
 //! Set the data from a ByteColor4. Return true if successful.
-template <> inline bool NifValue::set( const ByteColor4 & x )
+template <> inline bool NifValue::set( const ByteColor4 & x, const BaseModel * model, const NifItem * item )
 {
-	return setType( tByteColor4, x );
+	return setType( tByteColor4, x, model, item );
 }
 //! Set the data from a Color4. Return true if successful.
-template <> inline bool NifValue::set( const Color4 & x )
+template <> inline bool NifValue::set( const Color4 & x, const BaseModel * model, const NifItem * item )
 {
-	return setType( tColor4, x );
+	return setType( tColor4, x, model, item );
 }
 //! Set the data from a Triangle. Return true if successful.
-template <> inline bool NifValue::set( const Triangle & x )
+template <> inline bool NifValue::set( const Triangle & x, const BaseModel * model, const NifItem * item )
 {
-	return setType( tTriangle, x );
+	return setType( tTriangle, x, model, item );
 }
 //! Set the data from a string. Return true if successful.
-template <> inline bool NifValue::set( const QString & x )
+template <> inline bool NifValue::set( const QString & x, const BaseModel * model, const NifItem * item )
 {
 	if ( isString() ) {
 		if ( !val.data ) {
@@ -731,129 +798,38 @@ template <> inline bool NifValue::set( const QString & x )
 		return true;
 	}
 
+	if ( model )
+		reportConvertFromError( model, item, "a QString" );
 	return false;
 }
 //! Set the data from a byte array. Return true if successful.
-template <> inline bool NifValue::set( const QByteArray & x )
+template <> inline bool NifValue::set( const QByteArray & x, const BaseModel * model, const NifItem * item )
 {
 	if ( isByteArray() ) {
 		*static_cast<QByteArray *>( val.data ) = x;
 		return true;
 	}
 
+	if ( model )
+		reportConvertFromError( model, item, "a QByteArray" );
 	return false;
 }
 //! Set the data from a quaternion. Return true if successful.
-template <> inline bool NifValue::set( const Quat & x )
+template <> inline bool NifValue::set( const Quat & x, const BaseModel * model, const NifItem * item )
 {
 	if ( isQuat() ) {
 		*static_cast<Quat *>( val.data ) = x;
 		return true;
 	}
 
+	if ( model )
+		reportConvertFromError( model, item, "a Quat" );
 	return false;
 }
 //! Set the data from a BSVertexDesc. Return true if successful.
-template <> inline bool NifValue::set( const BSVertexDesc & x )
+template <> inline bool NifValue::set( const BSVertexDesc & x, const BaseModel * model, const NifItem * item )
 {
-	return setType( tBSVertexDesc, x );
-}
-
-
-//! Check whether the data is a boolean.
-template <> inline bool NifValue::ask( bool * ) const
-{
-	return isCount();
-}
-//! Check whether the data is an integer.
-template <> inline bool NifValue::ask( int * ) const
-{
-	return isCount();
-}
-//! Check whether the data is a short.
-template <> inline bool NifValue::ask( short * ) const
-{
-	return isCount();
-}
-//! Check whether the data is a float.
-template <> inline bool NifValue::ask( float * ) const
-{
-	return isFloat();
-}
-//! Check whether the data is a Matrix.
-template <> inline bool NifValue::ask( Matrix * ) const
-{
-	return type() == tMatrix;
-}
-//! Check whether the data is a Matrix4.
-template <> inline bool NifValue::ask( Matrix4 * ) const
-{
-	return type() == tMatrix4;
-}
-//! Check whether the data is a quaternion.
-template <> inline bool NifValue::ask( Quat * ) const
-{
-	return isQuat();
-}
-//! Check whether the data is a Vector4.
-template <> inline bool NifValue::ask( Vector4 * ) const
-{
-	return type() == tVector4;
-}
-//! Check whether the data is a Vector3.
-template <> inline bool NifValue::ask( Vector3 * ) const
-{
-	return type() == tVector3;
-}
-//! Check whether the data is a HalfVector3.
-template <> inline bool NifValue::ask( HalfVector3 * ) const
-{
-	return type() == tHalfVector3;
-}
-//! Check whether the data is a ByteVector3.
-template <> inline bool NifValue::ask( ByteVector3 * ) const
-{
-	return type() == tByteVector3;
-}
-//! Check whether the data is a Vector2.
-template <> inline bool NifValue::ask( HalfVector2 * ) const
-{
-	return type() == tHalfVector2;
-}
-//! Check whether the data is a Vector2.
-template <> inline bool NifValue::ask( Vector2 * ) const
-{
-	return type() == tVector2;
-}
-//! Check whether the data is a Color3.
-template <> inline bool NifValue::ask( Color3 * ) const
-{
-	return type() == tColor3;
-}
-//! Check whether the data is a ByteColor4.
-template <> inline bool NifValue::ask( ByteColor4 * ) const
-{
-	return type() == tByteColor4;
-}
-//! Check whether the data is a Color4.
-template <> inline bool NifValue::ask( Color4 * ) const
-{
-	return type() == tColor4;
-}
-//! Check whether the data is a Triangle.
-template <> inline bool NifValue::ask( Triangle * ) const
-{
-	return type() == tTriangle;
-}
-//! Check whether the data is a string.
-template <> inline bool NifValue::ask( QString * ) const
-{
-	return isString();
-}
-//! Check whether the data is a byte array.
-template <> inline bool NifValue::ask( QByteArray * ) const
-{
-	return isByteArray();
+	return setCount(x.Value(), model, item );
 }
 
 #endif

@@ -71,7 +71,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QStandardItemModel>
 
 #include <fsengine/bsa.h>
-#include <fsengine/fsmanager.h>
 
 #ifdef WIN32
 #  define WINDOWS_LEAN_AND_MEAN
@@ -89,7 +88,8 @@ const QList<QPair<QString, QString>> NifSkope::filetypes = {
 	// KF types
 	{ "Keyframe", "kf" }, { "Keyframe Animation", "kfa" }, { "Keyframe Motion", "kfm" },
 	// Miscellaneous NIF types
-	{ "NIFCache", "nifcache" }, { "TEXCache", "texcache" }, { "PCPatch", "pcpatch" }, { "JMI", "jmi" }
+	{ "NIFCache", "nifcache" }, { "TEXCache", "texcache" }, { "PCPatch", "pcpatch" }, { "JMI", "jmi" },
+	{ "Divinity 2 Character Template", "cat" }
 };
 
 QStringList NifSkope::fileExtensions()
@@ -164,7 +164,7 @@ NifSkope::NifSkope()
 	nifEmpty = new NifModel( this );
 	proxyEmpty = new NifProxyModel( this );
 
-	nif->setMessageMode( BaseModel::UserMessage );
+	nif->setMessageMode( BaseModel::MSG_USER );
 
 	// Setup QUndoStack
 	nif->undoStack = new QUndoStack( this );
@@ -207,6 +207,7 @@ NifSkope::NifSkope()
 	//	Note: this has some side effects such as vertex selection 
 	//	in viewport being wrong if you attempt to select many rows.
 	tree->setSelectionMode( QAbstractItemView::ExtendedSelection );
+	tree->doAutoExpanding = true;
 
 	// Header Details
 	header = ui->header;
@@ -333,8 +334,6 @@ void NifSkope::exitRequested()
 	// Must disconnect from this signal as it's set once for each widget for some reason
 	disconnect( qApp, &QApplication::lastWindowClosed, this, &NifSkope::exitRequested );
 
-	FSManager::del();
-
 	if ( options ) {
 		delete options;
 		options = nullptr;
@@ -443,7 +442,7 @@ void NifSkope::select( const QModelIndex & index )
 
 	if ( sender() != list ) {
 		if ( list->model() == proxy ) {
-			QModelIndex idxProxy = proxy->mapFrom( nif->getBlock( idx ), list->currentIndex() );
+			QModelIndex idxProxy = proxy->mapFrom( nif->getBlockIndex( idx ), list->currentIndex() );
 
 			// Fix for NiDefaultAVObjectPalette (et al.) bug
 			//	mapFrom() stops at the first result for the given block number,
@@ -476,13 +475,13 @@ void NifSkope::select( const QModelIndex & index )
 			}
 
 		} else if ( list->model() == nif ) {
-			list->setCurrentIndex( nif->getBlockOrHeader( idx ) );
+			list->setCurrentIndex( nif->getTopIndex( idx ) );
 		}
 	}
 
 	if ( sender() != tree ) {
 		if ( dList->isVisible() ) {
-			QModelIndex root = nif->getBlockOrHeader( idx );
+			QModelIndex root = nif->getTopIndex( idx );
 
 			if ( tree->rootIndex() != root )
 				tree->setRootIndex( root );
@@ -1247,40 +1246,6 @@ void NifSkope::migrateSettings() const
 		if ( oldVersion <= NifSkopeVersion( "2.0.dev1" ) ) {
 			qDebug() << "Migrating to new Settings";
 
-			// Sanitize backslashes
-			auto sanitize = []( QVariant oldVal ) {
-				QStringList sanitized;
-				for ( const QString & archive : oldVal.toStringList() ) {
-					if ( archive == "AUTO" ) {
-						sanitized.append( FSManager::autodetectArchives() );
-						continue;
-					}
-
-					sanitized.append( QDir::fromNativeSeparators( archive ) );
-				}
-
-				return sanitized;
-			};
-
-			QVariant foldersVal = settings.value( "Settings/Resources/Folders" );
-			if ( foldersVal.toStringList().isEmpty() ) {
-				QVariant oldVal = settings.value( "Render Settings/Texture Folders" );
-				if ( !oldVal.isNull() ) {
-					settings.setValue( "Settings/Resources/Folders", sanitize( oldVal ) );
-				}
-			}
-
-			QVariant archivesVal = settings.value( "Settings/Resources/Archives" );
-			if ( archivesVal.toStringList().isEmpty() ) {
-				QVariant oldVal = settings.value( "FSEngine/Archives" );
-				if ( !oldVal.isNull() ) {
-					settings.setValue( "Settings/Resources/Archives", sanitize( oldVal ) );
-				}
-			}
-
-			// Update archive handler
-			FSManager::get()->initialize();
-			
 			// Remove old keys
 
 			settings.remove( "FSEngine" );

@@ -45,6 +45,12 @@ const float Quat::identity[4] = {
 const float Matrix::identity[9] = {
 	1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0
 };
+const float Matrix::Y_UP[3][3] = {
+	{1.0, 0.0, 0.0}, {0.0, 0.0, 1.0}, {0.0, -1.0, 0.0}
+};
+const float Matrix::Z_UP[3][3] = {
+	{1.0, 0.0, 0.0}, {0.0, 0.0, -1.0}, {0.0, 1.0, 0.0}
+};
 const float Matrix4::identity[16] = {
 	1.0, 0.0, 0.0, 0.0,  0.0, 1.0, 0.0, 0.0,  0.0, 0.0, 1.0, 0.0,  0.0, 0.0, 0.0, 1.0
 };
@@ -244,13 +250,13 @@ bool Matrix::toEuler( float & x, float & y, float & z ) const
 			return true;
 		} else {
 			x = -atan2( -m[1][0], m[1][1] );
-			y = -PI / 2;
+			y = float(-HALF_PI);
 			z = 0.0;
 			return false;
 		}
 	} else {
 		x = atan2( m[1][0], m[1][1] );
-		y = PI / 2;
+		y = float(HALF_PI);
 		z = 0.0;
 		return false;
 	}
@@ -283,6 +289,24 @@ Matrix Matrix::inverted () const
 
 
 	return i;
+}
+
+Matrix Matrix::toYUp() const
+{
+	auto m1 = Matrix();
+	auto m2 = Matrix();
+	memcpy(m1.m, m, 36);
+	memcpy(m2.m, Y_UP, 36);
+	return m1 * m2;
+}
+
+Matrix Matrix::toZUp() const
+{
+	auto m1 = Matrix();
+	auto m2 = Matrix();
+	memcpy(m1.m, m, 36);
+	memcpy(m2.m, Z_UP, 36);
+	return m1 * m2;
 }
 
 QString Matrix::toHtml() const

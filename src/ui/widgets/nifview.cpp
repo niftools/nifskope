@@ -51,6 +51,7 @@ NifTreeView::NifTreeView( QWidget * parent, Qt::WindowFlags flags ) : QTreeView(
 	setParent( parent );
 
 	connect( this, &NifTreeView::expanded, this, &NifTreeView::scrollExpand );
+	connect( this, &NifTreeView::collapsed, this, &NifTreeView::onItemCollapsed );
 }
 
 NifTreeView::~NifTreeView()
@@ -66,9 +67,8 @@ void NifTreeView::setModel( QAbstractItemModel * model )
 
 	QTreeView::setModel( model );
 
-	if ( nif && doRowHiding ) {
+	if ( nif )
 		connect( nif, &BaseModel::dataChanged, this, &NifTreeView::updateConditions );
-	}
 }
 
 void NifTreeView::setRootIndex( const QModelIndex & index )
@@ -93,11 +93,8 @@ void NifTreeView::setRowHiding( bool show )
 
 	doRowHiding = !show;
 
-	if ( nif && doRowHiding ) {
+	if ( nif )
 		connect( nif, &BaseModel::dataChanged, this, &NifTreeView::updateConditions );
-	} else if ( nif ) {
-		disconnect( nif, &BaseModel::dataChanged, this, &NifTreeView::updateConditions );
-	}
 
 	// refresh
 	updateConditionRecurse( rootIndex() );
@@ -107,11 +104,23 @@ void NifTreeView::setRowHiding( bool show )
 
 bool NifTreeView::isRowHidden( int r, const QModelIndex & index ) const
 {
-	NifItem * item = static_cast<NifItem *>(index.internalPointer());
-	if ( !item || !doRowHiding )
-		return false;
+	const NifItem * item = static_cast<const NifItem *>( index.internalPointer() );
+	return isRowHidden( item );
+}
 
-	return !item->condition();
+bool NifTreeView::isRowHidden( const NifItem * rowItem ) const
+{
+	if ( rowItem && nif ) {
+		if ( doRowHiding || rowItem->hasTypeCondition() ) {
+			if ( !nif->evalCondition( rowItem ) )
+				return true;
+		} else {
+			if ( !nif->evalVersion( rowItem ) )
+				return true;
+		}
+	}
+
+	return false;
 }
 
 void NifTreeView::setAllExpanded( const QModelIndex & index, bool e )
@@ -155,29 +164,27 @@ void NifTreeView::copy()
 	}
 }
 
-void NifTreeView::pasteTo( QModelIndex iDest, const NifValue & srcValue )
+void NifTreeView::pasteTo( const QModelIndex iDest, const NifValue & srcValue )
 {	
 	// Only run once per row for the correct column
 	if ( iDest.column() != NifModel::ValueCol )
 		return;
 
-	NifItem * item = static_cast<NifItem *>(iDest.internalPointer());
+	NifItem * item = nif->getItem( iDest );
+	if ( !item || item->valueType() != srcValue.type() )
+		return;
 
 	auto valueType = model()->sibling( iDest.row(), 0, iDest ).data().toString();
 
-	NifValue destValue = item->value();
-	if ( destValue.type() != srcValue.type() )
-		return;
-
-	switch ( destValue.type() ) {
+	switch ( item->valueType() ) {
 	case NifValue::tByte:
-		nif->set<quint8>( iDest, srcValue.get<quint8>() );
+		item->set<quint8>( srcValue.get<quint8>( nif, nullptr ) );
 		break;
 	case NifValue::tWord:
 	case NifValue::tShort:
 	case NifValue::tFlags:
 	case NifValue::tBlockTypeIndex:
-		nif->set<quint16>( iDest, srcValue.get<quint16>() );
+		item->set<quint16>( srcValue.get<quint16>( nif, nullptr ) );
 		break;
 	case NifValue::tStringOffset:
 	case NifValue::tInt:
@@ -186,40 +193,41 @@ void NifTreeView::pasteTo( QModelIndex iDest, const NifValue & srcValue )
 	case NifValue::tStringIndex:
 	case NifValue::tUpLink:
 	case NifValue::tLink:
-		nif->set<quint32>( iDest, srcValue.get<quint32>() );
+		item->set<quint32>( srcValue.get<quint32>( nif, nullptr ) );
 		break;
 	case NifValue::tVector2:
 	case NifValue::tHalfVector2:
-		nif->set<Vector2>( iDest, srcValue.get<Vector2>() );
+		item->set<Vector2>( srcValue.get<Vector2>( nif, nullptr ) );
 		break;
 	case NifValue::tVector3:
 	case NifValue::tByteVector3:
 	case NifValue::tHalfVector3:
-		nif->set<Vector3>( iDest, srcValue.get<Vector3>() );
+		item->set<Vector3>( srcValue.get<Vector3>( nif, nullptr ) );
 		break;
 	case NifValue::tVector4:
-		nif->set<Vector4>( iDest, srcValue.get<Vector4>() );
+		item->set<Vector4>( srcValue.get<Vector4>( nif, nullptr ) );
 		break;
 	case NifValue::tFloat:
 	case NifValue::tHfloat:
-		nif->set<float>( iDest, srcValue.get<float>() );
+	case NifValue::tNormbyte:
+		item->set<float>( srcValue.get<float>( nif, nullptr ) );
 		break;
 	case NifValue::tColor3:
-		nif->set<Color3>( iDest, srcValue.get<Color3>() );
+		item->set<Color3>( srcValue.get<Color3>( nif, nullptr ) );
 		break;
 	case NifValue::tColor4:
 	case NifValue::tByteColor4:
-		nif->set<Color4>( iDest, srcValue.get<Color4>() );
+		item->set<Color4>( srcValue.get<Color4>( nif, nullptr ) );
 		break;
 	case NifValue::tQuat:
 	case NifValue::tQuatXYZW:
-		nif->set<Quat>( iDest, srcValue.get<Quat>() );
+		item->set<Quat>( srcValue.get<Quat>( nif, nullptr ) );
 		break;
 	case NifValue::tMatrix:
-		nif->set<Matrix>( iDest, srcValue.get<Matrix>() );
+		item->set<Matrix>( srcValue.get<Matrix>( nif, nullptr ) );
 		break;
 	case NifValue::tMatrix4:
-		nif->set<Matrix4>( iDest, srcValue.get<Matrix4>() );
+		item->set<Matrix4>( srcValue.get<Matrix4>( nif, nullptr ) );
 		break;
 	case NifValue::tString:
 	case NifValue::tSizedString:
@@ -228,7 +236,7 @@ void NifTreeView::pasteTo( QModelIndex iDest, const NifValue & srcValue )
 	case NifValue::tHeaderString:
 	case NifValue::tLineString:
 	case NifValue::tChar8String:
-		nif->set<QString>( iDest, srcValue.get<QString>() );
+		item->set<QString>( srcValue.get<QString>( nif, nullptr ) );
 		break;
 	default:
 		// Return and do not push to Undo Stack
@@ -237,13 +245,13 @@ void NifTreeView::pasteTo( QModelIndex iDest, const NifValue & srcValue )
 
 	auto n = static_cast<NifModel*>(nif);
 	if ( n )
-		n->undoStack->push( new ChangeValueCommand( iDest, destValue, srcValue, valueType, n ) );
+		n->undoStack->push( new ChangeValueCommand( iDest, item->value(), srcValue, valueType, n ) );
 }
 
 void NifTreeView::paste()
 {
 	ChangeValueCommand::createTransaction();
-	for ( const auto i : valueIndexList( selectionModel()->selectedIndexes() ) )
+	for ( const auto & i : valueIndexList( selectionModel()->selectedIndexes() ) )
 		pasteTo( i, valueClipboard->getValue() );
 }
 
@@ -306,7 +314,7 @@ void NifTreeView::updateConditionRecurse( const QModelIndex & index )
 		updateConditionRecurse( child );
 	}
 
-	setRowHidden( index.row(), index.parent(), doRowHiding && !item->condition() );
+	setRowHidden( index.row(), index.parent(), isRowHidden(item) );
 }
 
 auto splitMime = []( QString format ) {
@@ -426,6 +434,12 @@ void NifTreeView::keyPressEvent( QKeyEvent * e )
 			oldidx = proxy->mapTo( currentIndex() );
 		}
 
+		// Cast non-modifying spells
+		if ( spell->constant() && spell->isApplicable( nif, oldidx ) ) {
+			spell->cast( nif, oldidx );
+			return;
+		}
+
 		if ( nif && spell->isApplicable( nif, oldidx ) ) {
 			selectionModel()->setCurrentIndex( QModelIndex(), QItemSelectionModel::Clear | QItemSelectionModel::Rows );
 
@@ -438,7 +452,7 @@ void NifTreeView::keyPressEvent( QKeyEvent * e )
 				nif->resetState();
 
 			// Refresh the header
-			nif->invalidateConditions( nif->getHeader(), true );
+			nif->invalidateHeaderConditions();
 			nif->updateHeader();
 
 			if ( noSignals && nif->getProcessingResult() ) {
@@ -469,50 +483,93 @@ void NifTreeView::keyPressEvent( QKeyEvent * e )
 	QTreeView::keyPressEvent( e );
 }
 
+void NifTreeView::mousePressEvent( QMouseEvent * event )
+{
+	blockMouseSelection = false;
+	QTreeView::mousePressEvent( event );
+}
+
+void NifTreeView::mouseReleaseEvent( QMouseEvent * event )
+{
+	if ( !blockMouseSelection )
+		QTreeView::mouseReleaseEvent( event );
+}
+
+void NifTreeView::mouseMoveEvent( QMouseEvent * event )
+{
+	if ( !blockMouseSelection )
+		QTreeView::mouseMoveEvent( event );
+}
+
 void NifTreeView::currentChanged( const QModelIndex & current, const QModelIndex & last )
 {
 	QTreeView::currentChanged( current, last );
 
-	if ( nif && doRowHiding ) {
+	if ( nif )
 		updateConditionRecurse( current );
-	}
 
 	autoExpanded = false;
-	auto mdl = static_cast<NifModel *>( nif );
-	if ( mdl && mdl->isNiBlock( current ) ) {
-		auto cnt = mdl->rowCount( current );
-		const int ARRAY_LIMIT = 100;
-		if ( mdl->inherits( current, "NiTransformInterpolator" ) 
-			 || mdl->inherits( current, "NiBSplineTransformInterpolator" ) ) {
-			// Auto-Expand NiQuatTransform
-			autoExpand( current.child( 0, 0 ) );
-		} else if ( mdl->inherits( current, "NiNode" ) ) {
-			// Auto-Expand Children array
-			auto iChildren = mdl->getIndex( current, "Children" );
-			if ( mdl->rowCount( iChildren ) < ARRAY_LIMIT )
-				autoExpand( iChildren );
-		} else if ( mdl->inherits( current, "NiSkinPartition" ) ) {
-			// Auto-Expand skin partitions array
-			autoExpand( current.child( 1, 0 ) );
-		} else if ( mdl->getValue( current.child( cnt - 1, 0 ) ).type() == NifValue::tNone
-					&& mdl->rowCount( current.child( cnt - 1, 0 ) ) < ARRAY_LIMIT ) {
-			// Auto-Expand final arrays/compounds
-			autoExpand( current.child( cnt - 1, 0 ) );
-		}
-	}
+	if ( doAutoExpanding )
+		autoExpandBlock( current );
 
 	emit sigCurrentIndexChanged( currentIndex() );
 }
 
-void NifTreeView::autoExpand( const QModelIndex & index )
+void NifTreeView::autoExpandBlock( const QModelIndex & blockIndex )
 {
-	autoExpanded = true;
-	expand( index );
+	auto mdl = qobject_cast<const NifModel *>( nif );
+	if ( !mdl )
+		return;
+
+	auto block = mdl->getItem( blockIndex, false );
+	if ( !mdl->isNiBlock(block) )
+		return;
+
+	if ( mdl->inherits(block->name(), "NiTransformInterpolator") || mdl->inherits(block->name(), "NiBSplineTransformInterpolator") ) {
+		// Auto-Expand NiQuatTransform
+		autoExpandItem( mdl->getItem(block, "Transform") );
+	} else if ( mdl->inherits(block->name(), "NiNode") ) {
+		// Auto-Expand Children array
+		autoExpandItem( mdl->getItem(block, "Children") );
+	} else if ( mdl->inherits(block->name(), "NiSkinPartition") || mdl->inherits(block->name(), "BSDismemberSkinInstance") ) {
+		// Auto-Expand skin partitions array
+		autoExpandItem( mdl->getItem(block, "Partitions") );
+	} else {
+		// Auto-Expand final arrays/compounds
+		for( int i = block->childCount() - 1; i >= 0; i-- ) {
+			auto c = block->child(i);
+			if ( c && !isRowHidden(c) ) {
+				autoExpandItem( c );
+				break;
+			}
+		}
+	}
+}
+
+void NifTreeView::autoExpandItem( const NifItem * item )
+{
+	if ( !item )
+		return;
+
+	auto nChildren = item->childCount();
+	if ( nChildren > 0 && nChildren < 100 ) {
+		autoExpanded = true;
+		blockMouseSelection = true;
+		expand( nif->itemToIndex(item) );
+	}
 }
 
 void NifTreeView::scrollExpand( const QModelIndex & index )
 {
+	blockMouseSelection = true;
+
 	// this is a compromise between scrolling to the top, and scrolling the last child to the bottom
 	if ( !autoExpanded )
 		scrollTo( index, PositionAtCenter );
+}
+
+void NifTreeView::onItemCollapsed( const QModelIndex & index )
+{
+	Q_UNUSED( index );
+	blockMouseSelection = true;
 }

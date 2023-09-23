@@ -68,14 +68,14 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		QModelIndex iBlock  = nif->getBlock( index );
+		QModelIndex iBlock  = nif->getBlockIndex( index );
 		QModelIndex sibling = index.sibling( index.row(), 0 );
-		return index.isValid() && nif->inherits( iBlock, "NiLight" ) && ( iBlock == sibling || nif->getIndex( iBlock, "Name" ) == sibling );
+		return index.isValid() && nif->blockInherits( iBlock, "NiLight" ) && ( iBlock == sibling || nif->getIndex( iBlock, "Name" ) == sibling );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
-		QModelIndex iLight = nif->getBlock( index );
+		QModelIndex iLight = nif->getBlockIndex( index );
 
 		NifBlockEditor * le = new NifBlockEditor( nif, iLight );
 		le->pushLayout( new QHBoxLayout() );

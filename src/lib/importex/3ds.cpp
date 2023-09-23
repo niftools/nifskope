@@ -105,7 +105,7 @@ static void addLink( NifModel * nif, const QModelIndex & iBlock, const QString &
 	QModelIndex iSize  = nif->getIndex( iBlock, QString( "Num %1" ).arg( name ) );
 	int numIndices = nif->get<int>( iSize );
 	nif->set<int>( iSize, numIndices + 1 );
-	nif->updateArray( iArray );
+	nif->updateArraySize( iArray );
 	nif->setLink( iArray.child( numIndices, 0 ), link );
 }
 
@@ -170,7 +170,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 
 	// If no existing node is selected, create a group node.  Otherwise use selected node
 	QPersistentModelIndex iRoot, iNode, iShape, iMaterial, iData, iTexProp, iTexSource;
-	QModelIndex iBlock = nif->getBlock( index );
+	QModelIndex iBlock = nif->getBlockIndex( index );
 
 	//Be sure the user hasn't clicked on a NiTriStrips object
 	if ( iBlock.isValid() && nif->itemName( iBlock ) == "NiTriStrips" ) {
@@ -186,7 +186,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 		int par_num = nif->getParent( nif->getBlockNumber( index ) );
 
 		if ( par_num != -1 ) {
-			iNode = nif->getBlock( par_num );
+			iNode = nif->getBlockIndex( par_num );
 		}
 
 		//Find material, texture, and data objects
@@ -194,7 +194,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 
 		for ( const auto child : children ) {
 			if ( child != -1 ) {
-				QModelIndex temp = nif->getBlock( child );
+				QModelIndex temp = nif->getBlockIndex( child );
 				QString type = nif->itemName( temp );
 
 				if ( type == "NiMaterialProperty" ) {
@@ -208,7 +208,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 					QList<int> chn = nif->getChildLinks( nif->getBlockNumber( iTexProp ) );
 
 					for ( const auto c : chn ) {
-						QModelIndex temp = nif->getBlock( c );
+						QModelIndex temp = nif->getBlockIndex( c );
 						QString type = nif->itemName( temp );
 
 						if ( (type == "NiSourceTexture") || (type == "NiImage") ) {
@@ -638,7 +638,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 					// Skyrim, nothing here yet
 				} else if ( nif->getVersionNumber() >= 0x0303000D ) {
 					//Newer versions use NiTexturingProperty and NiSourceTexture
-					if ( iTexProp.isValid() == false || objIndex != 0 || nif->itemType( iTexProp ) != "NiTexturingProperty" ) {
+					if ( iTexProp.isValid() == false || objIndex != 0 || nif->itemStrType( iTexProp ) != "NiTexturingProperty" ) {
 						iTexProp = nif->insertNiBlock( "NiTexturingProperty" );
 					}
 
@@ -649,7 +649,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 					nif->set<int>( iBaseMap, "Clamp Mode", 3 );
 					nif->set<int>( iBaseMap, "Filter Mode", 2 );
 
-					if ( iTexSource.isValid() == false || objIndex != 0 || nif->itemType( iTexSource ) != "NiSourceTexture" ) {
+					if ( iTexSource.isValid() == false || objIndex != 0 || nif->itemStrType( iTexSource ) != "NiSourceTexture" ) {
 						iTexSource = nif->insertNiBlock( "NiSourceTexture" );
 					}
 
@@ -665,13 +665,13 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 					nif->set<QString>( iTexSource, "File Name", mat->map_Kd );
 				} else {
 					//Older versions use NiTextureProperty and NiImage
-					if ( iTexProp.isValid() == false || objIndex != 0 || nif->itemType( iTexProp ) != "NiTextureProperty" ) {
+					if ( iTexProp.isValid() == false || objIndex != 0 || nif->itemStrType( iTexProp ) != "NiTextureProperty" ) {
 						iTexProp = nif->insertNiBlock( "NiTextureProperty" );
 					}
 
 					addLink( nif, iShape, "Properties", nif->getBlockNumber( iTexProp ) );
 
-					if ( iTexSource.isValid() == false || objIndex != 0 || nif->itemType( iTexSource ) != "NiImage" ) {
+					if ( iTexSource.isValid() == false || objIndex != 0 || nif->itemStrType( iTexSource ) != "NiImage" ) {
 						iTexSource = nif->insertNiBlock( "NiImage" );
 					}
 
@@ -703,28 +703,22 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 
 			nif->set<int>( iData, "Num Vertices", mesh->vertices.count() );
 			nif->set<int>( iData, "Has Vertices", 1 );
-			nif->updateArray( iData, "Vertices" );
+			nif->updateArraySize( iData, "Vertices" );
 			nif->setArray<Vector3>( iData, "Vertices",  mesh->vertices );
 			nif->set<int>( iData, "Has Normals", 1 );
-			nif->updateArray( iData, "Normals" );
+			nif->updateArraySize( iData, "Normals" );
 			nif->setArray<Vector3>( iData, "Normals",  mesh->normals );
 			nif->set<int>( iData, "Has UV", 1 );
-			nif->set<int>( iData, "Num UV Sets", 1 );
-			nif->set<int>( iData, "Num UV Sets 2", 1 );
+			nif->set<int>( iData, "Data Flags", 1 );
 			QModelIndex iTexCo = nif->getIndex( iData, "UV Sets" );
-
-			if ( !iTexCo.isValid() ) {
-				iTexCo = nif->getIndex( iData, "UV Sets 2" );
-			}
-
-			nif->updateArray( iTexCo );
-			nif->updateArray( iTexCo.child( 0, 0 ) );
+			nif->updateArraySize( iTexCo );
+			nif->updateArraySize( iTexCo.child( 0, 0 ) );
 			nif->setArray<Vector2>( iTexCo.child( 0, 0 ),  mesh->texcoords );
 
 			nif->set<int>( iData, "Has Triangles", 1 );
 			nif->set<int>( iData, "Num Triangles", triangles.count() );
 			nif->set<int>( iData, "Num Triangle Points", triangles.count() * 3 );
-			nif->updateArray( iData, "Triangles" );
+			nif->updateArraySize( iData, "Triangles" );
 			nif->setArray<Triangle>( iData, "Triangles", triangles );
 
 			Vector3 center;

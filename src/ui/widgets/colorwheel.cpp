@@ -199,10 +199,6 @@ int ColorWheel::heightForWidth( int width ) const
 	return width;
 }
 
-#ifndef M_PI
-#define M_PI 3.1415926535897932385
-#endif
-
 void ColorWheel::paintEvent( QPaintEvent * e )
 {
 	Q_UNUSED( e );
@@ -364,7 +360,7 @@ void ColorWheel::setColor( int x, int y )
 		if ( V > 1.0 ) V = 1.0;
 
 		if ( V > 0 ) {
-			double h = V * ( c + c / 2 ) / ( 2.0 * sin( 60.0 / 180.0 * M_PI ) );
+			double h = V * ( c + c / 2 ) / ( 2.0 * sin( deg2radd(60.0) ) );
 			S = ( p.x() + h ) / ( h * 2 );
 
 			if ( S < 0.0 ) S = 0.0;

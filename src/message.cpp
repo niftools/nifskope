@@ -3,6 +3,8 @@
 #include <QApplication>
 #include <QAbstractButton>
 #include <QMap>
+#include <QCloseEvent>
+#include <QScreen>
 
 
 Q_LOGGING_CATEGORY( ns, "nifskope" )
@@ -23,43 +25,43 @@ Message::~Message()
 }
 
 //! Static helper for message box without detail text
-void Message::message( QWidget * parent, const QString & str, QMessageBox::Icon icon )
+QMessageBox* Message::message( QWidget * parent, const QString & str, QMessageBox::Icon icon )
 {
 	auto msgBox = new QMessageBox( parent );
-
-	// Keep message box on top if it does not have a parent
-	//if ( !parent )
-	msgBox->setWindowFlags( msgBox->windowFlags() | Qt::WindowStaysOnTopHint | Qt::Tool );
+	msgBox->setWindowFlags( msgBox->windowFlags() | Qt::Tool );
+	msgBox->setAttribute( Qt::WA_DeleteOnClose );
+	msgBox->setWindowModality( Qt::NonModal );
 
 	msgBox->setText( str );
 	msgBox->setIcon( icon );
 
-	msgBox->open();
+	msgBox->show();
 
-	//if ( !parent )
 	msgBox->activateWindow();
+
+	return msgBox;
 }
 
 //! Static helper for message box with detail text
-void Message::message( QWidget * parent, const QString & str, const QString & err, QMessageBox::Icon icon )
+QMessageBox* Message::message( QWidget * parent, const QString & str, const QString & err, QMessageBox::Icon icon )
 {
 	if ( !parent )
 		parent = qApp->activeWindow();
 
 	auto msgBox = new QMessageBox( parent );
-
-	// Keep message box on top if it does not have a parent
-	//if ( !parent )
-	msgBox->setWindowFlags( msgBox->windowFlags() | Qt::WindowStaysOnTopHint | Qt::Tool );
+	msgBox->setAttribute( Qt::WA_DeleteOnClose );
+	msgBox->setWindowModality( Qt::NonModal );
+	msgBox->setWindowFlags( msgBox->windowFlags() | Qt::Tool );
 
 	msgBox->setText( str );
 	msgBox->setIcon( icon );
 	msgBox->setDetailedText( err );
 
-	msgBox->open();
+	msgBox->show();
 
-	//if ( !parent )
 	msgBox->activateWindow();
+
+	return msgBox;
 }
 
 //! Static helper for installed message handler
@@ -135,50 +137,126 @@ void Message::info( QWidget * parent, const QString & str, const QString & err )
 *
 */
 
-static QMap<QString, QMessageBox *> messageBoxes;
+class DetailsMessageBox : public QMessageBox
+{
+public:
+	explicit DetailsMessageBox( QWidget * parent, const QString & txt )
+		: QMessageBox( parent ), m_key( txt ) { }
+
+	~DetailsMessageBox();
+
+	const QString & key() const { return m_key; }
+
+	int detailsCount() const { return m_nDetails; }
+	void updateDetailsCount() { m_nDetails++; }
+
+protected:
+	void closeEvent( QCloseEvent * event ) override;
+
+	QString m_key;
+	int m_nDetails = 0;
+};
+
+static QVector<DetailsMessageBox *> messageBoxes;
+
+void unregisterMessageBox( DetailsMessageBox * msgBox ) 
+{
+	messageBoxes.removeOne( msgBox );
+}
 
 void Message::append( QWidget * parent, const QString & str, const QString & err, QMessageBox::Icon icon )
 {
 	if ( !parent )
 		parent = qApp->activeWindow();
 
-	// Create one box per error string, accumulate messages
-	auto box = messageBoxes[str];
-	if ( box ) {
-		// Append strings to existing message box's Detailed Text
-		// Show box if it has been closed before
-		box->show();
-		box->setDetailedText( box->detailedText().append( err + "\n" ) );
+	// Create one box per parent widget and error string, accumulate messages
+	DetailsMessageBox * msgBox = nullptr;
+	for ( auto box : messageBoxes ) {
+		if ( box->parentWidget() == parent && box->key() == str ) {
+			msgBox = box;
+			break;
+		}
+	}
+
+	if ( msgBox ) {
+		// Limit the number of detail lines to MAX_DETAILS_COUNTER
+		// because when errors are spammed at hundreds or thousands in a row, this makes NifSkope unresponsive.
+		const int MAX_DETAILS_COUNTER = 50;
+
+		if ( !err.isEmpty() && msgBox->detailsCount() <= MAX_DETAILS_COUNTER ) {
+			// Append strings to existing message box's Detailed Text
+			// Show box if it has been closed before
+			msgBox->show();
+			QString newLine = ( msgBox->detailsCount() < MAX_DETAILS_COUNTER ) ? (err + "\n") : QString("...\n");
+			msgBox->setDetailedText( msgBox->detailedText().append( newLine ) );
+			msgBox->updateDetailsCount();
+		}
+
 	} else {
 		// Create new message box
-		auto msgBox = new QMessageBox( parent );
+		msgBox = new DetailsMessageBox( parent, str );
+		messageBoxes.append( msgBox );
 
-		// Keep message box on top if it does not have a parent
-		//if ( !parent )
-		msgBox->setWindowFlags( msgBox->windowFlags() | Qt::WindowStaysOnTopHint | Qt::Tool );
+		msgBox->setAttribute( Qt::WA_DeleteOnClose );
+		msgBox->setWindowModality( Qt::NonModal );
+		msgBox->setWindowFlags( msgBox->windowFlags() | Qt::Tool );
+
+		// Set the min. width of the label containing str to a quarter of the screen resolution.
+		// This makes the detailed text more readable even when str is short.
+		auto screen = QGuiApplication::primaryScreen();
+		if ( screen ) {
+			msgBox->setStyleSheet( 
+				QString(" QLabel[objectName^=\"qt_msgbox_label\"]{min-width: %1px;}" )
+				.arg ( screen->size().width() / 4 )
+			);
+		}
 
 		msgBox->setText( str );
 		msgBox->setIcon( icon );
-		msgBox->setDetailedText( err + "\n" );
-		msgBox->open();
 
-		//if ( !parent )
-		msgBox->activateWindow();
-
-		messageBoxes[str] = msgBox;
-
-		// Clear Detailed Text with each confirmation
 		connect( msgBox, &QMessageBox::buttonClicked, [msgBox]( QAbstractButton * button ) { 
 			Q_UNUSED( button );
-			msgBox->setDetailedText( "" );
-		} );
+			unregisterMessageBox( msgBox );
+			} );
+
+		msgBox->show();
+
+		// setDetailedText(...) has to be after show(),
+		// otherwise a "QWindowsWindow::setGeometry: Unable to set geometry ..." warning from Qt appears in Debug build.
+		if ( !err.isEmpty() ) {
+			msgBox->setDetailedText( err + "\n" );
+			msgBox->updateDetailsCount();
+
+			// Auto-show detailed text on first show.
+			// https://stackoverflow.com/questions/36083551/qmessagebox-show-details
+			for ( auto btn : msgBox->buttons() ) {
+				if ( msgBox->buttonRole( btn ) == QMessageBox::ActionRole ) {
+					btn->click(); // "Click" it to expand the detailed text
+					break;
+				}
+			}
+		}
+
+		msgBox->activateWindow();
 	}
 }
+
 void Message::append( const QString & str, const QString & err, QMessageBox::Icon icon )
 {
 	append( nullptr, str, err, icon );
 }
 
+DetailsMessageBox::~DetailsMessageBox()
+{
+	unregisterMessageBox( this ); // Just in case if buttonClicked or closeEvent fail
+}
+
+void DetailsMessageBox::closeEvent( QCloseEvent * event )
+{	
+	QMessageBox::closeEvent( event );
+	if ( event->isAccepted() )
+		unregisterMessageBox( this );
+}
 
 
 /*
@@ -201,7 +279,7 @@ template <> TestMessage & TestMessage::operator<<(const char * x)
 template <> TestMessage & TestMessage::operator<<(QString x)
 {
 	space( s );
-	s += "\"" + x + "\"";
+	s += x; //"\"" + x + "\"";
 	return *this;
 }
 

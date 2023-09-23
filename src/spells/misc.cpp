@@ -67,7 +67,8 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		return ( nif->getHeader() == nif->getBlockOrHeader( index ) );
+		auto block = nif->getTopItem( index );
+		return ( block && block == nif->getHeaderItem() );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
@@ -88,7 +89,8 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		return ( nif->getFooter() == nif->getBlockOrHeader( index ) );
+		auto block = nif->getTopItem( index );
+		return ( block && block == nif->getFooterItem() );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
@@ -105,6 +107,7 @@ class spFollowLink final : public Spell
 {
 public:
 	QString name() const override final { return Spell::tr( "Follow Link" ); }
+	bool constant() const override final { return true; }
 	bool instant() const override final { return true; }
 	QIcon icon() const override final { return QIcon( ":/img/link" ); }
 
@@ -115,7 +118,7 @@ public:
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
-		QModelIndex idx = nif->getBlock( nif->getLink( index ) );
+		QModelIndex idx = nif->getBlockIndex( nif->getLink( index ) );
 
 		if ( idx.isValid() )
 			return idx;
@@ -131,6 +134,7 @@ class spFileOffset final : public Spell
 {
 public:
 	QString name() const override final { return Spell::tr( "File Offset" ); }
+	bool constant() const override final { return true; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
@@ -155,6 +159,7 @@ class spExportBinary final : public Spell
 {
 public:
 	QString name() const override final { return Spell::tr( "Export Binary" ); }
+	bool constant() const override final { return true; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
@@ -174,14 +179,14 @@ public:
 			dataItem = item->child( 0 );
 		}
 
-		if ( dataItem && dataItem->value().isByteArray() ) {
-			auto bytes = dataItem->value().get<QByteArray *>();
+		if ( dataItem && dataItem->isByteArray() ) {
+			auto bytes = dataItem->get<QByteArray *>();
 			data.append( *bytes );
 		}
 
 		// Get parent block name and number
 		int blockNum = nif->getBlockNumber( index );
-		QString suffix = QString( "%1_%2" ).arg( nif->getBlockName( nif->getBlock( blockNum ) ) ).arg( blockNum );
+		QString suffix = QString( "%1_%2" ).arg( nif->itemName( nif->getBlockIndex( blockNum ) ) ).arg( blockNum );
 		QString filestring = QString( "%1-%2" ).arg( nif->getFilename() ).arg( suffix );
 
 		QString filename = QFileDialog::getSaveFileName( qApp->activeWindow(), tr( "Export Binary File" ),
@@ -232,7 +237,7 @@ public:
 			if ( parent->isArray() && parent->isBinary() ) {
 				// NOTE: This will only work on byte arrays where the array length is not an expression
 				nif->set<int>( iParent.parent(), parent->arr1(), data.count() );
-				nif->updateArray( iParent );
+				nif->updateArraySize( iParent );
 			}
 			
 			nif->set<QByteArray>( idx, data );
@@ -250,7 +255,7 @@ REGISTER_SPELL( spImportBinary )
 bool spCollapseArray::isApplicable( const NifModel * nif, const QModelIndex & index )
 {
 	if ( nif->isArray( index ) && index.isValid()
-	     && ( nif->getBlockType( index ) == "Ref" || nif->getBlockType( index ) == "Ptr" ) )
+	     && ( nif->itemStrType( index ) == "Ref" || nif->itemStrType( index ) == "Ptr" ) )
 	{
 		// copy from spUpdateArray when that changes
 		return true;
@@ -261,10 +266,10 @@ bool spCollapseArray::isApplicable( const NifModel * nif, const QModelIndex & in
 
 QModelIndex spCollapseArray::cast( NifModel * nif, const QModelIndex & index )
 {
-	nif->updateArray( index );
+	nif->updateArraySize( index );
 	// There's probably an easier way of doing this hiding in NifModel somewhere
 	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
-	QModelIndex size  = nif->getIndex( nif->getBlock( index.parent() ), item->arr1() );
+	QModelIndex size  = nif->getIndex( nif->getBlockIndex( index.parent() ), item->arr1() );
 	QModelIndex array = static_cast<QModelIndex>( index );
 	return numCollapser( nif, size, array );
 }
@@ -283,7 +288,7 @@ QModelIndex spCollapseArray::numCollapser( NifModel * nif, QModelIndex & iNumEle
 
 		if ( links.count() < nif->rowCount( iArray ) ) {
 			nif->set<int>( iNumElem, links.count() );
-			nif->updateArray( iArray );
+			nif->updateArraySize( iArray );
 			nif->setLinkArray( iArray, links );
 		}
 	}

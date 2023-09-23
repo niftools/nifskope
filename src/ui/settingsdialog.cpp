@@ -21,7 +21,8 @@ SettingsDialog::SettingsDialog( QWidget * parent ) :
 	categories = ui->categoryList;
 
 	setWindowTitle( tr( "Settings" ) );
-	setWindowFlags( Qt::Tool | Qt::WindowStaysOnTopHint );
+	setWindowFlags( Qt::Tool );
+	setWindowModality( Qt::WindowModality::ApplicationModal );
 	installEventFilter( this );
 
 	content->addWidget( new SettingsGeneral( this ) );

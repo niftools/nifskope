@@ -75,17 +75,19 @@ public:
 
 		return *txt_xpm_icon;
 	}
+	bool constant() const override final { return true; }
 	bool instant() const override final { return true; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		NifValue::Type type = nif->getValue( index ).type();
-
-		if ( type == NifValue::tStringIndex )
-			return true;
-
-		if ( (type == NifValue::tString || type == NifValue::tFilePath) && nif->checkVersion( 0x14010003, 0 ) )
-			return true;
+		const NifItem * item = nif->getItem( index );
+		if ( item ) {
+			auto vt = item->valueType();
+			if ( vt == NifValue::tStringIndex )
+				return true;
+			if ( nif->checkVersion( 0x14010003, 0 ) && ( vt == NifValue::tString || vt == NifValue::tFilePath ) )
+				return true;
+		}
 
 		return false;
 	}
@@ -99,7 +101,7 @@ public:
 		if ( nif->getValue( index ).type() != NifValue::tStringIndex || !nif->checkVersion( 0x14010003, 0 ) )
 			return index;
 
-		QModelIndex header = nif->getHeader();
+		QModelIndex header = nif->getHeaderIndex();
 		QVector<QString> stringVector = nif->getArray<QString>( header, "Strings" );
 		strings = stringVector.toList();
 
@@ -139,7 +141,8 @@ public:
 		if ( dlg.exec() != QDialog::Accepted )
 			return index;
 
-		nif->set<QString>( index, le->text() );
+		if ( le->text() != string )
+			nif->set<QString>( index, le->text() );
 
 		return index;
 	}

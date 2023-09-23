@@ -58,6 +58,8 @@ using namespace std;
 #define F3_BSAHEADER_VERSION 0x68 //!< Version number of a Fallout 3 BSA
 #define SSE_BSAHEADER_VERSION 0x69 //!< Version number of a Skyrim SE BSA
 #define F4_BSAHEADER_VERSION 0x01 //!< Version number of a Fallout 4 BA2
+#define SF_BSAHEADER_VERSION2 0x02 //!< Version number of a Starfield BA2
+#define SF_BSAHEADER_VERSION3 0x03 //!< Version number of a Starfield BA2
 
 /* Archive flags */
 #define OB_BSAARCHIVE_PATHNAMES           0x0001 //!< Whether the BSA has names for paths
@@ -327,6 +329,8 @@ public:
 	
 	//! Gets the specified folder, or the root folder if not found
 	const BSAFolder * getFolder( QString fn ) const;
+	//! Gets the root folder
+	const BSAFolder * getRootFolder() const;
 	//! Gets the specified file, or null if not found
 	const BSAFile * getFile( QString fn ) const;
 
@@ -341,6 +345,8 @@ protected:
 	QFileInfo bsaInfo;
 
 	quint32 version = 0;
+
+	quint32 version3flag;
 
 	//! Mutual exclusion handler
 	QMutex bsaMutex;

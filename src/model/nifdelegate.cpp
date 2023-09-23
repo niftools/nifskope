@@ -119,7 +119,8 @@ public:
 
 					// Yes/No toggle for bool types
 					if ( nv.type() == NifValue::tBool ) {
-						nv.set<int>( !nv.get<int>() );
+						int oldv = nv.get<int>( nullptr, nullptr );
+						nv.set<int>( oldv ? 0 : 1, nullptr, nullptr );
 						model->setData( index, nv.toVariant(), Qt::EditRole );
 						return true;
 					}
@@ -248,7 +249,7 @@ public:
 			cedit->clear();
 			QString t = index.sibling( index.row(), NifModel::TypeCol ).data( NifSkopeDisplayRole ).toString();
 			const NifValue::EnumOptions & eo = NifValue::enumOptionData( t );
-			quint32 value = v.value<NifValue>().toCount();
+			quint32 value = v.value<NifValue>().toCount( nullptr, nullptr );
 			QMapIterator<quint32, QPair<QString, QString> > it( eo.o );
 
 			while ( it.hasNext() ) {
@@ -315,7 +316,7 @@ public:
 
 			if ( v.canConvert<NifValue>() ) {
 				NifValue nv = v.value<NifValue>();
-				nv.setCount( x );
+				nv.setCount( x, nullptr, nullptr );
 				v.setValue( nv );
 
 				// Value is unchanged, do not push to Undo Stack or call setData()

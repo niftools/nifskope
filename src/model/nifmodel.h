@@ -42,7 +42,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <memory>
 
-
 class SpellBook;
 class QUndoStack;
 
@@ -72,6 +71,9 @@ class NifModel final : public BaseModel
 public:
 	NifModel( QObject * parent = 0 );
 
+	static const NifModel * fromIndex( const QModelIndex & index );
+	static const NifModel * fromValidIndex( const QModelIndex & index );
+
 	//! Find and parse the XML file
 	static bool loadXML();
 
@@ -97,12 +99,6 @@ public:
 	QString getVersion() const override final { return version2string( version ); }
 	quint32 getVersionNumber() const override final { return version; }
 
-	template <typename T> T get( const QModelIndex & index ) const;
-	template <typename T> bool set( const QModelIndex & index, const T & d );
-
-	template <typename T> T get( const QModelIndex & parent, const QString & name ) const;
-	template <typename T> bool set( const QModelIndex & parent, const QString & name, const T & v );
-
 	// end BaseModel
 
 	//! Load from QIODevice and index
@@ -112,14 +108,10 @@ public:
 	//! Resets the model to its original state in any attached views.
 	void reset();
 
-	//! Evaluate the condition and version expressions for a NifItem
-	bool evalCondition( NifItem * item, bool chkParents = false ) const;
-	//! Invalidate the conditions of the item and its children recursively
-	void invalidateConditions( NifItem * item, bool refresh = true );
-	void invalidateConditions( const QModelIndex & index, bool refresh = true );
 	//! Invalidate only the conditions of the items dependent on this item
 	void invalidateDependentConditions( NifItem * item );
-	void invalidateDependentConditions( const QModelIndex & index );
+	//! Reset all cached conditions of the header
+	void invalidateHeaderConditions();
 
 	//! Loads a model and maps links
 	bool loadAndMapLinks( QIODevice & device, const QModelIndex &, const QMap<qint32, qint32> & map );
@@ -129,12 +121,10 @@ public:
 	//! Returns the the estimated file offset of the model index
 	int fileOffset( const QModelIndex & ) const;
 
-	//! Returns the estimated file size of the model index
-	int blockSize( const QModelIndex & ) const;
 	//! Returns the estimated file size of the item
-	int blockSize( NifItem * parent ) const;
+	int blockSize( const NifItem * item ) const;
 	//! Returns the estimated file size of the stream
-	int blockSize( NifItem * parent, NifSStream & stream ) const;
+	int blockSize( const NifItem * item, NifSStream & stream ) const;
 
 	/*! Checks if the specified file contains the specified block ID in its header and is of the specified version
 	 *
@@ -146,8 +136,12 @@ public:
 	 */
 	bool earlyRejection( const QString & filepath, const QString & blockId, quint32 version );
 
+	const NifItem * getHeaderItem() const;
+	NifItem * getHeaderItem();
 	//! Returns the model index of the NiHeader
-	QModelIndex getHeader() const;
+	// TODO(Gavrant): try replace it with getHeaderItem
+	QModelIndex getHeaderIndex() const;
+
 	//! Updates the header infos ( num blocks etc. )
 	void updateHeader();
 	//! Extracts the 0x01 separated args from NiDataStream. NiDataStream is the only known block to use RTTI args.
@@ -157,73 +151,19 @@ public:
 	//! Creates the 0x01 separated args for NiDataStream. NiDataStream is the only known block to use RTTI args.
 	QString createRTTIName( const NifItem * block ) const;
 
-	//! Returns the model index of the NiFooter
-	QModelIndex getFooter() const;
+	const NifItem * getFooterItem() const;
+	NifItem * getFooterItem();
+
 	//! Updates the footer info (num root links etc. )
 	void updateFooter();
 
 	//! Set delayed updating of model links
 	bool holdUpdates( bool value );
 
-	//! Insert or append ( row == -1 ) a new NiBlock
-	QModelIndex insertNiBlock( const QString & identifier, int row = -1 );
-	//! Remove a block from the list
-	void removeNiBlock( int blocknum );
-	//! Move a block in the list
-	void moveNiBlock( int src, int dst );
-	//! Return the block name
-	QString getBlockName( const QModelIndex & ) const;
-	//! Return the block type
-	QString getBlockType( const QModelIndex & ) const;
-	//! Return the block number
-	int getBlockNumber( const QModelIndex & ) const;
-
-	/*! Get the NiBlock at a given index
-	 *
-	 * @param idx	The model index to get the parent of
-	 * @param name	Optional: the type to check for
+	/*! Item may stop I/O depending on certain children values
+	 * @return	Whether or not to test for early I/O skip
 	 */
-	QModelIndex getBlock( const QModelIndex & idx, const QString & name = QString() ) const;
-
-	/*! Get the NiBlock at a given index
-	 *
-	 * @param x		The integer index of the block
-	 * @param name	Optional: the type to check for
-	 */
-	QModelIndex getBlock( int x, const QString & name = QString() ) const;
-
-	//! Returns the parent block or header
-	QModelIndex getBlockOrHeader( const QModelIndex & ) const;
-
-	//! Get the number of NiBlocks
-	int getBlockCount() const;
-
-	/*! Check if a given index is a NiBlock
-	 *
-	 * @param index	The index to check
-	 * @param name	Optional: the type to check for
-	 */
-	bool isNiBlock( const QModelIndex & index, const QString & name = QString() ) const;
-
-	/*! Check if a given index is a NiBlock
-	 *
-	 * @param index	The index to check
-	 * @param names	A list of names to check
-	 */
-	bool isNiBlock( const QModelIndex & index, const QStringList & names ) const;
-
-	//! Returns a list with all known NiXXX ids (<niobject abstract="0">)
-	static QStringList allNiBlocks();
-	//! Determine if a value is a NiBlock identifier (<niobject abstract="0">).
-	static bool isNiBlock( const QString & name );
-	//! Reorders the blocks according to a list of new block numbers
-	void reorderBlocks( const QVector<qint32> & order );
-	//! Moves all niblocks from this nif to another nif, returns a map which maps old block numbers to new block numbers
-	QMap<qint32, qint32> moveAllNiBlocks( NifModel * targetnif, bool update = true );
-	//! Convert a block from one type to another
-	void convertNiBlock( const QString & identifier, const QModelIndex & index );
-
-	void insertType( const QModelIndex & parent, const NifData & data, int atRow );
+	bool testSkipIO( const NifItem * parent ) const;
 
 	QList<int> getRootLinks() const;
 	QList<int> getChildLinks( int block ) const;
@@ -239,23 +179,10 @@ public:
 	 */
 	int getParent( const QModelIndex & index ) const;
 
-	//! Is it a child or parent link?
-	bool isLink( const QModelIndex & index, bool * ischildLink = 0 ) const;
-	//! Return a block number if the index is a valid link
-	qint32 getLink( const QModelIndex & index ) const;
-
-	/*! Get the block number of a link
-	 *
-	 * @param parent	The parent of the link
-	 * @param name		The name of the link
-	 */
-	int getLink( const QModelIndex & parent, const QString & name ) const;
-	QVector<qint32> getLinkArray( const QModelIndex & array ) const;
-	QVector<qint32> getLinkArray( const QModelIndex & parent, const QString & name ) const;
-	bool setLink( const QModelIndex & index, qint32 l );
-	bool setLink( const QModelIndex & parent, const QString & name, qint32 l );
-	bool setLinkArray( const QModelIndex & array, const QVector<qint32> & links );
-	bool setLinkArray( const QModelIndex & parent, const QString & name, const QVector<qint32> & links );
+	//! Is an item's value a child or parent link?
+	bool isLink( const NifItem * item ) const;
+	//! Is a model index' value a child or parent link?
+	bool isLink( const QModelIndex & index ) const;
 
 	void mapLinks( const QMap<qint32, qint32> & map );
 
@@ -267,12 +194,6 @@ public:
 	static bool isAncestor( const QString & name );
 	//! Is name a NiBlock identifier (<niobject abstract="0"> or <niobject abstract="1">)?
 	bool isAncestorOrNiBlock( const QString & name ) const override final;
-	//! Returns true if name inherits ancestor.
-	bool inherits( const QString & name, const QString & ancestor ) const override final;
-	//! Returns true if name inherits any ancestors in list.
-	bool inherits( const QString & name, const QStringList & ancestors ) const;
-	// returns true if the block containing index inherits ancestor
-	bool inherits( const QModelIndex & index, const QString & ancestor ) const;
 
 	//! Is this version supported?
 	static bool isVersionSupported( quint32 );
@@ -281,22 +202,438 @@ public:
 	static quint32 version2number( const QString & );
 
 	//! Check whether the current NIF file version lies in the range [since, until]
-	bool checkVersion( quint32 since, quint32 until ) const;
+	bool checkVersion( quint32 since, quint32 until = 0 ) const;
 
-	quint32 getUserVersion() const { return get<int>( getHeader(), "User Version" ); }
-	quint32 getUserVersion2() const { return get<int>( getHeader(), "User Version 2" ); }
-
-	QString string( const QModelIndex & index, bool extraInfo = false ) const;
-	QString string( const QModelIndex & index, const QString & name, bool extraInfo = false ) const;
-
-	bool assignString( const QModelIndex & index, const QString & string, bool replace = false );
-	bool assignString( const QModelIndex & index, const QString & name, const QString & string, bool replace = false );
+	quint32 getUserVersion() const { return get<int>( getHeaderItem(), "User Version" ); }
+	quint32 getBSVersion() const { return bsVersion; }
 
 	//! Create and return delegate for SpellBook
 	static QAbstractItemDelegate * createDelegate( QObject * parent, SpellBookPtr book );
 
 	//! Undo Stack for changes to NifModel
 	QUndoStack * undoStack = nullptr;
+
+	// Basic block functions
+protected:
+	constexpr int firstBlockRow() const;
+	int lastBlockRow() const;
+	bool isBlockRow( int row ) const;
+
+public:
+	//! Get the number of NiBlocks
+	int getBlockCount() const;
+
+	//! Get the numerical index (or link) of the block an item belongs to.
+	// Return -1 if the item is the root or header or footer or null.
+	int getBlockNumber( const NifItem * item ) const;
+	//! Get the numerical index (or link) of the block an item belongs to.
+	// Return -1 if the item is the root or header or footer or null.
+	int getBlockNumber( const QModelIndex & index ) const;
+	
+	// Checks if blockNum is a valid block number.
+	bool isValidBlockNumber( qint32 blockNum ) const;
+
+	//! Insert or append ( row == -1 ) a new NiBlock
+	QModelIndex insertNiBlock( const QString & identifier, int row = -1 );
+	//! Remove a block from the list
+	void removeNiBlock( int blocknum );
+	//! Move a block in the list
+	void moveNiBlock( int src, int dst );
+
+	//! Returns a list with all known NiXXX ids (<niobject abstract="0">)
+	static QStringList allNiBlocks();
+	//! Reorders the blocks according to a list of new block numbers
+	void reorderBlocks( const QVector<qint32> & order );
+	//! Moves all niblocks from this nif to another nif, returns a map which maps old block numbers to new block numbers
+	QMap<qint32, qint32> moveAllNiBlocks( NifModel * targetnif, bool update = true );
+	//! Convert a block from one type to another
+	void convertNiBlock( const QString & identifier, const QModelIndex & index );
+
+	// Block item getters
+private:
+	const NifItem * _getBlockItem( const NifItem * block, const QString & ancestor ) const;
+	const NifItem * _getBlockItem( const NifItem * block, const QLatin1String & ancestor ) const;
+	const NifItem * _getBlockItem( const NifItem * block, const std::initializer_list<const char *> & ancestors ) const;
+	const NifItem * _getBlockItem( const NifItem * block, const QStringList & ancestors ) const;
+
+public:
+	//! Get a block NifItem by its number.
+	const NifItem * getBlockItem( qint32 link ) const;
+	//! Get a block NifItem by its number, with a check that it inherits ancestor.
+	const NifItem * getBlockItem( qint32 link, const QString & ancestor ) const;
+	//! Get a block NifItem by its number, with a check that it inherits ancestor.
+	const NifItem * getBlockItem( qint32 link, const QLatin1String & ancestor ) const;
+	//! Get a block NifItem by its number, with a check that it inherits ancestor.
+	const NifItem * getBlockItem( qint32 link, const char * ancestor ) const;
+	//! Get a block NifItem by its number, with a check that it inherits any of ancestors.
+	const NifItem * getBlockItem( qint32 link, const std::initializer_list<const char *> & ancestors ) const;
+	//! Get a block NifItem by its number, with a check that it inherits any of ancestors.
+	const NifItem * getBlockItem( qint32 link, const QStringList & ancestors ) const;
+
+	//! Get the block NifItem an item belongs to.
+	const NifItem * getBlockItem( const NifItem * item ) const;
+	//! Get the block NifItem an item belongs to, with a check that it inherits ancestor.
+	const NifItem * getBlockItem( const NifItem * item, const QString & ancestor ) const;
+	//! Get the block NifItem an item belongs to, with a check that it inherits ancestor.
+	const NifItem * getBlockItem( const NifItem * item, const QLatin1String & ancestor ) const;
+	//! Get the block NifItem an item belongs to, with a check that it inherits ancestor.
+	const NifItem * getBlockItem( const NifItem * item, const char * ancestor ) const;
+	//! Get the block NifItem an item belongs to, with a check that it inherits any of ancestors.
+	const NifItem * getBlockItem( const NifItem * item, const std::initializer_list<const char *> & ancestors ) const;
+	//! Get the block NifItem an item belongs to, with a check that it inherits any of ancestors.
+	const NifItem * getBlockItem( const NifItem * item, const QStringList & ancestors ) const;
+
+	//! Get the block NifItem a model index belongs to.
+	const NifItem * getBlockItem( const QModelIndex & index ) const;
+	//! Get the block NifItem a model index belongs to, with a check that it inherits ancestor.
+	const NifItem * getBlockItem( const QModelIndex & index, const QString & ancestor ) const;
+	//! Get the block NifItem a model index belongs to, with a check that it inherits ancestor.
+	const NifItem * getBlockItem( const QModelIndex & index, const QLatin1String & ancestor ) const;
+	//! Get the block NifItem a model index belongs to, with a check that it inherits ancestor.
+	const NifItem * getBlockItem( const QModelIndex & index, const char * ancestor ) const;
+	//! Get the block NifItem a model index belongs to, with a check that it inherits any of ancestors.
+	const NifItem * getBlockItem( const QModelIndex & index, const std::initializer_list<const char *> & ancestors ) const;
+	//! Get the block NifItem a model index belongs to, with a check that it inherits any of ancestors.
+	const NifItem * getBlockItem( const QModelIndex & index, const QStringList & ancestors ) const;
+
+	//! Get a block NifItem by its number.
+	NifItem * getBlockItem( qint32 link );
+	//! Get a block NifItem by its number, with a check that it inherits ancestor.
+	NifItem * getBlockItem( qint32 link, const QString & ancestor );
+	//! Get a block NifItem by its number, with a check that it inherits ancestor.
+	NifItem * getBlockItem( qint32 link, const QLatin1String & ancestor );
+	//! Get a block NifItem by its number, with a check that it inherits ancestor.
+	NifItem * getBlockItem( qint32 link, const char * ancestor );
+	//! Get a block NifItem by its number, with a check that it inherits any of ancestors.
+	NifItem * getBlockItem( qint32 link, const std::initializer_list<const char *> & ancestors );
+	//! Get a block NifItem by its number, with a check that it inherits any of ancestors.
+	NifItem * getBlockItem( qint32 link, const QStringList & ancestors );
+
+	//! Get the block NifItem an item belongs to.
+	NifItem * getBlockItem( const NifItem * item );
+	//! Get the block NifItem an item belongs to, with a check that it inherits ancestor.
+	NifItem * getBlockItem( const NifItem * item, const QString & ancestor );
+	//! Get the block NifItem an item belongs to, with a check that it inherits ancestor.
+	NifItem * getBlockItem( const NifItem * item, const QLatin1String & ancestor );
+	//! Get the block NifItem an item belongs to, with a check that it inherits ancestor.
+	NifItem * getBlockItem( const NifItem * item, const char * ancestor );
+	//! Get the block NifItem an item belongs to, with a check that it inherits any of ancestors.
+	NifItem * getBlockItem( const NifItem * item, const std::initializer_list<const char *> & ancestors );
+	//! Get the block NifItem an item belongs to, with a check that it inherits any of ancestors.
+	NifItem * getBlockItem( const NifItem * item, const QStringList & ancestors );
+
+	//! Get the block NifItem a model index belongs to.
+	NifItem * getBlockItem( const QModelIndex & index );
+	//! Get the block NifItem a model index belongs to, with a check that it inherits ancestor.
+	NifItem * getBlockItem( const QModelIndex & index, const QString & ancestor );
+	//! Get the block NifItem a model index belongs to, with a check that it inherits ancestor.
+	NifItem * getBlockItem( const QModelIndex & index, const QLatin1String & ancestor );
+	//! Get the block NifItem a model index belongs to, with a check that it inherits ancestor.
+	NifItem * getBlockItem( const QModelIndex & index, const char * ancestor );
+	//! Get the block NifItem a model index belongs to, with a check that it inherits any of ancestors.
+	NifItem * getBlockItem( const QModelIndex & index, const std::initializer_list<const char *> & ancestors );
+	//! Get the block NifItem a model index belongs to, with a check that it inherits any of ancestors.
+	NifItem * getBlockItem( const QModelIndex & index, const QStringList & ancestors );
+
+	// Block index getters
+public:
+	//! Get a block model index by its number.
+	QModelIndex getBlockIndex( qint32 link ) const;
+	//! Get a block model index by its number, with a check that it inherits ancestor.
+	QModelIndex getBlockIndex( qint32 link, const QString & ancestor ) const;
+	//! Get a block model index by its number, with a check that it inherits ancestor.
+	QModelIndex getBlockIndex( qint32 link, const QLatin1String & ancestor ) const;
+	//! Get a block model index by its number, with a check that it inherits ancestor.
+	QModelIndex getBlockIndex( qint32 link, const char * ancestor ) const;
+	//! Get a block model index by its number, with a check that it inherits any of ancestors.
+	QModelIndex getBlockIndex( qint32 link, const std::initializer_list<const char *> & ancestors ) const;
+	//! Get a block model index by its number, with a check that it inherits any of ancestors.
+	QModelIndex getBlockIndex( qint32 link, const QStringList & ancestors ) const;
+
+	//! Get the block model index an item belongs to.
+	QModelIndex getBlockIndex( const NifItem * item ) const;
+	//! Get the block model index an item belongs to, with a check that it inherits ancestor.
+	QModelIndex getBlockIndex( const NifItem * item, const QString & ancestor ) const;
+	//! Get the block model index an item belongs to, with a check that it inherits ancestor.
+	QModelIndex getBlockIndex( const NifItem * item, const QLatin1String & ancestor ) const;
+	//! Get the block model index an item belongs to, with a check that it inherits ancestor.
+	QModelIndex getBlockIndex( const NifItem * item, const char * ancestor ) const;
+	//! Get the block model index an item belongs to, with a check that it inherits any of ancestors.
+	QModelIndex getBlockIndex( const NifItem * item, const std::initializer_list<const char *> & ancestors ) const;
+	//! Get the block model index an item belongs to, with a check that it inherits any of ancestors.
+	QModelIndex getBlockIndex( const NifItem * item, const QStringList & ancestors ) const;
+
+	//! Get the block model index a model index belongs to.
+	QModelIndex getBlockIndex( const QModelIndex & index ) const;
+	//! Get the block model index a model index belongs to, with a check that it inherits ancestor.
+	QModelIndex getBlockIndex( const QModelIndex & index, const QString & ancestor ) const;
+	//! Get the block model index a model index belongs to, with a check that it inherits ancestor.
+	QModelIndex getBlockIndex( const QModelIndex & index, const QLatin1String & ancestor ) const;
+	//! Get the block model index a model index belongs to, with a check that it inherits ancestor.
+	QModelIndex getBlockIndex( const QModelIndex & index, const char * ancestor ) const;
+	//! Get the block model index a model index belongs to, with a check that it inherits any of ancestors.
+	QModelIndex getBlockIndex( const QModelIndex & index, const std::initializer_list<const char *> & ancestors ) const;
+	//! Get the block model index a model index belongs to, with a check that it inherits any of ancestors.
+	QModelIndex getBlockIndex( const QModelIndex & index, const QStringList & ancestors ) const;
+
+	// isNiBlock
+public:
+	//! Determine if a value is a NiBlock identifier (<niobject abstract="0">).
+	static bool isNiBlock( const QString & name );
+
+	//! Check if a given item is a NiBlock.
+	bool isNiBlock( const NifItem * item ) const;
+	//! Check if a given item is a NiBlock of testType.
+	bool isNiBlock( const NifItem * item, const QString & testType ) const;
+	//! Check if a given item is a NiBlock of testType.
+	bool isNiBlock( const NifItem * item, const QLatin1String & testType ) const;
+	//! Check if a given item is a NiBlock of testType.
+	bool isNiBlock( const NifItem * item, const char * testType ) const;
+	//! Check if a given item is a NiBlock of one of testTypes.
+	bool isNiBlock( const NifItem * item, const std::initializer_list<const char *> & testTypes ) const;
+	//! Check if a given item is a NiBlock of one of testTypes.
+	bool isNiBlock( const NifItem * item, const QStringList & testTypes ) const;
+	//! Check if a given model index is a NiBlock.
+	bool isNiBlock( const QModelIndex & index ) const;
+	//! Check if a given model index is a NiBlock of testType.
+	bool isNiBlock( const QModelIndex & index, const QString & testType ) const;
+	//! Check if a given model index is a NiBlock of testType.
+	bool isNiBlock( const QModelIndex & index, const QLatin1String & testType ) const;
+	//! Check if a given model index is a NiBlock of testType.
+	bool isNiBlock( const QModelIndex & index, const char * testType ) const;
+	//! Check if a given model index is a NiBlock of one of testTypes.
+	bool isNiBlock( const QModelIndex & index, const std::initializer_list<const char *> & testTypes ) const;
+	//! Check if a given model index is a NiBlock of one of testTypes.
+	bool isNiBlock( const QModelIndex & index, const QStringList & testTypes ) const;
+
+	// Block inheritance
+public:
+	//! Returns true if blockName inherits ancestor.
+	bool inherits( const QString & blockName, const QString & ancestor ) const override final;
+	//! Returns true if blockName inherits ancestor.
+	bool inherits( const QString & blockName, const QLatin1String & ancestor ) const;
+	//! Returns true if blockName inherits ancestor.
+	bool inherits( const QString & blockName, const char * ancestor ) const;
+	//! Returns true if blockName inherits any of ancestors.
+	bool inherits( const QString & blockName, const std::initializer_list<const char *> & ancestors ) const;
+	//! Returns true if blockName inherits any of ancestors.
+	bool inherits( const QString & blockName, const QStringList & ancestors ) const;
+
+	//! Returns true if the block containing an item inherits ancestor.
+	bool blockInherits( const NifItem * item, const QString & ancestor ) const;
+	//! Returns true if the block containing an item inherits ancestor.
+	bool blockInherits( const NifItem * item, const QLatin1String & ancestor ) const;
+	//! Returns true if the block containing an item inherits ancestor.
+	bool blockInherits( const NifItem * item, const char * ancestor ) const;
+	//! Returns true if the block containing an item inherits any of ancestors.
+	bool blockInherits( const NifItem * item, const std::initializer_list<const char *> & ancestors ) const;
+	//! Returns true if the block containing an item inherits any of ancestors.
+	bool blockInherits( const NifItem * item, const QStringList & ancestors ) const;
+
+	//! Returns true if the block containing a model index inherits ancestor.
+	bool blockInherits( const QModelIndex & index, const QString & ancestor ) const;
+	//! Returns true if the block containing a model index inherits ancestor.
+	bool blockInherits( const QModelIndex & index, const QLatin1String & ancestor ) const;
+	//! Returns true if the block containing a model index inherits ancestor.
+	bool blockInherits( const QModelIndex & index, const char * ancestor ) const;
+	//! Returns true if the block containing a model index inherits any of ancestors.
+	bool blockInherits( const QModelIndex & index, const std::initializer_list<const char *> & ancestors ) const;
+	//! Returns true if the block containing a model index inherits any of ancestors.
+	bool blockInherits( const QModelIndex & index, const QStringList & ancestors ) const;
+
+	// Item value getters
+public:
+	//! Get the value of an item.
+	template <typename T> T get( const NifItem * item ) const;
+	//! Get the value of a child item.
+	template <typename T> T get( const NifItem * itemParent, int itemIndex ) const;
+	//! Get the value of a child item.
+	template <typename T> T get( const NifItem * itemParent, const QString & itemName ) const;
+	//! Get the value of a child item.
+	template <typename T> T get( const NifItem * itemParent, const QLatin1String & itemName ) const;
+	//! Get the value of a child item.
+	template <typename T> T get( const NifItem * itemParent, const char * itemName ) const;
+	//! Get the value of a model index.
+	template <typename T> T get( const QModelIndex & index ) const;
+	//! Get the value of a child item.
+	template <typename T> T get( const QModelIndex & itemParent, int itemIndex ) const;
+	//! Get the value of a child item.
+	template <typename T> T get( const QModelIndex & itemParent, const QString & itemName ) const;
+	//! Get the value of a child item.
+	template <typename T> T get( const QModelIndex & itemParent, const QLatin1String & itemName ) const;
+	//! Get the value of a child item.
+	template <typename T> T get( const QModelIndex & itemParent, const char * itemName ) const;
+
+	// Item value setters
+public:
+	//! Set the value of an item.
+	template <typename T> bool set( NifItem * item, const T & val );
+	//! Set the value of a child item.
+	template <typename T> bool set( const NifItem * itemParent, int itemIndex, const T & val );
+	//! Set the value of a child item.
+	template <typename T> bool set( const NifItem * itemParent, const QString & itemName, const T & val );
+	//! Set the value of a child item.
+	template <typename T> bool set( const NifItem * itemParent, const QLatin1String & itemName, const T & val );
+	//! Set the value of a child item.
+	template <typename T> bool set( const NifItem * itemParent, const char * itemName, const T & val );
+	//! Set the value of a model index.
+	template <typename T> bool set( const QModelIndex & index, const T & val );
+	//! Set the value of a child item.
+	template <typename T> bool set( const QModelIndex & itemParent, int itemIndex, const T & val );
+	//! Set the value of a child item.
+	template <typename T> bool set( const QModelIndex & itemParent, const QString & itemName, const T & val );
+	//! Set the value of a child item.
+	template <typename T> bool set( const QModelIndex & itemParent, const QLatin1String & itemName, const T & val );
+	//! Set the value of a child item.
+	template <typename T> bool set( const QModelIndex & itemParent, const char * itemName, const T & val );
+
+	// String resolving ("get ex")
+public:
+	//! Get the string value of an item, expanding string indices or subitems if necessary.
+	QString resolveString( const NifItem * item ) const;
+	//! Get the string value of a child item, expanding string indices or subitems if necessary.
+	QString resolveString( const NifItem * itemParent, int itemIndex ) const;
+	//! Get the string value of a child item, expanding string indices or subitems if necessary.
+	QString resolveString( const NifItem * itemParent, const QString & itemName ) const;
+	//! Get the string value of a child item, expanding string indices or subitems if necessary.
+	QString resolveString( const NifItem * itemParent, const QLatin1String & itemName ) const;
+	//! Get the string value of a child item, expanding string indices or subitems if necessary.
+	QString resolveString( const NifItem * itemParent, const char * itemName ) const;
+	//! Get the string value of a model index, expanding string indices or subitems if necessary.
+	QString resolveString( const QModelIndex & index ) const;
+	//! Get the string value of a child item, expanding string indices or subitems if necessary.
+	QString resolveString( const QModelIndex & itemParent, int itemIndex ) const;
+	//! Get the string value of a child item, expanding string indices or subitems if necessary.
+	QString resolveString( const QModelIndex & itemParent, const QString & itemName ) const;
+	//! Get the string value of a child item, expanding string indices or subitems if necessary.
+	QString resolveString( const QModelIndex & itemParent, const QLatin1String & itemName ) const;
+	//! Get the string value of a child item, expanding string indices or subitems if necessary.
+	QString resolveString( const QModelIndex & itemParent, const char * itemName ) const;
+
+	// String assigning ("set ex")
+public:
+	//! Set the string value of an item, updating string indices or subitems if necessary.
+	bool assignString( NifItem * item, const QString & string, bool replace = false );
+	//! Set the string value of a child item, updating string indices or subitems if necessary.
+	bool assignString( const NifItem * itemParent, int itemIndex, const QString & string, bool replace = false );
+	//! Set the string value of a child item, updating string indices or subitems if necessary.
+	bool assignString( const NifItem * itemParent, const QString & itemName, const QString & string, bool replace = false );
+	//! Set the string value of a child item, updating string indices or subitems if necessary.
+	bool assignString( const NifItem * itemParent, const QLatin1String & itemName, const QString & string, bool replace = false );
+	//! Set the string value of a child item, updating string indices or subitems if necessary.
+	bool assignString( const NifItem * itemParent, const char * itemName, const QString & string, bool replace = false );
+	//! Set the string value of a model index, updating string indices or subitems if necessary.
+	bool assignString( const QModelIndex & index, const QString & string, bool replace = false );
+	//! Set the string value of a child item, updating string indices or subitems if necessary.
+	bool assignString( const QModelIndex & itemParent, int itemIndex, const QString & string, bool replace = false );
+	//! Set the string value of a child item, updating string indices or subitems if necessary.
+	bool assignString( const QModelIndex & itemParent, const QString & itemName, const QString & string, bool replace = false );
+	//! Set the string value of a child item, updating string indices or subitems if necessary.
+	bool assignString( const QModelIndex & itemParent, const QLatin1String & itemName, const QString & string, bool replace = false );
+	//! Set the string value of a child item, updating string indices or subitems if necessary.
+	bool assignString( const QModelIndex & itemParent, const char * itemName, const QString & string, bool replace = false );
+
+	// Link getters
+public:
+	//! Return the link value (block number) of an item if it's a valid link, otherwise -1.
+	qint32 getLink( const NifItem * item ) const;
+	//! Return the link value (block number) of a child item if it's a valid link, otherwise -1.
+	qint32 getLink( const NifItem * itemParent, int itemIndex ) const;
+	//! Return the link value (block number) of a child item if it's a valid link, otherwise -1.
+	qint32 getLink( const NifItem * itemParent, const QString & itemName ) const;
+	//! Return the link value (block number) of a child item if it's a valid link, otherwise -1.
+	qint32 getLink( const NifItem * itemParent, const QLatin1String & itemName ) const;
+	//! Return the link value (block number) of a child item if it's a valid link, otherwise -1.
+	qint32 getLink( const NifItem * itemParent, const char * itemName ) const;
+	//! Return the link value (block number) of a model index if it's a valid link, otherwise -1.
+	qint32 getLink( const QModelIndex & index ) const;
+	//! Return the link value (block number) of a child item if it's a valid link, otherwise -1.
+	qint32 getLink( const QModelIndex & itemParent, int itemIndex ) const;
+	//! Return the link value (block number) of a child item if it's a valid link, otherwise -1.
+	qint32 getLink( const QModelIndex & itemParent, const QString & itemName ) const;
+	//! Return the link value (block number) of a child item if it's a valid link, otherwise -1.
+	qint32 getLink( const QModelIndex & itemParent, const QLatin1String & itemName ) const;
+	//! Return the link value (block number) of a child item if it's a valid link, otherwise -1.
+	qint32 getLink( const QModelIndex & itemParent, const char * itemName ) const;
+
+	// Link setters
+public:
+	//! Set the link value (block number) of an item if it's a valid link.
+	bool setLink( NifItem * item, qint32 link );
+	//! Set the link value (block number) of a child item if it's a valid link.
+	bool setLink( const NifItem * itemParent, int itemIndex, qint32 link );
+	//! Set the link value (block number) of a child item if it's a valid link.
+	bool setLink( const NifItem * itemParent, const QString & itemName, qint32 link );
+	//! Set the link value (block number) of a child item if it's a valid link.
+	bool setLink( const NifItem * itemParent, const QLatin1String & itemName, qint32 link );
+	//! Set the link value (block number) of a child item if it's a valid link.
+	bool setLink( const NifItem * itemParent, const char * itemName, qint32 link );
+	//! Set the link value (block number) of a model index if it's a valid link.
+	bool setLink( const QModelIndex & index, qint32 link );
+	//! Set the link value (block number) of a child item if it's a valid link.
+	bool setLink( const QModelIndex & itemParent, int itemIndex, qint32 link );
+	//! Set the link value (block number) of a child item if it's a valid link.
+	bool setLink( const QModelIndex & itemParent, const QString & itemName, qint32 link );
+	//! Set the link value (block number) of a child item if it's a valid link.
+	bool setLink( const QModelIndex & itemParent, const QLatin1String & itemName, qint32 link );
+	//! Set the link value (block number) of a child item if it's a valid link.
+	bool setLink( const QModelIndex & itemParent, const char * itemName, qint32 link );
+
+	// Link array getters
+public:
+	//! Return a QVector of link values (block numbers) of an item if it's a valid link array.
+	QVector<qint32> getLinkArray( const NifItem * arrayRootItem ) const;
+	//! Return a QVector of link values (block numbers) of a child item if it's a valid link array.
+	QVector<qint32> getLinkArray( const NifItem * arrayParent, int arrayIndex ) const;
+	//! Return a QVector of link values (block numbers) of a child item if it's a valid link array.
+	QVector<qint32> getLinkArray( const NifItem * arrayParent, const QString & arrayName ) const;
+	//! Return a QVector of link values (block numbers) of a child item if it's a valid link array.
+	QVector<qint32> getLinkArray( const NifItem * arrayParent, const QLatin1String & arrayName ) const;
+	//! Return a QVector of link values (block numbers) of a child item if it's a valid link array.
+	QVector<qint32> getLinkArray( const NifItem * arrayParent, const char * arrayName ) const;
+	//! Return a QVector of link values (block numbers) of a model index if it's a valid link array.
+	QVector<qint32> getLinkArray( const QModelIndex & iArray ) const;
+	//! Return a QVector of link values (block numbers) of a child item if it's a valid link array.
+	QVector<qint32> getLinkArray( const QModelIndex & arrayParent, int arrayIndex ) const;
+	//! Return a QVector of link values (block numbers) of a child item if it's a valid link array.
+	QVector<qint32> getLinkArray( const QModelIndex & arrayParent, const QString & arrayName ) const;
+	//! Return a QVector of link values (block numbers) of a child item if it's a valid link array.
+	QVector<qint32> getLinkArray( const QModelIndex & arrayParent, const QLatin1String & arrayName ) const;
+	//! Return a QVector of link values (block numbers) of a child item if it's a valid link array.
+	QVector<qint32> getLinkArray( const QModelIndex & arrayParent, const char * arrayName ) const;
+
+	// Link array setters
+public:
+	//! Write a QVector of link values (block numbers) to an item if it's a valid link array.
+	// The size of QVector must match the current size of the array.
+	bool setLinkArray( NifItem * arrayRootItem, const QVector<qint32> & links );
+	//! Write a QVector of link values (block numbers) to a child item if it's a valid link array.
+	// The size of QVector must match the current size of the array.
+	bool setLinkArray( const NifItem * arrayParent, int arrayIndex, const QVector<qint32> & links );
+	//! Write a QVector of link values (block numbers) to a child item if it's a valid link array.
+	// The size of QVector must match the current size of the array.
+	bool setLinkArray( const NifItem * arrayParent, const QString & arrayName, const QVector<qint32> & links );
+	//! Write a QVector of link values (block numbers) to a child item if it's a valid link array.
+	// The size of QVector must match the current size of the array.
+	bool setLinkArray( const NifItem * arrayParent, const QLatin1String & arrayName, const QVector<qint32> & links );
+	//! Write a QVector of link values (block numbers) to a child item if it's a valid link array.
+	// The size of QVector must match the current size of the array.
+	bool setLinkArray( const NifItem * arrayParent, const char * arrayName, const QVector<qint32> & links );
+	//! Write a QVector of link values (block numbers) to a model index if it's a valid link array.
+	// The size of QVector must match the current size of the array.
+	bool setLinkArray( const QModelIndex & iArray, const QVector<qint32> & links );
+	//! Write a QVector of link values (block numbers) to a child item if it's a valid link array.
+	// The size of QVector must match the current size of the array.
+	bool setLinkArray( const QModelIndex & arrayParent, int arrayIndex, const QVector<qint32> & links );
+	//! Write a QVector of link values (block numbers) to a child item if it's a valid link array.
+	// The size of QVector must match the current size of the array.
+	bool setLinkArray( const QModelIndex & arrayParent, const QString & arrayName, const QVector<qint32> & links );
+	//! Write a QVector of link values (block numbers) to a child item if it's a valid link array.
+	// The size of QVector must match the current size of the array.
+	bool setLinkArray( const QModelIndex & arrayParent, const QLatin1String & arrayName, const QVector<qint32> & links );
+	//! Write a QVector of link values (block numbers) to a child item if it's a valid link array.
+	// The size of QVector must match the current size of the array.
+	bool setLinkArray( const QModelIndex & arrayParent, const char * arrayName, const QVector<qint32> & links );
 
 public slots:
 	void updateSettings();
@@ -309,44 +646,34 @@ signals:
 protected:
 	// BaseModel
 
-	NifItem * getItem( NifItem * parent, const QString & name ) const override final;
-
-	bool setItemValue( NifItem * item, const NifValue & v ) override final;
-
-	bool updateArrayItem( NifItem * array ) override final;
+	bool updateArraySizeImpl( NifItem * array ) override final;
+	bool updateByteArraySize( NifItem * array );
+	bool updateChildArraySizes( NifItem * parent );
 
 	QString ver2str( quint32 v ) const override final { return version2string( v ); }
 	quint32 str2ver( QString s ) const override final { return version2number( s ); }
 
-	bool evalVersion( NifItem * item, bool chkParents = false ) const override final;
+	//! Get condition value cache NifItem for an item.
+	// If the item has no cache NifItem, returns the item itself.
+	const NifItem * getConditionCacheItem( const NifItem * item ) const;
 
-	bool setHeaderString( const QString & ) override final;
+	bool evalVersionImpl( const NifItem * item ) const override final;
 
-	template <typename T> T get( NifItem * parent, const QString & name ) const;
-	template <typename T> T get( NifItem * item ) const;
-	template <typename T> bool set( NifItem * parent, const QString & name, const T & d );
-	template <typename T> bool set( NifItem * item, const T & d );
+	bool evalConditionImpl( const NifItem * item ) const override final;
+
+	bool setHeaderString( const QString &, uint ver = 0 ) override final;
 
 	// end BaseModel
 
 	bool loadItem( NifItem * parent, NifIStream & stream );
 	bool loadHeader( NifItem * parent, NifIStream & stream );
-	bool saveItem( NifItem * parent, NifOStream & stream ) const;
-	bool fileOffset( NifItem * parent, NifItem * target, NifSStream & stream, int & ofs ) const;
+	bool saveItem( const NifItem * parent, NifOStream & stream ) const;
+	bool fileOffset( const NifItem * parent, const NifItem * target, NifSStream & stream, int & ofs ) const;
 
-	NifItem * getHeaderItem() const;
-	NifItem * getFooterItem() const;
-	NifItem * getBlockItem( int ) const;
-
-	int getBlockNumber( NifItem * item ) const;
-	bool itemIsLink( NifItem * item, bool * ischildLink = 0 ) const;
-
+protected:
 	void insertAncestor( NifItem * parent, const QString & identifier, int row = -1 );
 	void insertType( NifItem * parent, const NifData & data, int row = -1 );
 	NifItem * insertBranch( NifItem * parent, const NifData & data, int row = -1 );
-
-	bool updateByteArrayItem( NifItem * array );
-	bool updateArrays( NifItem * parent );
 
 	void updateLinks( int block = -1 );
 	void updateLinks( int block, NifItem * parent );
@@ -355,7 +682,6 @@ protected:
 	void mapLinks( NifItem * parent, const QMap<qint32, qint32> & map );
 
 	static void updateStrings( NifModel * src, NifModel * tgt, NifItem * item );
-	bool assignString( NifItem * parent, const QString & string, bool replace = false );
 
 	//! NIF file version
 	quint32 version;
@@ -377,6 +703,14 @@ protected:
 	UpdateType needUpdates;
 
 	void updateModel( UpdateType value = utAll );
+
+	quint32 bsVersion;
+	void cacheBSVersion( const NifItem * headerItem );
+
+	QString topItemRepr( const NifItem * item ) const override final;
+	void onItemValueChange( NifItem * item ) override final;
+
+	void invalidateItemConditions( NifItem * item );
 
 	//! Parse the XML file using a NifXmlHandler
 	static QString parseXmlDescription( const QString & filename );
@@ -413,6 +747,35 @@ private:
 
 // Inlines
 
+inline const NifModel * NifModel::fromIndex( const QModelIndex & index )
+{
+	return static_cast<const NifModel *>( index.model() ); // qobject_cast
+}
+
+inline const NifModel * NifModel::fromValidIndex( const QModelIndex & index )
+{
+	return index.isValid() ? NifModel::fromIndex( index ) : nullptr;
+}
+
+inline QString NifModel::createRTTIName( const QModelIndex & iBlock ) const
+{
+	return createRTTIName( getItem(iBlock) );
+}
+
+inline NifItem * NifModel::getHeaderItem()
+{
+	return const_cast<NifItem *>( const_cast<const NifModel *>(this)->getHeaderItem() );
+}
+
+inline QModelIndex NifModel::getHeaderIndex() const
+{
+	return itemToIndex( getHeaderItem() );
+}
+
+inline NifItem * NifModel::getFooterItem()
+{
+	return const_cast<NifItem *>( const_cast<const NifModel *>(this)->getFooterItem() );
+}
 
 inline QStringList NifModel::allNiBlocks()
 {
@@ -471,12 +834,14 @@ inline QList<int> NifModel::getParentLinks( int block ) const
 	return parentLinks.value( block );
 }
 
-inline bool NifModel::itemIsLink( NifItem * item, bool * isChildLink ) const
+inline bool NifModel::isLink( const NifItem * item ) const
 {
-	if ( isChildLink )
-		*isChildLink = ( item->value().type() == NifValue::tLink );
+	return item && item->isLink();
+}
 
-	return item->value().isLink();
+inline bool NifModel::isLink( const QModelIndex & index ) const
+{
+	return isLink( getItem(index) );
 }
 
 inline bool NifModel::checkVersion( quint32 since, quint32 until ) const
@@ -484,95 +849,679 @@ inline bool NifModel::checkVersion( quint32 since, quint32 until ) const
 	return (( since == 0 || since <= version ) && ( until == 0 || version <= until ));
 }
 
-
-// Templates
-
-
-template <typename T> inline T NifModel::get( const QModelIndex & index ) const
+constexpr inline int NifModel::firstBlockRow() const
 {
-	return BaseModel::get<T>( index );
+	return 1; // The fist root's child is always the header
 }
 
-template <typename T> inline T NifModel::get( NifItem * item ) const
+inline int NifModel::lastBlockRow() const
+{	
+	return root->childCount() - 2; // The last root's child is always the footer.
+}
+
+inline bool NifModel::isBlockRow( int row ) const
+{
+	return ( row >= firstBlockRow() && row <= lastBlockRow() );
+}
+
+inline int NifModel::getBlockCount() const
+{
+	return std::max( lastBlockRow() - firstBlockRow() + 1, 0 );
+}
+
+inline int NifModel::getBlockNumber( const QModelIndex & index ) const
+{
+	return getBlockNumber( getItem(index) );
+}
+
+inline bool NifModel::isValidBlockNumber( qint32 blockNum ) const
+{
+	return blockNum >= 0 && blockNum < getBlockCount();
+}
+
+
+// Block item getters
+
+inline const NifItem * NifModel::getBlockItem( qint32 link, const QString & ancestor ) const
+{
+	return _getBlockItem( getBlockItem(link), ancestor );
+}
+inline const NifItem * NifModel::getBlockItem( qint32 link, const QLatin1String & ancestor ) const
+{
+	return _getBlockItem( getBlockItem(link), ancestor );
+}
+inline const NifItem * NifModel::getBlockItem( qint32 link, const char * ancestor ) const
+{
+	return _getBlockItem( getBlockItem(link), QLatin1Literal(ancestor) );
+}
+inline const NifItem * NifModel::getBlockItem( qint32 link, const std::initializer_list<const char *> & ancestors ) const
+{
+	return _getBlockItem( getBlockItem(link), ancestors );
+}
+inline const NifItem * NifModel::getBlockItem( qint32 link, const QStringList & ancestors ) const
+{
+	return _getBlockItem( getBlockItem(link), ancestors );
+}
+
+inline const NifItem * NifModel::getBlockItem( const NifItem * item, const QString & ancestor ) const
+{
+	return _getBlockItem( getBlockItem(item), ancestor );
+}
+inline const NifItem * NifModel::getBlockItem( const NifItem * item, const QLatin1String & ancestor ) const
+{
+	return _getBlockItem( getBlockItem(item), ancestor );
+}
+inline const NifItem * NifModel::getBlockItem( const NifItem * item, const char * ancestor ) const
+{
+	return _getBlockItem( getBlockItem(item), QLatin1String(ancestor) );
+}
+inline const NifItem * NifModel::getBlockItem( const NifItem * item, const std::initializer_list<const char *> & ancestors ) const
+{
+	return _getBlockItem( getBlockItem(item), ancestors );
+}
+inline const NifItem * NifModel::getBlockItem( const NifItem * item, const QStringList & ancestors ) const
+{
+	return _getBlockItem( getBlockItem(item), ancestors );
+}
+
+inline const NifItem * NifModel::getBlockItem( const QModelIndex & index ) const
+{
+	return getBlockItem( getItem(index) );
+}
+inline const NifItem * NifModel::getBlockItem( const QModelIndex & index, const QString & ancestor ) const
+{
+	return getBlockItem( getItem(index), ancestor );
+}
+inline const NifItem * NifModel::getBlockItem( const QModelIndex & index, const QLatin1String & ancestor ) const
+{
+	return getBlockItem( getItem(index), ancestor );
+}
+inline const NifItem * NifModel::getBlockItem( const QModelIndex & index, const char * ancestor ) const
+{
+	return getBlockItem( getItem(index), QLatin1String(ancestor) );
+}
+inline const NifItem * NifModel::getBlockItem( const QModelIndex & index, const std::initializer_list<const char *> & ancestors ) const
+{
+	return getBlockItem( getItem(index), ancestors );
+}
+inline const NifItem * NifModel::getBlockItem( const QModelIndex & index, const QStringList & ancestors ) const
+{
+	return getBlockItem( getItem(index), ancestors );
+}
+
+#define _NIFMODEL_NONCONST_GETBLOCKITEM_1(arg) const_cast<NifItem *>( const_cast<const NifModel *>(this)->getBlockItem( arg ) )
+#define _NIFMODEL_NONCONST_GETBLOCKITEM_2(arg1, arg2) const_cast<NifItem *>( const_cast<const NifModel *>(this)->getBlockItem( arg1, arg2 ) )
+
+inline NifItem * NifModel::getBlockItem( qint32 link )
+{
+	return _NIFMODEL_NONCONST_GETBLOCKITEM_1( link );
+}
+inline NifItem * NifModel::getBlockItem( qint32 link, const QString & ancestor )
+{
+	return _NIFMODEL_NONCONST_GETBLOCKITEM_2( link, ancestor );
+}
+inline NifItem * NifModel::getBlockItem( qint32 link, const QLatin1String & ancestor )
+{
+	return _NIFMODEL_NONCONST_GETBLOCKITEM_2( link, ancestor );
+}
+inline NifItem * NifModel::getBlockItem( qint32 link, const char * ancestor )
+{
+	return _NIFMODEL_NONCONST_GETBLOCKITEM_2( link, QLatin1String(ancestor) );
+}
+inline NifItem * NifModel::getBlockItem( qint32 link, const std::initializer_list<const char *> & ancestors )
+{
+	return _NIFMODEL_NONCONST_GETBLOCKITEM_2( link, ancestors );
+}
+inline NifItem * NifModel::getBlockItem( qint32 link, const QStringList & ancestors )
+{
+	return _NIFMODEL_NONCONST_GETBLOCKITEM_2( link, ancestors );
+}
+
+inline NifItem * NifModel::getBlockItem( const NifItem * item )
+{
+	return _NIFMODEL_NONCONST_GETBLOCKITEM_1( item );
+}
+inline NifItem * NifModel::getBlockItem( const NifItem * item, const QString & ancestor )
+{
+	return _NIFMODEL_NONCONST_GETBLOCKITEM_2( item, ancestor );
+}
+inline NifItem * NifModel::getBlockItem( const NifItem * item, const QLatin1String & ancestor )
+{
+	return _NIFMODEL_NONCONST_GETBLOCKITEM_2( item, ancestor );
+}
+inline NifItem * NifModel::getBlockItem( const NifItem * item, const char * ancestor )
+{
+	return _NIFMODEL_NONCONST_GETBLOCKITEM_2( item, QLatin1String(ancestor) );
+}
+inline NifItem * NifModel::getBlockItem( const NifItem * item, const std::initializer_list<const char *> & ancestors )
+{
+	return _NIFMODEL_NONCONST_GETBLOCKITEM_2( item, ancestors );
+}
+inline NifItem * NifModel::getBlockItem( const NifItem * item, const QStringList & ancestors )
+{
+	return _NIFMODEL_NONCONST_GETBLOCKITEM_2( item, ancestors );
+}
+
+inline NifItem * NifModel::getBlockItem( const QModelIndex & index )
+{
+	return _NIFMODEL_NONCONST_GETBLOCKITEM_1( index );
+}
+inline NifItem * NifModel::getBlockItem( const QModelIndex & index, const QString & ancestor )
+{
+	return _NIFMODEL_NONCONST_GETBLOCKITEM_2( index, ancestor );
+}
+inline NifItem * NifModel::getBlockItem( const QModelIndex & index, const QLatin1String & ancestor )
+{
+	return _NIFMODEL_NONCONST_GETBLOCKITEM_2( index, ancestor );
+}
+inline NifItem * NifModel::getBlockItem( const QModelIndex & index, const char * ancestor )
+{
+	return _NIFMODEL_NONCONST_GETBLOCKITEM_2( index, QLatin1String(ancestor) );
+}
+inline NifItem * NifModel::getBlockItem( const QModelIndex & index, const std::initializer_list<const char *> & ancestors )
+{
+	return _NIFMODEL_NONCONST_GETBLOCKITEM_2( index, ancestors );
+}
+inline NifItem * NifModel::getBlockItem( const QModelIndex & index, const QStringList & ancestors )
+{
+	return _NIFMODEL_NONCONST_GETBLOCKITEM_2( index, ancestors );
+}
+
+
+// Block index getters
+
+#define _NIFMODEL_GETBLOCKINDEX_1(arg) itemToIndex( getBlockItem( arg ) )
+#define _NIFMODEL_GETBLOCKINDEX_2(arg1, arg2) itemToIndex( getBlockItem( arg1, arg2 ) )
+
+inline QModelIndex NifModel::getBlockIndex( qint32 link ) const
+{
+	return _NIFMODEL_GETBLOCKINDEX_1( link );
+}
+inline QModelIndex NifModel::getBlockIndex( qint32 link, const QString & ancestor ) const
+{
+	return _NIFMODEL_GETBLOCKINDEX_2( link, ancestor );
+}
+inline QModelIndex NifModel::getBlockIndex( qint32 link, const QLatin1String & ancestor ) const
+{
+	return _NIFMODEL_GETBLOCKINDEX_2( link, ancestor );
+}
+inline QModelIndex NifModel::getBlockIndex( qint32 link, const char * ancestor ) const
+{
+	return _NIFMODEL_GETBLOCKINDEX_2( link, QLatin1String(ancestor) );
+}
+inline QModelIndex NifModel::getBlockIndex( qint32 link, const std::initializer_list<const char *> & ancestors ) const
+{
+	return _NIFMODEL_GETBLOCKINDEX_2( link, ancestors );
+}
+inline QModelIndex NifModel::getBlockIndex( qint32 link, const QStringList & ancestors ) const
+{
+	return _NIFMODEL_GETBLOCKINDEX_2( link, ancestors );
+}
+
+inline QModelIndex NifModel::getBlockIndex( const NifItem * item ) const
+{
+	return _NIFMODEL_GETBLOCKINDEX_1( item );
+}
+inline QModelIndex NifModel::getBlockIndex( const NifItem * item, const QString & ancestor ) const
+{
+	return _NIFMODEL_GETBLOCKINDEX_2( item, ancestor );
+}
+inline QModelIndex NifModel::getBlockIndex( const NifItem * item, const QLatin1String & ancestor ) const
+{
+	return _NIFMODEL_GETBLOCKINDEX_2( item, ancestor );
+}
+inline QModelIndex NifModel::getBlockIndex( const NifItem * item, const char * ancestor ) const
+{
+	return _NIFMODEL_GETBLOCKINDEX_2( item, QLatin1String(ancestor) );
+}
+inline QModelIndex NifModel::getBlockIndex( const NifItem * item, const std::initializer_list<const char *> & ancestors ) const
+{
+	return _NIFMODEL_GETBLOCKINDEX_2( item, ancestors );
+}
+inline QModelIndex NifModel::getBlockIndex( const NifItem * item, const QStringList & ancestors ) const
+{
+	return _NIFMODEL_GETBLOCKINDEX_2( item, ancestors );
+}
+
+inline QModelIndex NifModel::getBlockIndex( const QModelIndex & index ) const
+{
+	return _NIFMODEL_GETBLOCKINDEX_1( index );
+}
+inline QModelIndex NifModel::getBlockIndex( const QModelIndex & index, const QString & ancestor ) const
+{
+	return _NIFMODEL_GETBLOCKINDEX_2( index, ancestor );
+}
+inline QModelIndex NifModel::getBlockIndex( const QModelIndex & index, const QLatin1String & ancestor ) const
+{
+	return _NIFMODEL_GETBLOCKINDEX_2( index, ancestor );
+}
+inline QModelIndex NifModel::getBlockIndex( const QModelIndex & index, const char * ancestor ) const
+{
+	return _NIFMODEL_GETBLOCKINDEX_2( index, QLatin1String(ancestor) );
+}
+inline QModelIndex NifModel::getBlockIndex( const QModelIndex & index, const std::initializer_list<const char *> & ancestors ) const
+{
+	return _NIFMODEL_GETBLOCKINDEX_2( index, ancestors );
+}
+inline QModelIndex NifModel::getBlockIndex( const QModelIndex & index, const QStringList & ancestors ) const
+{
+	return _NIFMODEL_GETBLOCKINDEX_2( index, ancestors );
+}
+
+
+// isNiBlock
+
+inline bool NifModel::isNiBlock( const NifItem * item ) const
+{
+	return isTopItem( item ) && isBlockRow( item->row() );
+}
+inline bool NifModel::isNiBlock( const NifItem * item, const QString & testType ) const
+{
+	return isNiBlock(item) && item->hasName(testType);
+}
+inline bool NifModel::isNiBlock( const NifItem * item, const QLatin1String & testType ) const
+{
+	return isNiBlock(item) && item->hasName(testType);
+}
+inline bool NifModel::isNiBlock( const NifItem * item, const char * testType ) const
+{
+	return isNiBlock( item, QLatin1String(testType) );
+}
+inline bool NifModel::isNiBlock( const QModelIndex & index ) const
+{
+	return isNiBlock( getItem(index) );
+}
+inline bool NifModel::isNiBlock( const QModelIndex & index, const QString & testType ) const
+{
+	return isNiBlock( getItem(index), testType );
+}
+inline bool NifModel::isNiBlock( const QModelIndex & index, const QLatin1String & testType ) const
+{
+	return isNiBlock( getItem(index), testType );
+}
+inline bool NifModel::isNiBlock( const QModelIndex & index, const char * testType ) const
+{
+	return isNiBlock( getItem(index), QLatin1String(testType) );
+}
+inline bool NifModel::isNiBlock( const QModelIndex & index, const std::initializer_list<const char *> & testTypes ) const
+{
+	return isNiBlock( getItem(index), testTypes );
+}
+inline bool NifModel::isNiBlock( const QModelIndex & index, const QStringList & testTypes ) const
+{
+	return isNiBlock( getItem(index), testTypes );
+}
+
+
+// Block inheritance
+
+inline bool NifModel::inherits( const QString & blockName, const char * ancestor ) const
+{
+	return inherits( blockName, QLatin1String(ancestor) );
+}
+inline bool NifModel::blockInherits( const NifItem * item, const char * ancestor ) const
+{
+	return blockInherits( item, QLatin1String(ancestor) );
+}
+inline bool NifModel::blockInherits( const QModelIndex & index, const QString & ancestor ) const
+{
+	return blockInherits( getItem(index), ancestor );
+}
+inline bool NifModel::blockInherits( const QModelIndex & index, const QLatin1String & ancestor ) const
+{
+	return blockInherits( getItem(index), ancestor );
+}
+inline bool NifModel::blockInherits( const QModelIndex & index, const char * ancestor ) const
+{
+	return blockInherits( getItem(index), QLatin1String(ancestor) );
+}
+inline bool NifModel::blockInherits( const QModelIndex & index, const std::initializer_list<const char *> & ancestors ) const
+{
+	return blockInherits( getItem(index), ancestors );
+}
+inline bool NifModel::blockInherits( const QModelIndex & index, const QStringList & ancestors ) const
+{
+	return blockInherits( getItem(index), ancestors );
+}
+
+
+// Item value getters
+
+template <typename T> inline T NifModel::get( const NifItem * item ) const
 {
 	return BaseModel::get<T>( item );
 }
-
-template <typename T> inline T NifModel::get( NifItem * parent, const QString & name ) const
+template <> inline QString NifModel::get( const NifItem * item ) const
 {
-	return BaseModel::get<T>( parent, name );
+	return resolveString( item );
+}
+template <typename T> inline T NifModel::get( const NifItem * itemParent, int itemIndex ) const
+{
+	return get<T>( getItem(itemParent, itemIndex) );
+}
+template <typename T> inline T NifModel::get( const NifItem * itemParent, const QString & itemName ) const
+{
+	return get<T>( getItem(itemParent, itemName) );
+}
+template <typename T> inline T NifModel::get( const NifItem * itemParent, const QLatin1String & itemName ) const
+{
+	return get<T>( getItem(itemParent, itemName) );
+}
+template <typename T> inline T NifModel::get( const NifItem * itemParent, const char * itemName ) const
+{
+	return get<T>( getItem(itemParent, QLatin1String(itemName)) );
+}
+template <typename T> inline T NifModel::get( const QModelIndex & index ) const
+{
+	return get<T>( getItem(index) );
+}
+template <typename T> inline T NifModel::get( const QModelIndex & itemParent, int itemIndex ) const
+{
+	return get<T>( getItem(itemParent, itemIndex) );
+}
+template <typename T> inline T NifModel::get( const QModelIndex & itemParent, const QString & itemName ) const
+{
+	return get<T>( getItem(itemParent, itemName) );
+}
+template <typename T> inline T NifModel::get( const QModelIndex & itemParent, const QLatin1String & itemName ) const
+{
+	return get<T>( getItem(itemParent, itemName) );
+}
+template <typename T> inline T NifModel::get( const QModelIndex & itemParent, const char * itemName ) const
+{
+	return get<T>( getItem(itemParent, QLatin1String(itemName)) );
 }
 
-template <typename T> inline T NifModel::get( const QModelIndex & parent, const QString & name ) const
+
+// Item value setters
+
+template <typename T> inline bool NifModel::set( NifItem * item, const T & val )
 {
-	return BaseModel::get<T>( parent, name );
+	return BaseModel::set<T>( item, val );
+}
+template <> inline bool NifModel::set( NifItem * item, const QString & val )
+{
+	return assignString( item, val );
+}
+template <typename T> inline bool NifModel::set( const NifItem * itemParent, int itemIndex, const T & val )
+{
+	return set<T>( getItem(itemParent, itemIndex, true), val );
+}
+template <typename T> inline bool NifModel::set( const NifItem * itemParent, const QString & itemName, const T & val )
+{
+	return set<T>( getItem(itemParent, itemName, true), val );
+}
+template <typename T> inline bool NifModel::set( const NifItem * itemParent, const QLatin1String & itemName, const T & val )
+{
+	return set<T>( getItem(itemParent, itemName, true), val );
+}
+template <typename T> inline bool NifModel::set( const NifItem * itemParent, const char * itemName, const T & val )
+{
+	return set<T>( getItem(itemParent, QLatin1String(itemName), true), val );
+}
+template <typename T> inline bool NifModel::set( const QModelIndex & index, const T & val )
+{
+	return set<T>( getItem(index), val );
+}
+template <typename T> inline bool NifModel::set( const QModelIndex & itemParent, int itemIndex, const T & val )
+{
+	return set<T>( getItem(itemParent, itemIndex, true), val );
+}
+template <typename T> inline bool NifModel::set( const QModelIndex & itemParent, const QString & itemName, const T & val )
+{
+	return set<T>( getItem(itemParent, itemName, true), val );
+}
+template <typename T> inline bool NifModel::set( const QModelIndex & itemParent, const QLatin1String & itemName, const T & val )
+{
+	return set<T>( getItem(itemParent, itemName, true), val );
+}
+template <typename T> inline bool NifModel::set( const QModelIndex & itemParent, const char * itemName, const T & val )
+{
+	return set<T>( getItem(itemParent, QLatin1String(itemName), true), val );
 }
 
-template <typename T> inline bool NifModel::set( const QModelIndex & index, const T & d )
+
+// String resolving ("get ex")
+
+inline QString NifModel::resolveString( const NifItem * itemParent, int itemIndex ) const
 {
-	bool result = BaseModel::set<T>( index, d );
-	if ( result )
-		invalidateDependentConditions( index );
-	return result;
+	return resolveString( getItem(itemParent, itemIndex) );
+}
+inline QString NifModel::resolveString( const NifItem * itemParent, const QString & itemName ) const
+{
+	return resolveString( getItem(itemParent, itemName) );
+}
+inline QString NifModel::resolveString( const NifItem * itemParent, const QLatin1String & itemName ) const
+{
+	return resolveString( getItem(itemParent, itemName) );
+}
+inline QString NifModel::resolveString( const NifItem * itemParent, const char * itemName ) const
+{
+	return resolveString( getItem(itemParent, QLatin1String(itemName)) );
+}
+inline QString NifModel::resolveString( const QModelIndex & index ) const
+{
+	return resolveString( getItem(index) );
+}
+inline QString NifModel::resolveString( const QModelIndex & itemParent, int itemIndex ) const
+{
+	return resolveString( getItem(itemParent, itemIndex) );
+}
+inline QString NifModel::resolveString( const QModelIndex & itemParent, const QString & itemName ) const
+{
+	return resolveString( getItem(itemParent, itemName) );
+}
+inline QString NifModel::resolveString( const QModelIndex & itemParent, const QLatin1String & itemName ) const
+{
+	return resolveString( getItem(itemParent, itemName) );
+}
+inline QString NifModel::resolveString( const QModelIndex & itemParent, const char * itemName ) const
+{
+	return resolveString( getItem(itemParent, QLatin1String(itemName)) );
 }
 
-template <typename T> inline bool NifModel::set( NifItem * item, const T & d )
+
+// String assigning ("set ex")
+
+inline bool NifModel::assignString( const NifItem * itemParent, int itemIndex, const QString & string, bool replace )
 {
-	bool result = BaseModel::set<T>( item, d );
-	if ( result )
-		invalidateDependentConditions( item );
-	return result;
+	return assignString( getItem(itemParent, itemIndex, true), string, replace );
+}
+inline bool NifModel::assignString( const NifItem * itemParent, const QString & itemName, const QString & string, bool replace )
+{
+	return assignString( getItem(itemParent, itemName, true), string, replace );
+}
+inline bool NifModel::assignString( const NifItem * itemParent, const QLatin1String & itemName, const QString & string, bool replace )
+{
+	return assignString( getItem(itemParent, itemName, true), string, replace );
+}
+inline bool NifModel::assignString( const NifItem * itemParent, const char * itemName, const QString & string, bool replace )
+{
+	return assignString( getItem(itemParent, QLatin1String(itemName), true), string, replace );
+}
+inline bool NifModel::assignString( const QModelIndex & index, const QString & string, bool replace )
+{
+	return assignString( getItem(index), string, replace );
+}
+inline bool NifModel::assignString( const QModelIndex & itemParent, int itemIndex, const QString & string, bool replace )
+{
+	return assignString( getItem(itemParent, itemIndex, true), string, replace );
+}
+inline bool NifModel::assignString( const QModelIndex & itemParent, const QString & itemName, const QString & string, bool replace )
+{
+	return assignString( getItem(itemParent, itemName, true), string, replace );
+}
+inline bool NifModel::assignString( const QModelIndex & itemParent, const QLatin1String & itemName, const QString & string, bool replace )
+{
+	return assignString( getItem(itemParent, itemName, true), string, replace );
+}
+inline bool NifModel::assignString( const QModelIndex & itemParent, const char * itemName, const QString & string, bool replace )
+{
+	return assignString( getItem(itemParent, QLatin1String(itemName), true), string, replace );
 }
 
-template <typename T> inline bool NifModel::set( const QModelIndex & parent, const QString & name, const T & d )
+
+// Link getters
+
+inline qint32 NifModel::getLink( const NifItem * item ) const
 {
-	bool result = BaseModel::set<T>( parent, name, d );
-	if ( result )
-		invalidateDependentConditions( getIndex( parent, name ) );
-	return result;
+	return item ? item->getLinkValue() : -1;
+}
+inline qint32 NifModel::getLink( const NifItem * itemParent, int itemIndex ) const
+{
+	return getLink( getItem(itemParent, itemIndex) );
+}
+inline qint32 NifModel::getLink( const NifItem * itemParent, const QString & itemName ) const
+{
+	return getLink( getItem(itemParent, itemName) );
+}
+inline qint32 NifModel::getLink( const NifItem * itemParent, const QLatin1String & itemName ) const
+{
+	return getLink( getItem(itemParent, itemName) );
+}
+inline qint32 NifModel::getLink( const NifItem * itemParent, const char * itemName ) const
+{
+	return getLink( getItem(itemParent, QLatin1String(itemName)) );
+}
+inline qint32 NifModel::getLink( const QModelIndex & index ) const
+{
+	return getLink( getItem(index) );
+}
+inline qint32 NifModel::getLink( const QModelIndex & itemParent, int itemIndex ) const
+{
+	return getLink( getItem(itemParent, itemIndex) );
+}
+inline qint32 NifModel::getLink( const QModelIndex & itemParent, const QString & itemName ) const
+{
+	return getLink( getItem(itemParent, itemName) );
+}
+inline qint32 NifModel::getLink( const QModelIndex & itemParent, const QLatin1String & itemName ) const
+{
+	return getLink( getItem(itemParent, itemName) );
+}
+inline qint32 NifModel::getLink( const QModelIndex & itemParent, const char * itemName ) const
+{
+	return getLink( getItem(itemParent, QLatin1String(itemName)) );
 }
 
-template <typename T> inline bool NifModel::set( NifItem * parent, const QString & name, const T & d )
+
+// Link setters
+
+inline bool NifModel::setLink( const NifItem * itemParent, int itemIndex, qint32 link )
 {
-	bool result = BaseModel::set<T>( parent, name, d );
-	if ( result )
-		invalidateDependentConditions( getItem( parent, name ) );
-	return result;
+	return setLink( getItem(itemParent, itemIndex, true), link );
+}
+inline bool NifModel::setLink( const NifItem * itemParent, const QString & itemName, qint32 link )
+{
+	return setLink( getItem(itemParent, itemName, true), link );
+}
+inline bool NifModel::setLink( const NifItem * itemParent, const QLatin1String & itemName, qint32 link )
+{
+	return setLink( getItem(itemParent, itemName, true), link );
+}
+inline bool NifModel::setLink( const NifItem * itemParent, const char * itemName, qint32 link )
+{
+	return setLink( getItem(itemParent, QLatin1String(itemName), true), link );
+}
+inline bool NifModel::setLink( const QModelIndex & index, qint32 link )
+{
+	return setLink( getItem(index), link );
+}
+inline bool NifModel::setLink( const QModelIndex & itemParent, int itemIndex, qint32 link )
+{
+	return setLink( getItem(itemParent, itemIndex, true), link );
+}
+inline bool NifModel::setLink( const QModelIndex & itemParent, const QString & itemName, qint32 link )
+{
+	return setLink( getItem(itemParent, itemName, true), link );
+}
+inline bool NifModel::setLink( const QModelIndex & itemParent, const QLatin1String & itemName, qint32 link )
+{
+	return setLink( getItem(itemParent, itemName, true), link );
+}
+inline bool NifModel::setLink( const QModelIndex & itemParent, const char * itemName, qint32 link )
+{
+	return setLink( getItem(itemParent, QLatin1String(itemName), true), link );
 }
 
-template <> inline QString NifModel::get( const QModelIndex & index ) const
+
+// Link array getters
+
+inline QVector<qint32> NifModel::getLinkArray( const NifItem * arrayParent, int arrayIndex ) const
 {
-	return this->string( index );
+	return getLinkArray( getItem(arrayParent, arrayIndex) );
+}
+inline QVector<qint32> NifModel::getLinkArray( const NifItem * arrayParent, const QString & arrayName ) const
+{
+	return getLinkArray( getItem(arrayParent, arrayName) );
+}
+inline QVector<qint32> NifModel::getLinkArray( const NifItem * arrayParent, const QLatin1String & arrayName ) const
+{
+	return getLinkArray( getItem(arrayParent, arrayName) );
+}
+inline QVector<qint32> NifModel::getLinkArray( const NifItem * arrayParent, const char * arrayName ) const
+{
+	return getLinkArray( getItem(arrayParent, QLatin1String(arrayName)) );
+}
+inline QVector<qint32> NifModel::getLinkArray( const QModelIndex & iArray ) const
+{
+	return getLinkArray( getItem(iArray) );
+}
+inline QVector<qint32> NifModel::getLinkArray( const QModelIndex & arrayParent, int arrayIndex ) const
+{
+	return getLinkArray( getItem(arrayParent, arrayIndex) );
+}
+inline QVector<qint32> NifModel::getLinkArray( const QModelIndex & arrayParent, const QString & arrayName ) const
+{
+	return getLinkArray( getItem(arrayParent, arrayName) );
+}
+inline QVector<qint32> NifModel::getLinkArray( const QModelIndex & arrayParent, const QLatin1String & arrayName ) const
+{
+	return getLinkArray( getItem(arrayParent, arrayName) );
+}
+inline QVector<qint32> NifModel::getLinkArray( const QModelIndex & arrayParent, const char * arrayName ) const
+{
+	return getLinkArray( getItem(arrayParent, QLatin1String(arrayName)) );
 }
 
-//template <> inline QString NifModel::get( NifItem * item ) const {
-//	return this->string( this->item );
-//}
 
-//template <> inline QString NifModel::get( NifItem * parent, const QString & name ) const {
-//	return this->string(parent, name);
-//}
+// Link array setters
 
-template <> inline QString NifModel::get( const QModelIndex & parent, const QString & name ) const
+inline bool NifModel::setLinkArray( const NifItem * arrayParent, int arrayIndex, const QVector<qint32> & links )
 {
-	return this->string( parent, name );
+	return setLinkArray( getItem(arrayParent, arrayIndex, true), links );
+}
+inline bool NifModel::setLinkArray( const NifItem * arrayParent, const QString & arrayName, const QVector<qint32> & links )
+{
+	return setLinkArray( getItem(arrayParent, arrayName, true), links );
+}
+inline bool NifModel::setLinkArray( const NifItem * arrayParent, const QLatin1String & arrayName, const QVector<qint32> & links )
+{
+	return setLinkArray( getItem(arrayParent, arrayName, true), links );
+}
+inline bool NifModel::setLinkArray( const NifItem * arrayParent, const char * arrayName, const QVector<qint32> & links )
+{
+	return setLinkArray( getItem(arrayParent, QLatin1String(arrayName), true), links );
+}
+inline bool NifModel::setLinkArray( const QModelIndex & iArray, const QVector<qint32> & links )
+{
+	return setLinkArray( getItem(iArray), links );
+}
+inline bool NifModel::setLinkArray( const QModelIndex & arrayParent, int arrayIndex, const QVector<qint32> & links )
+{
+	return setLinkArray( getItem(arrayParent, arrayIndex, true), links );
+}
+inline bool NifModel::setLinkArray( const QModelIndex & arrayParent, const QString & arrayName, const QVector<qint32> & links )
+{
+	return setLinkArray( getItem(arrayParent, arrayName, true), links );
+}
+inline bool NifModel::setLinkArray( const QModelIndex & arrayParent, const QLatin1String & arrayName, const QVector<qint32> & links )
+{
+	return setLinkArray( getItem(arrayParent, arrayName, true), links );
+}
+inline bool NifModel::setLinkArray( const QModelIndex & arrayParent, const char * arrayName, const QVector<qint32> & links )
+{
+	return setLinkArray( getItem(arrayParent, QLatin1String(arrayName), true), links );
 }
 
-template <> inline bool NifModel::set( const QModelIndex & index, const QString & d )
-{
-	return this->assignString( index, d );
-}
-
-//template <> inline bool NifModel::set( NifItem * item, const QString & d ) {
-//	return this->assignString( item, d );
-//}
-
-template <> inline bool NifModel::set( const QModelIndex & parent, const QString & name, const QString & d )
-{
-	return this->assignString( parent, name, d );
-}
-
-//template <> inline bool NifModel::set( NifItem * parent, const QString & name, const QString & d ) {
-//	return this->assignString(parent, name, d);
-//}
 #endif

@@ -186,6 +186,8 @@ void NifSkope::initActions()
 	connect( ui->aSave, &QAction::triggered, this, &NifSkope::save );  
 	connect( ui->aSaveAs, &QAction::triggered, this, &NifSkope::saveAsDlg );
 
+	ui->aReload->setDisabled(true);
+
 	// TODO: Assure Actions and Scene state are synced
 	// Set Data for Actions to pass onto Scene when clicking
 	/*	
@@ -390,6 +392,22 @@ void NifSkope::initDockWidgets()
 	dRefr->setVisible( false );
 	dInsp->setVisible( false );
 	dKfm->setVisible( false );
+
+	ui->menuShow->addAction(dList->toggleViewAction());
+	ui->menuShow->addAction(dTree->toggleViewAction());
+	ui->menuShow->addAction(dHeader->toggleViewAction());
+	ui->menuShow->addAction(dBrowser->toggleViewAction());
+	ui->menuShow->addAction(dInsp->toggleViewAction());
+	ui->menuShow->addAction(dKfm->toggleViewAction());
+	ui->menuShow->addAction(dRefr->toggleViewAction());
+
+	ui->tView->addAction(dList->toggleViewAction());
+	ui->tView->addAction(dTree->toggleViewAction());
+	ui->tView->addAction(dHeader->toggleViewAction());
+	ui->tView->addAction(dBrowser->toggleViewAction());
+	ui->tView->addAction(dInsp->toggleViewAction());
+	ui->tView->addAction(dKfm->toggleViewAction());
+	ui->tView->addAction(dRefr->toggleViewAction());
 
 	// Set Inspect widget
 	dInsp->setWidget( inspect );
@@ -608,13 +626,18 @@ void NifSkope::initToolBars()
 		}
 	} );
 
+	connect ( ogl->scene, &Scene::disableSave, [this]() {
+		ui->aSave->setDisabled(true);
+		ui->aSaveAs->setDisabled(true);
+		ui->aReload->setDisabled(true);
+	} );
 
 	// LOD Toolbar
 	QToolBar * tLOD = ui->tLOD;
 
-	QSettings settings;
-	int lodLevel = settings.value( "GLView/LOD Level", 2 ).toInt();
-	settings.setValue( "GLView/LOD Level", lodLevel );
+	//QSettings settings;
+	//int lodLevel = settings.value( "GLView/LOD Level", 0 ).toInt();
+	//settings.setValue( "GLView/LOD Level", lodLevel );
 
 	QSlider * lodSlider = new QSlider( Qt::Horizontal );
 	lodSlider->setFocusPolicy( Qt::StrongFocus );
@@ -622,8 +645,8 @@ void NifSkope::initToolBars()
 	lodSlider->setTickInterval( 1 );
 	lodSlider->setSingleStep( 1 );
 	lodSlider->setMinimum( 0 );
-	lodSlider->setMaximum( 2 );
-	lodSlider->setValue( lodLevel );
+	lodSlider->setMaximum( 3 );
+	lodSlider->setValue(0);
 
 	tLOD->addWidget( lodSlider );
 	tLOD->setEnabled( false );
@@ -773,12 +796,23 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 	if ( nif && nif->getVersionNumber() >= 0x14050000 ) {
 		mExport->setDisabled( true );
 		mImport->setDisabled( true );
-	} else {
+	} else if ( nif ) {
 		mExport->setDisabled( false );
-		if ( nif->getUserVersion2() >= 100 )
-			mImport->setDisabled( true );
-		else
-			mImport->setDisabled( false );
+		mImport->setDisabled( false );
+		
+		if ( nif->getBSVersion() >= 172 ) {
+			// Disable OBJ if/until it is supported for Starfield
+			mImport->actions().at(0)->setDisabled(true);
+			mImport->actions().at(1)->setDisabled(true);
+			mExport->actions().at(0)->setDisabled(true);
+		} else {
+			// Disable glTF if/until it is supported for pre-Starfield
+			//mImport->actions().at(2)->setDisabled(true);
+			mExport->actions().at(1)->setDisabled(true);
+		}
+		// Import OBJ as Collision disabled for non-Bethesda
+		if ( nif->getBSVersion() == 0 )
+			mImport->actions().at(1)->setDisabled(true);
 	}
 
 	// Reconnect the models to the views
@@ -791,16 +825,20 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 	ogl->setEnabled( true );
 	setEnabled( true ); // IMPORTANT!
 
+	ui->aSave->setDisabled(false);
+	ui->aSaveAs->setDisabled(false);
+	ui->aReload->setDisabled(false);
+
 	int timeout = 2500;
 	if ( success ) {
 		// Scroll panel back to top
 		tree->scrollTo( nif->index( 0, 0 ) );
 
-		select( nif->getHeader() );
+		select( nif->getHeaderIndex() );
 
-		header->setRootIndex( nif->getHeader() );
+		header->setRootIndex( nif->getHeaderIndex() );
 		// Refresh the header rows
-		header->updateConditions( nif->getHeader().child( 0, 0 ), nif->getHeader().child( 20, 0 ) );
+		header->updateConditions( nif->getHeaderIndex().child( 0, 0 ), nif->getHeaderIndex().child( 20, 0 ) );
 
 		ogl->setOrientation( GLView::ViewFront );
 
@@ -831,6 +869,9 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 
 	// Center the model on load
 	ogl->center();
+
+	// Expand the top level of Block List tree
+	ui->list->expandToDepth(0);
 
 	// Hide Progress Bar
 	QTimer::singleShot( timeout, progress, SLOT( hide() ) );
@@ -896,6 +937,7 @@ void NifSkope::enableUi()
 	ui->aSaveMenu->setEnabled( true );
 	ui->aSave->setEnabled( true );
 	ui->aSaveAs->setEnabled( true );
+	ui->aReload->setEnabled( true );
 	ui->aHeader->setEnabled( true );
 
 	ui->mRender->setEnabled( true );
@@ -1396,7 +1438,7 @@ void NifSkope::on_aHeader_triggered()
 	if ( tree )
 		tree->clearRootIndex();
 
-	select( nif->getHeader() );
+	select( nif->getHeaderIndex() );
 }
 
 

@@ -31,6 +31,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "nifskope.h"
+#include "gl/glscene.h"
+#include "glview.h"
 #include "model/nifmodel.h"
 #include "model/nifproxymodel.h"
 #include "ui/widgets/nifview.h"
@@ -43,16 +45,20 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 void exportObj( const NifModel * nif, const QModelIndex & index );
 void exportCol( const NifModel * nif, QFileInfo );
-void importObj( NifModel * nif, const QModelIndex & index );
+void importObj( NifModel * nif, const QModelIndex & index, bool collision = false );
 void import3ds( NifModel * nif, const QModelIndex & index );
 
+void exportGltf(const NifModel* nif, const Scene* scene, const QModelIndex& index);
 
 void NifSkope::fillImportExportMenus()
 {
 	mExport->addAction( tr( "Export .OBJ" ) );
+	mExport->addAction(tr("Export .gltf"));
 	//mExport->addAction( tr( "Export .DAE" ) );
 	//mImport->addAction( tr( "Import .3DS" ) );
 	mImport->addAction( tr( "Import .OBJ" ) );
+	mImport->addAction( tr( "Import .OBJ as Collision" ) );
+	//mImport->addAction(tr("Import .gltf"));
 }
 
 void NifSkope::sltImportExport( QAction * a )
@@ -75,23 +81,37 @@ void NifSkope::sltImportExport( QAction * a )
 		}
 	}
 
-	if ( nif && nif->getVersionNumber() >= 0x14050000 ) {
+	if ( !nif || nif->getVersionNumber() >= 0x14050000 ) {
 		mExport->setDisabled( true );
 		mImport->setDisabled( true );
 		return;
-	} else {
-		if ( nif->getUserVersion2() >= 100 )
-			mImport->setDisabled( true );
-		else
-			mImport->setDisabled( false );
-		
-		mExport->setDisabled( false );
 	}
+
+	mImport->setDisabled( false );
+	mExport->setDisabled( false );
+
+	if ( nif->getBSVersion() >= 172 ) {
+		// Disable OBJ if/until it is supported for Starfield
+		mImport->actions().at(0)->setDisabled(true);
+		mImport->actions().at(1)->setDisabled(true);
+		mExport->actions().at(0)->setDisabled(true);
+	} else {
+		// Disable glTF if/until it is supported for pre-Starfield
+		//mImport->actions().at(2)->setDisabled(true);
+		mExport->actions().at(1)->setDisabled(true);
+	}
+	// Import OBJ as Collision disabled for non-Bethesda
+	if ( nif->getBSVersion() == 0 )
+		mImport->actions().at(1)->setDisabled( true );
 
 	if ( a->text() == tr( "Export .OBJ" ) )
 		exportObj( nif, index );
 	else if ( a->text() == tr( "Import .OBJ" ) )
 		importObj( nif, index );
+	else if ( a->text() == tr( "Import .OBJ as Collision" ) )
+		importObj( nif, index, true );
+	else if ( a->text() == tr("Export .gltf") )
+		exportGltf(nif, ogl->scene, index);
 	//else if ( a->text() == tr( "Import .3DS" ) )
 	//	import3ds( nif, index );
 	//else if ( a->text() == tr( "Export .DAE" ) )

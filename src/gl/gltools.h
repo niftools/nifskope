@@ -36,9 +36,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "data/niftypes.h"
 
 #include <QOpenGLContext>
+#include <QPair>
 
 
 //! @file gltools.h BoundSphere, VertexWeight, BoneWeights, SkinPartition
+
+
+using TriStrip = QVector<quint16>;
+Q_DECLARE_TYPEINFO(TriStrip, Q_MOVABLE_TYPE);
+using TexCoords = QVector<Vector2>;
+Q_DECLARE_TYPEINFO(TexCoords, Q_MOVABLE_TYPE);
+
 
 //! A bounding sphere for an object, typically a Mesh
 class BoundSphere final
@@ -52,6 +60,10 @@ public:
 
 	Vector3 center;
 	float radius;
+
+	void update( NifModel * nif, const QModelIndex & );
+
+	static void setBounds( NifModel * nif, const QModelIndex &, const Vector3 & center, float radius );
 
 	BoundSphere & operator=( const BoundSphere & );
 	BoundSphere & operator|=( const BoundSphere & );
@@ -77,8 +89,25 @@ public:
 	float weight;
 };
 
+//! A bone, weight pair
+class BoneWeightUNORM16 final
+{
+public:
+	BoneWeightUNORM16()
+	{
+		bone = 0; weight = 0.0;
+	}
+	BoneWeightUNORM16(quint16 b, float w)
+	{
+		bone = b; weight = w;
+	}
+
+	quint16 bone;
+	float weight;
+};
+
 //! A set of vertices weighted to a bone
-class BoneWeights final
+class BoneWeights
 {
 public:
 	BoneWeights() {}
@@ -92,6 +121,15 @@ public:
 	Vector3 tcenter;
 	int bone = 0;
 	QVector<VertexWeight> weights;
+};
+
+class BoneWeightsUNorm : public BoneWeights
+{
+public:
+	BoneWeightsUNorm() {}
+	BoneWeightsUNorm(QVector<QPair<quint16, quint16>> weights, int v);
+
+	QVector<BoneWeightUNORM16> weightsUNORM;
 };
 
 //! A skin partition
@@ -113,6 +151,15 @@ public:
 	QVector<Triangle> triangles;
 	QVector<QVector<quint16> > tristrips;
 };
+
+float bhkScale( const NifModel * nif );
+float bhkInvScale( const NifModel * nif );
+float bhkScaleMult( const NifModel * nif );
+
+Transform bhkBodyTrans( const NifModel * nif, const QModelIndex & index );
+
+QModelIndex bhkGetEntity( const NifModel * nif, const QModelIndex & index, const QString & name );
+QModelIndex bhkGetRBInfo( const NifModel * nif, const QModelIndex & index, const QString & name );
 
 QVector<int> sortAxes( QVector<float> axesDots );
 

@@ -51,11 +51,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! @file glnode.cpp Scene management for visible NiNodes and their children.
 
-#ifndef M_PI
-#define M_PI 3.1415926535897932385
-#endif
-
-
 int Node::SELECTING = 0;
 
 static QColor highlightColor;
@@ -192,7 +187,7 @@ void NodeList::alphaSort()
  */
 
 
-Node::Node( Scene * s, const QModelIndex & index ) : IControllable( s, index ), parent( 0 ), ref( 0 )
+Node::Node( Scene * s, const QModelIndex & iBlock) : IControllable( s, iBlock ), parent( 0 ), ref( 0 )
 {
 	nodeId = 0;
 	flags.bits = 0;
@@ -201,7 +196,6 @@ Node::Node( Scene * s, const QModelIndex & index ) : IControllable( s, index ), 
 
 	connect( NifSkope::getOptions(), &SettingsDialog::saveSettings, this, &Node::updateSettings );
 }
-
 
 void Node::updateSettings()
 {
@@ -282,51 +276,39 @@ Controller * Node::findController( const QString & proptype, const QModelIndex &
 	return c;
 }
 
-void Node::update( const NifModel * nif, const QModelIndex & index )
+void Node::updateImpl( const NifModel * nif, const QModelIndex & index )
 {
-	IControllable::update( nif, index );
-
-	if ( !iBlock.isValid() ) {
-		clear();
-		return;
-	}
+	IControllable::updateImpl( nif, index );
 
 	nodeId = nif->getBlockNumber( iBlock );
 
 	if ( iBlock == index ) {
 		flags.bits = nif->get<int>( iBlock, "Flags" );
 		local = Transform( nif, iBlock );
-	}
 
-	if ( iBlock == index || !index.isValid() ) {
-		PropertyList newProps;
-		for ( const auto l : nif->getLinkArray( iBlock, "Properties" ) ) {
-			if ( Property * p = scene->getProperty( nif, nif->getBlock( l ) ) )
-				newProps.add( p );
-		}
+		// Properties
+		properties.clear();
+		for ( auto l : nif->getLinkArray(iBlock, "Properties") )
+			properties.add( scene->getProperty(nif, nif->getBlockIndex(l)) );
 
-		if ( Property * p = scene->getProperty( nif, nif->getBlock( nif->getLink( iBlock, "Shader Property" ) ) ) )
-			newProps.add( p );
+		properties.add( scene->getProperty(nif, iBlock, "Shader Property", "BSShaderProperty") );
+		properties.add( scene->getProperty(nif, iBlock, "Alpha Property", "NiAlphaProperty") );
 
-		if ( Property * p = scene->getProperty( nif, nif->getBlock( nif->getLink( iBlock, "Alpha Property" ) ) ) )
-			newProps.add( p );
-
-		properties = newProps;
-
+		// Children
 		children.clear();
 		QModelIndex iChildren = nif->getIndex( iBlock, "Children" );
-		QList<qint32> lChildren = nif->getChildLinks( nif->getBlockNumber( iBlock ) );
-
 		if ( iChildren.isValid() ) {
-			for ( int c = 0; c < nif->rowCount( iChildren ); c++ ) {
-				qint32 link = nif->getLink( iChildren.child( c, 0 ) );
+			int nChildren = nif->rowCount(iChildren);
+			if ( nChildren > 0 ) {
+				QList<qint32> lChildren = nif->getChildLinks( nodeId );
+				for ( int c = 0; c < nChildren; c++ ) {
+					qint32 link = nif->getLink( iChildren.child( c, 0 ) );
 
-				if ( lChildren.contains( link ) ) {
-					QModelIndex iChild = nif->getBlock( link );
-					Node * node = scene->getNode( nif, iChild );
-
-					if ( node ) {
-						node->makeParent( this );
+					if ( lChildren.contains( link ) ) {
+						QModelIndex iChild = nif->getBlockIndex( link );
+						Node * node = scene->getNode( nif, iChild );
+						if ( node )
+							node->makeParent( this );
 					}
 				}
 			}
@@ -351,24 +333,19 @@ void Node::setController( const NifModel * nif, const QModelIndex & iController 
 
 	if ( cname == "NiTransformController" ) {
 		Controller * ctrl = new TransformController( this, iController );
-		ctrl->update( nif, iController );
-		controllers.append( ctrl );
+		registerController(nif, ctrl);
 	} else if ( cname == "NiMultiTargetTransformController" ) {
 		Controller * ctrl = new MultiTargetTransformController( this, iController );
-		ctrl->update( nif, iController );
-		controllers.append( ctrl );
+		registerController(nif, ctrl);
 	} else if ( cname == "NiControllerManager" ) {
 		Controller * ctrl = new ControllerManager( this, iController );
-		ctrl->update( nif, iController );
-		controllers.append( ctrl );
+		registerController(nif, ctrl);
 	} else if ( cname == "NiKeyframeController" ) {
 		Controller * ctrl = new KeyframeController( this, iController );
-		ctrl->update( nif, iController );
-		controllers.append( ctrl );
+		registerController(nif, ctrl);
 	} else if ( cname == "NiVisController" ) {
 		Controller * ctrl = new VisibilityController( this, iController );
-		ctrl->update( nif, iController );
-		controllers.append( ctrl );
+		registerController(nif, ctrl);
 	}
 }
 
@@ -474,12 +451,12 @@ Node * Node::findChild( const QString & str ) const
 
 bool Node::isHidden() const
 {
-	if ( scene->options & Scene::ShowHidden )
+	if ( scene->hasOption(Scene::ShowHidden) )
 		return false;
-
-	if ( flags.node.hidden || ( parent && parent->isHidden() ) )
+	if ( flags.node.hidden )
 		return true;
-
+	if ( parent && parent->isHidden() )
+		return true;
 	return false; /*!Options::cullExpression().pattern().isEmpty() && name.contains( Options::cullExpression() );*/
 }
 
@@ -489,23 +466,20 @@ void Node::transform()
 
 	// if there's a rigid body attached, then calculate and cache the body's transform
 	// (need this later in the drawing stage for the constraints)
-	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
-
-	if ( iBlock.isValid() && nif ) {
-		// Scale up for Skyrim
-		float havokScale = (nif->checkVersion( 0x14020007, 0x14020007 ) && nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
-
-		QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );
-		if ( nif->getUserVersion2() > 0 && iObject.isValid() ) {
-			QModelIndex iBody = nif->getBlock( nif->getLink( iObject, "Body" ) );
+	auto nif = NifModel::fromValidIndex( iBlock );
+	if ( nif && nif->getBSVersion() > 0 ) {
+		QModelIndex iObject = nif->getBlockIndex( nif->getLink( iBlock, "Collision Object" ) );
+		if ( iObject.isValid() ) {
+			QModelIndex iBody = nif->getBlockIndex( nif->getLink( iObject, "Body" ) );
 
 			if ( iBody.isValid() ) {
 				Transform t;
-				t.scale = 7.0f;
+				t.scale = bhkScale( nif );
 
 				if ( nif->isNiBlock( iBody, "bhkRigidBodyT" ) ) {
-					t.rotation.fromQuat( nif->get<Quat>( iBody, "Rotation" ) );
-					t.translation = Vector3( nif->get<Vector4>( iBody, "Translation" ) * 7.0f * havokScale );
+					auto cinfo = nif->getIndex( iBody, "Rigid Body Info" );
+					t.rotation.fromQuat( nif->get<Quat>( cinfo, "Rotation" ) );
+					t.translation = Vector3( nif->get<Vector4>( cinfo, "Translation" ) * bhkScale( nif ) );
 				}
 
 				scene->bhkBodyTrans.insert( nif->getBlockNumber( iBody ), worldTrans() * t );
@@ -530,7 +504,7 @@ void Node::draw()
 	if ( isHidden() || iBlock == scene->currentBlock )
 		return;
 
-	if ( !(scene->selMode & Scene::SelObject) )
+	if ( !scene->isSelModeObject() )
 		return;
 
 	if ( Node::SELECTING ) {
@@ -583,15 +557,15 @@ void Node::draw()
 
 void Node::drawSelection() const
 {
-	auto nif = static_cast<const NifModel *>(scene->currentIndex.model());
+	auto nif = NifModel::fromIndex( scene->currentIndex );
 	if ( !nif )
 		return;
 
-	if ( !(scene->selMode & Scene::SelObject) )
+	if ( !scene->isSelModeObject() )
 		return;
 
 	bool extraData = false;
-	auto currentBlock = nif->getBlockName( scene->currentBlock );
+	auto currentBlock = nif->itemName( scene->currentBlock );
 	if ( currentBlock == "BSConnectPoint::Parents" )
 		extraData = nif->getBlockNumber( iBlock ) == 0; // Root Node only
 
@@ -677,13 +651,11 @@ void Node::drawSelection() const
 
 	}
 
-	if ( currentBlock.endsWith( "Node" ) && scene->options & Scene::ShowNodes && scene->options & Scene::ShowAxes ) {
+	if ( currentBlock.endsWith( "Node" ) && scene->hasOption(Scene::ShowNodes) && scene->hasOption(Scene::ShowAxes) ) {
 		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
 		Transform t;
-		Matrix m;
-		m.fromQuat( nif->get<Quat>( scene->currentIndex, "Rotation" ) );
-		t.rotation = m;
+		t.rotation = nif->get<Matrix>( scene->currentIndex, "Rotation" );
 
 		glPushMatrix();
 		glMultMatrix( t );
@@ -776,13 +748,10 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	if ( (!nif || !iShape.isValid() || stack.contains( iShape )) && !extraData )
 		return;
 
-	if ( !(scene->selMode & Scene::SelObject) )
+	if ( !scene->isSelModeObject() )
 		return;
 
 	stack.push( iShape );
-
-	// Scale up for Skyrim
-	float havokScale = (nif->checkVersion( 0x14020007, 0x14020007 ) && nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
 
 	//qDebug() << "draw shape" << nif->getBlockNumber( iShape ) << nif->itemName( iShape );
 
@@ -792,7 +761,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		if ( iShapes.isValid() ) {
 			for ( int r = 0; r < nif->rowCount( iShapes ); r++ ) {
 				if ( !Node::SELECTING ) {
-					if ( scene->currentBlock == nif->getBlock( nif->getLink( iShapes.child( r, 0 ) ) ) ) {
+					if ( scene->currentBlock == nif->getBlockIndex( nif->getLink( iShapes.child( r, 0 ) ) ) ) {
 						// fix: add selected visual to havok meshes
 						glHighlightColor();
 						glLineWidth( 2.5 );
@@ -805,7 +774,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 					}
 				}
 
-				drawHvkShape( nif, nif->getBlock( nif->getLink( iShapes.child( r, 0 ) ) ), stack, scene, origin_color3fv );
+				drawHvkShape( nif, nif->getBlockIndex( nif->getLink( iShapes.child( r, 0 ) ) ), stack, scene, origin_color3fv );
 			}
 		}
 	} else if ( name == "bhkTransformShape" || name == "bhkConvexTransformShape" ) {
@@ -815,10 +784,9 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		Transform t;
 		Vector3 s;
 		tm.decompose( t.translation, t.rotation, s );
-		t.translation *= havokScale;
 		t.scale = (s[0] + s[1] + s[2]) / 3.0; // assume uniform
 		glMultMatrix( t );
-		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack, scene, origin_color3fv );
+		drawHvkShape( nif, nif->getBlockIndex( nif->getLink( iShape, "Shape" ) ), stack, scene, origin_color3fv );
 		glPopMatrix();
 	} else if ( name == "bhkSphereShape" ) {
 		if ( Node::SELECTING ) {
@@ -826,7 +794,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 			glColor4ubv( (GLubyte *)&s_nodeId );
 		}
 
-		drawSphere( Vector3(), nif->get<float>( iShape, "Radius" ) * havokScale );
+		drawSphere( Vector3(), nif->get<float>( iShape, "Radius" ) );
 	} else if ( name == "bhkMultiSphereShape" ) {
 		if ( Node::SELECTING ) {
 			int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iShape ) );
@@ -845,7 +813,6 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		}
 
 		Vector3 v = nif->get<Vector3>( iShape, "Dimensions" );
-		v *= havokScale;
 		drawBox( v, -v );
 	} else if ( name == "bhkCapsuleShape" ) {
 		if ( Node::SELECTING ) {
@@ -853,10 +820,10 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 			glColor4ubv( (GLubyte *)&s_nodeId );
 		}
 
-		drawCapsule( nif->get<Vector3>( iShape, "First Point" ) * havokScale, nif->get<Vector3>( iShape, "Second Point" ) * havokScale, nif->get<float>( iShape, "Radius" ) * havokScale );
+		drawCapsule( nif->get<Vector3>( iShape, "First Point" ), nif->get<Vector3>( iShape, "Second Point" ), nif->get<float>( iShape, "Radius" ) );
 	} else if ( name == "bhkNiTriStripsShape" ) {
 		glPushMatrix();
-		float s = 1.0f / 7.0f;
+		float s = bhkInvScale( nif );
 		glScalef( s, s, s );
 
 		if ( Node::SELECTING ) {
@@ -881,7 +848,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 			glColor4ubv( (GLubyte *)&s_nodeId );
 		}
 
-		drawConvexHull( nif, iShape, havokScale );
+		drawConvexHull( nif, iShape, 1.0 );
 
 		//if ( Options::getHavokState() == HAVOK_SOLID ) {
 		//	QColor c = Options::hlColor();
@@ -893,7 +860,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 
 	} else if ( name == "bhkMoppBvTreeShape" ) {
 		if ( !Node::SELECTING ) {
-			if ( scene->currentBlock == nif->getBlock( nif->getLink( iShape, "Shape" ) ) ) {
+			if ( scene->currentBlock == nif->getBlockIndex( nif->getLink( iShape, "Shape" ) ) ) {
 				// fix: add selected visual to havok meshes
 				glHighlightColor();
 				glLineWidth( 1.5f ); // taken from "DrawTriangleSelection"
@@ -903,14 +870,14 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 			}
 		}
 
-		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack, scene, origin_color3fv );
+		drawHvkShape( nif, nif->getBlockIndex( nif->getLink( iShape, "Shape" ) ), stack, scene, origin_color3fv );
 	} else if ( name == "bhkPackedNiTriStripsShape" || name == "hkPackedNiTriStripsData" ) {
 		if ( Node::SELECTING ) {
 			int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iShape ) );
 			glColor4ubv( (GLubyte *)&s_nodeId );
 		}
 
-		QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
+		QModelIndex iData = nif->getBlockIndex( nif->getLink( iShape, "Data" ) );
 
 		if ( iData.isValid() ) {
 			QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
@@ -949,11 +916,11 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 
 						//for ( int t = 0; t < nif->rowCount( iTris ); t++ )
 						//	DrawTriangleIndex( verts, nif->get<Triangle>( iTris.child( t, 0 ), "Triangle" ), t );
-					} else if ( nif->isCompound( nif->getBlockType( scene->currentIndex ) ) ) {
+					} else if ( nif->isCompound( nif->itemStrType( scene->currentIndex ) ) ) {
 						Triangle tri = nif->get<Triangle>( iTris.child( i, 0 ), "Triangle" );
 						DrawTriangleSelection( verts, tri );
 						//DrawTriangleIndex( verts, tri, i );
-					} else if ( nif->getBlockName( scene->currentIndex ) == "Normal" ) {
+					} else if ( nif->itemName( scene->currentIndex ) == "Normal" ) {
 						Triangle tri = nif->get<Triangle>( scene->currentIndex.parent(), "Triangle" );
 						Vector3 triCentre = ( verts.value( tri.v1() ) + verts.value( tri.v2() ) + verts.value( tri.v3() ) ) /  3.0;
 						glLineWidth( 1.5f );
@@ -973,7 +940,6 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 					int totalVerts = 0;
 					if ( num_vertices > 0 ) {
 						QModelIndex iParent = scene->currentIndex.parent();
-						int rowCount = nif->rowCount( iParent );
 						for ( int j = 0; j < i; j++ ) {
 							totalVerts += nif->get<int>( iParent.child( j, 0 ), "Num Vertices" );
 						}
@@ -1049,10 +1015,6 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 			}
 		}
 	} else if ( name == "bhkCompressedMeshShape" ) {
-		glPushMatrix();
-		float s = 1.0f;
-		glScalef( s, s, s );
-
 		if ( Node::SELECTING ) {
 			int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iShape ) );
 			glColor4ubv( (GLubyte *)&s_nodeId );
@@ -1067,8 +1029,6 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		//
 		//	drawCMS( nif, iShape, true );
 		//}
-
-		glPopMatrix();
 	}
 
 	stack.pop();
@@ -1076,30 +1036,33 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 
 void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, const Scene * scene )
 {
-	if ( !( nif && iConstraint.isValid() && scene && (scene->options & Scene::ShowConstraints) ) )
+	if ( !( nif && iConstraint.isValid() && scene && scene->hasOption(Scene::ShowConstraints) ) )
 		return;
 
-	if ( !(scene->selMode & Scene::SelObject) )
+	if ( !scene->isSelModeObject() )
 		return;
 
-	QList<Transform> tBodies;
-	QModelIndex iBodies = nif->getIndex( iConstraint, "Entities" );
+	Transform tBodyA;
+	Transform tBodyB;
 
-	if ( !iBodies.isValid() ) {
+	auto iEntityA = bhkGetEntity( nif, iConstraint, "Entity A" );
+	auto iEntityB = bhkGetEntity( nif, iConstraint, "Entity B" );
+	if ( !iEntityA.isValid() || !iEntityB.isValid() )
 		return;
-	}
 
-	for ( int r = 0; r < nif->rowCount( iBodies ); r++ ) {
-		qint32 l = nif->getLink( iBodies.child( r, 0 ) );
-
-		if ( !scene->bhkBodyTrans.contains( l ) )
-			return; // TODO: Make sure this is not supposed to be continue;
-
-		tBodies.append( scene->bhkBodyTrans.value( l ) );
-	}
-
-	if ( tBodies.count() != 2 )
+	auto linkA = nif->getLink( iEntityA );
+	auto linkB = nif->getLink( iEntityB );
+	if ( !scene->bhkBodyTrans.contains( linkA ) || !scene->bhkBodyTrans.contains( linkB ) )
 		return;
+
+	tBodyA = scene->bhkBodyTrans.value( linkA );
+	tBodyB = scene->bhkBodyTrans.value( linkB );
+
+	auto hkFactor = bhkScaleMult( nif );
+	auto hkFactorInv = 1.0 / hkFactor;
+
+	tBodyA.scale = tBodyA.scale * hkFactorInv;
+	tBodyB.scale = tBodyB.scale * hkFactorInv;
 
 	Color3 color_a( 0.8f, 0.6f, 0.0f );
 	Color3 color_b( 0.6f, 0.8f, 0.0f );
@@ -1109,7 +1072,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		glColor4ubv( (GLubyte *)&s_nodeId );
 		glLineWidth( 5 ); // make hitting a line a litlle bit more easy
 	} else {
-		if ( scene->currentBlock == nif->getBlock( iConstraint ) ) {
+		if ( scene->currentBlock == nif->getBlockIndex( iConstraint ) ) {
 			// fix: add selected visual to havok meshes
 			glHighlightColor();
 			color_a.fromQColor( highlightColor );
@@ -1125,175 +1088,161 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 
 	QString name = nif->itemName( iConstraint );
 
+	QModelIndex iConstraintInfo;
+
 	if ( name == "bhkMalleableConstraint" || name == "bhkBreakableConstraint" ) {
 		if ( nif->getIndex( iConstraint, "Ragdoll" ).isValid() ) {
 			name = "bhkRagdollConstraint";
+			iConstraintInfo = nif->getIndex( iConstraint, "Ragdoll" );
 		} else if ( nif->getIndex( iConstraint, "Limited Hinge" ).isValid() ) {
 			name = "bhkLimitedHingeConstraint";
+			iConstraintInfo = nif->getIndex( iConstraint, "Limited Hinge" );
 		} else if ( nif->getIndex( iConstraint, "Hinge" ).isValid() ) {
 			name = "bhkHingeConstraint";
+			iConstraintInfo = nif->getIndex( iConstraint, "Hinge" );
 		} else if ( nif->getIndex( iConstraint, "Stiff Spring" ).isValid() ) {
 			name = "bhkStiffSpringConstraint";
+			iConstraintInfo = nif->getIndex( iConstraint, "Stiff Spring" );
 		}
+	} else {
+		iConstraintInfo = nif->getIndex( iConstraint, "Constraint" );
+		if ( !iConstraintInfo.isValid() )
+			iConstraintInfo = iConstraint;
 	}
 
+	Vector3 pivotA( nif->get<Vector4>( iConstraintInfo, "Pivot A" ) * hkFactor );
+	Vector3 pivotB( nif->get<Vector4>( iConstraintInfo, "Pivot B" ) * hkFactor );
+
 	if ( name == "bhkLimitedHingeConstraint" ) {
-		QModelIndex iHinge = nif->getIndex( iConstraint, "Limited Hinge" );
-		if ( !iHinge.isValid() )
-			iHinge = iConstraint;
+		const Vector3 axisA( nif->get<Vector4>( iConstraintInfo, "Axis A" ) );
+		const Vector3 axisA1( nif->get<Vector4>( iConstraintInfo, "Perp Axis In A1" ) );
+		const Vector3 axisA2( nif->get<Vector4>( iConstraintInfo, "Perp Axis In A2" ) );
 
-		const Vector3 pivotA( nif->get<Vector4>( iHinge, "Pivot A" ) );
-		const Vector3 pivotB( nif->get<Vector4>( iHinge, "Pivot B" ) );
+		const Vector3 axisB( nif->get<Vector4>( iConstraintInfo, "Axis B" ) );
+		const Vector3 axisB2( nif->get<Vector4>( iConstraintInfo, "Perp Axis In B2" ) );
 
-		const Vector3 axleA( nif->get<Vector4>( iHinge, "Axle A" ) );
-		const Vector3 axleA1( nif->get<Vector4>( iHinge, "Perp2 Axle In A1" ) );
-		const Vector3 axleA2( nif->get<Vector4>( iHinge, "Perp2 Axle In A2" ) );
-
-		const Vector3 axleB( nif->get<Vector4>( iHinge, "Axle B" ) );
-		const Vector3 axleB2( nif->get<Vector4>( iHinge, "Perp2 Axle In B2" ) );
-
-		const float minAngle = nif->get<float>( iHinge, "Min Angle" );
-		const float maxAngle = nif->get<float>( iHinge, "Max Angle" );
+		const float minAngle = nif->get<float>( iConstraintInfo, "Min Angle" );
+		const float maxAngle = nif->get<float>( iConstraintInfo, "Max Angle" );
 
 		glPushMatrix();
-		glMultMatrix( tBodies.value( 0 ) );
+		glMultMatrix( tBodyA );
 
 		if ( !Node::SELECTING )
 			glColor( color_a );
 
 		glBegin( GL_POINTS ); glVertex( pivotA ); glEnd();
-		glBegin( GL_LINES ); glVertex( pivotA ); glVertex( pivotA + axleA ); glEnd();
-		drawDashLine( pivotA, pivotA + axleA1, 14 );
-		drawDashLine( pivotA, pivotA + axleA2, 14 );
-		drawCircle( pivotA, axleA, 1.0f );
-		drawSolidArc( pivotA, axleA / 5, axleA2, axleA1, minAngle, maxAngle, 1.0f );
+		glBegin( GL_LINES ); glVertex( pivotA ); glVertex( pivotA + axisA ); glEnd();
+		drawDashLine( pivotA, pivotA + axisA1, 14 );
+		drawDashLine( pivotA, pivotA + axisA2, 14 );
+		drawCircle( pivotA, axisA, 1.0 );
+		drawSolidArc( pivotA, axisA / 5, axisA2, axisA1, minAngle, maxAngle, 1.0f );
 		glPopMatrix();
 
 		glPushMatrix();
-		glMultMatrix( tBodies.value( 1 ) );
+		glMultMatrix( tBodyB );
 
 		if ( !Node::SELECTING )
 			glColor( color_b );
 
 		glBegin( GL_POINTS ); glVertex( pivotB ); glEnd();
-		glBegin( GL_LINES ); glVertex( pivotB ); glVertex( pivotB + axleB ); glEnd();
-		drawDashLine( pivotB + axleB2, pivotB, 14 );
-		drawDashLine( pivotB + Vector3::crossproduct( axleB2, axleB ), pivotB, 14 );
-		drawCircle( pivotB, axleB, 1.01f );
-		drawSolidArc( pivotB, axleB / 7, axleB2, Vector3::crossproduct( axleB2, axleB ), minAngle, maxAngle, 1.01f );
+		glBegin( GL_LINES ); glVertex( pivotB ); glVertex( pivotB + axisB ); glEnd();
+		drawDashLine( pivotB + axisB2, pivotB, 14 );
+		drawDashLine( pivotB + Vector3::crossproduct( axisB2, axisB ), pivotB, 14 );
+		drawCircle( pivotB, axisB, 1.01f );
+		drawSolidArc( pivotB, axisB / 7, axisB2, Vector3::crossproduct( axisB2, axisB ), minAngle, maxAngle, 1.01f );
 		glPopMatrix();
 
-		glMultMatrix( tBodies.value( 0 ) );
-		float angle = Vector3::angle( tBodies.value( 0 ).rotation * axleA2, tBodies.value( 1 ).rotation * axleB2 );
+		glMultMatrix( tBodyA );
+		float angle = Vector3::angle( tBodyA.rotation * axisA2, tBodyB.rotation * axisB2 );
 
 		if ( !Node::SELECTING )
 			glColor( color_a );
 
 		glBegin( GL_LINES );
 		glVertex( pivotA );
-		glVertex( pivotA + axleA1 * cosf( angle ) + axleA2 * sinf( angle ) );
+		glVertex( pivotA + axisA1 * cosf( angle ) + axisA2 * sinf( angle ) );
 		glEnd();
 	} else if ( name == "bhkHingeConstraint" ) {
-		QModelIndex iHinge = nif->getIndex( iConstraint, "Hinge" );
-		if ( !iHinge.isValid() )
-			iHinge = iConstraint;
+		const Vector3 axisA1( nif->get<Vector4>( iConstraintInfo, "Perp Axis In A1" ) );
+		const Vector3 axisA2( nif->get<Vector4>( iConstraintInfo, "Perp Axis In A2" ) );
+		const Vector3 axisA( Vector3::crossproduct( axisA1, axisA2 ) );
 
-		const Vector3 pivotA( nif->get<Vector4>( iHinge, "Pivot A" ) );
-		const Vector3 pivotB( nif->get<Vector4>( iHinge, "Pivot B" ) );
+		const Vector3 axisB( nif->get<Vector4>( iConstraintInfo, "Axis B" ) );
 
-		const Vector3 axleA1( nif->get<Vector4>( iHinge, "Perp2 Axle In A1" ) );
-		const Vector3 axleA2( nif->get<Vector4>( iHinge, "Perp2 Axle In A2" ) );
-		const Vector3 axleA( Vector3::crossproduct( axleA1, axleA2 ) );
-
-		const Vector3 axleB( nif->get<Vector4>( iHinge, "Axle B" ) );
-
-		const Vector3 axleB1( axleB[1], axleB[2], axleB[0] );
-		const Vector3 axleB2( Vector3::crossproduct( axleB, axleB1 ) );
+		const Vector3 axisB1( axisB[1], axisB[2], axisB[0] );
+		const Vector3 axisB2( Vector3::crossproduct( axisB, axisB1 ) );
 
 		/*
 		 * This should be correct but is visually strange...
 		 *
-		Vector3 axleB1temp;
-		Vector3 axleB2temp;
+		Vector3 axisB1temp;
+		Vector3 axisB2temp;
 
 		if ( nif->checkVersion( 0, 0x14000002 ) )
 		{
-		    Vector3 axleB1temp( axleB[1], axleB[2], axleB[0] );
-		    Vector3 axleB2temp( Vector3::crossproduct( axleB, axleB1temp ) );
+		    Vector3 axisB1temp( axisB[1], axisB[2], axisB[0] );
+		    Vector3 axisB2temp( Vector3::crossproduct( axisB, axisB1temp ) );
 		}
 		else if ( nif->checkVersion( 0x14020007, 0 ) )
 		{
-		    Vector3 axleB1temp( nif->get<Vector4>( iHinge, "Perp2 Axle In B1" ) );
-		    Vector3 axleB2temp( nif->get<Vector4>( iHinge, "Perp2 Axle In B2" ) );
+		    Vector3 axisB1temp( nif->get<Vector4>( iConstraintInfo, "Perp Axis In B1" ) );
+		    Vector3 axisB2temp( nif->get<Vector4>( iConstraintInfo, "Perp Axis In B2" ) );
 		}
 
-		const Vector3 axleB1( axleB1temp );
-		const Vector3 axleB2( axleB2temp );
+		const Vector3 axisB1( axisB1temp );
+		const Vector3 axisB2( axisB2temp );
 		*/
 
 		const float minAngle = (float)-PI;
 		const float maxAngle = (float)+PI;
 
 		glPushMatrix();
-		glMultMatrix( tBodies.value( 0 ) );
+		glMultMatrix( tBodyA );
 
 		if ( !Node::SELECTING )
 			glColor( color_a );
 
 		glBegin( GL_POINTS ); glVertex( pivotA ); glEnd();
-		drawDashLine( pivotA, pivotA + axleA1 );
-		drawDashLine( pivotA, pivotA + axleA2 );
-		drawSolidArc( pivotA, axleA / 5, axleA2, axleA1, minAngle, maxAngle, 1.0f, 16 );
+		drawDashLine( pivotA, pivotA + axisA1 );
+		drawDashLine( pivotA, pivotA + axisA2 );
+		drawSolidArc( pivotA, axisA / 5, axisA2, axisA1, minAngle, maxAngle, 1.0f, 16 );
 		glPopMatrix();
 
-		glMultMatrix( tBodies.value( 1 ) );
+		glMultMatrix( tBodyB );
 
 		if ( !Node::SELECTING )
 			glColor( color_b );
 
 		glBegin( GL_POINTS ); glVertex( pivotB ); glEnd();
-		glBegin( GL_LINES ); glVertex( pivotB ); glVertex( pivotB + axleB ); glEnd();
-		drawSolidArc( pivotB, axleB / 7, axleB2, axleB1, minAngle, maxAngle, 1.01f, 16 );
+		glBegin( GL_LINES ); glVertex( pivotB ); glVertex( pivotB + axisB ); glEnd();
+		drawSolidArc( pivotB, axisB / 7, axisB2, axisB1, minAngle, maxAngle, 1.01f, 16 );
 	} else if ( name == "bhkStiffSpringConstraint" ) {
-		QModelIndex iSpring = nif->getIndex( iConstraint, "Stiff Spring" );
-		if ( !iSpring.isValid() )
-			iSpring = iConstraint;
-
-		const Vector3 pivotA = tBodies.value( 0 ) * Vector3( nif->get<Vector4>( iSpring, "Pivot A" ) );
-		const Vector3 pivotB = tBodies.value( 1 ) * Vector3( nif->get<Vector4>( iSpring, "Pivot B" ) );
-		const float length = nif->get<float>( iSpring, "Length" );
+		const float length = nif->get<float>( iConstraintInfo, "Length" );
 
 		if ( !Node::SELECTING )
 			glColor( color_b );
 
 		drawSpring( pivotA, pivotB, length );
 	} else if ( name == "bhkRagdollConstraint" ) {
-		QModelIndex iRagdoll = nif->getIndex( iConstraint, "Ragdoll" );
-		if ( !iRagdoll.isValid() )
-			iRagdoll = iConstraint;
+		const Vector3 planeA( nif->get<Vector4>( iConstraintInfo, "Plane A" ) );
+		const Vector3 planeB( nif->get<Vector4>( iConstraintInfo, "Plane B" ) );
 
-		const Vector3 pivotA( nif->get<Vector4>( iRagdoll, "Pivot A" ) );
-		const Vector3 pivotB( nif->get<Vector4>( iRagdoll, "Pivot B" ) );
+		const Vector3 twistA( nif->get<Vector4>( iConstraintInfo, "Twist A" ) );
+		const Vector3 twistB( nif->get<Vector4>( iConstraintInfo, "Twist B" ) );
 
-		const Vector3 planeA( nif->get<Vector4>( iRagdoll, "Plane A" ) );
-		const Vector3 planeB( nif->get<Vector4>( iRagdoll, "Plane B" ) );
+		const float coneAngle( nif->get<float>( iConstraintInfo, "Cone Max Angle" ) );
 
-		const Vector3 twistA( nif->get<Vector4>( iRagdoll, "Twist A" ) );
-		const Vector3 twistB( nif->get<Vector4>( iRagdoll, "Twist B" ) );
-
-		const float coneAngle( nif->get<float>( iRagdoll, "Cone Max Angle" ) );
-
-		const float minPlaneAngle( nif->get<float>( iRagdoll, "Plane Min Angle" ) );
-		const float maxPlaneAngle( nif->get<float>( iRagdoll, "Plane Max Angle" ) );
+		const float minPlaneAngle( nif->get<float>( iConstraintInfo, "Plane Min Angle" ) );
+		const float maxPlaneAngle( nif->get<float>( iConstraintInfo, "Plane Max Angle" ) );
 
 		// Unused? GCC complains
 		/*
-		const float minTwistAngle( nif->get<float>( iRagdoll, "Twist Min Angle" ) );
-		const float maxTwistAngle( nif->get<float>( iRagdoll, "Twist Max Angle" ) );
+		const float minTwistAngle( nif->get<float>( iConstraintInfo, "Twist Min Angle" ) );
+		const float maxTwistAngle( nif->get<float>( iConstraintInfo, "Twist Max Angle" ) );
 		*/
 
 		glPushMatrix();
-		glMultMatrix( tBodies.value( 0 ) );
+		glMultMatrix( tBodyA );
 
 		if ( !Node::SELECTING )
 			glColor( color_a );
@@ -1301,7 +1250,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		glPopMatrix();
 
 		glPushMatrix();
-		glMultMatrix( tBodies.value( 0 ) );
+		glMultMatrix( tBodyA );
 
 		if ( !Node::SELECTING )
 			glColor( color_a );
@@ -1313,7 +1262,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		glPopMatrix();
 
 		glPushMatrix();
-		glMultMatrix( tBodies.value( 1 ) );
+		glMultMatrix( tBodyB );
 
 		if ( !Node::SELECTING )
 			glColor( color_b );
@@ -1324,21 +1273,18 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		drawRagdollCone( pivotB, twistB, planeB, coneAngle, minPlaneAngle, maxPlaneAngle );
 		glPopMatrix();
 	} else if ( name == "bhkPrismaticConstraint" ) {
-		const Vector3 pivotA( nif->get<Vector4>( iConstraint, "Pivot A" ) );
-		const Vector3 pivotB( nif->get<Vector4>( iConstraint, "Pivot B" ) );
+		const Vector3 planeNormal( nif->get<Vector4>( iConstraintInfo, "Plane A" ) );
+		const Vector3 slidingAxis( nif->get<Vector4>( iConstraintInfo, "Sliding A" ) );
 
-		const Vector3 planeNormal( nif->get<Vector4>( iConstraint, "Plane A" ) );
-		const Vector3 slidingAxis( nif->get<Vector4>( iConstraint, "Sliding A" ) );
-
-		const float minDistance = nif->get<float>( iConstraint, "Min Distance" );
-		const float maxDistance = nif->get<float>( iConstraint, "Max Distance" );
+		const float minDistance = nif->get<float>( iConstraintInfo, "Min Distance" );
+		const float maxDistance = nif->get<float>( iConstraintInfo, "Max Distance" );
 
 		const Vector3 d1 = pivotA + slidingAxis * minDistance;
 		const Vector3 d2 = pivotA + slidingAxis * maxDistance;
 
 		/* draw Pivot A and Plane */
 		glPushMatrix();
-		glMultMatrix( tBodies.value( 0 ) );
+		glMultMatrix( tBodyA );
 
 		if ( !Node::SELECTING )
 			glColor( color_a );
@@ -1357,7 +1303,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		float angle = atan2f( slidingAxis[1], slidingAxis[0] );
 
 		if ( slidingAxis[0] < 0.0001f && slidingAxis[1] < 0.0001f ) {
-			angle = (float)PI / 2.0f;
+			angle = float(HALF_PI);
 		}
 
 		t.translation = d1;
@@ -1381,7 +1327,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 
 		/* draw Pivot B */
 		glPushMatrix();
-		glMultMatrix( tBodies.value( 1 ) );
+		glMultMatrix( tBodyB );
 
 		if ( !Node::SELECTING )
 			glColor( color_b );
@@ -1396,7 +1342,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 
 void Node::drawHavok()
 {
-	if ( !(scene->selMode & Scene::SelObject) )
+	if ( !scene->isSelModeObject() )
 		return;
 
 	// TODO: Why are all these here - "drawNodes", "drawFurn", "drawHavok"?
@@ -1405,9 +1351,8 @@ void Node::drawHavok()
 		node->drawHavok();
 	}
 
-	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
-
-	if ( !( iBlock.isValid() && nif ) )
+	auto nif = NifModel::fromValidIndex(iBlock);
+	if ( !nif )
 		return;
 
 	//Check if there's any old style collision bounding box set
@@ -1443,14 +1388,14 @@ void Node::drawHavok()
 	}
 
 	// Only Bethesda support after this
-	if ( nif->getUserVersion2() == 0 )
+	if ( nif->getBSVersion() == 0 )
 		return;
 
 	// Draw BSMultiBound
-	auto iBSMultiBound = nif->getBlock( nif->getLink( iBlock, "Multi Bound" ), "BSMultiBound" );
+	auto iBSMultiBound = nif->getBlockIndex( nif->getLink( iBlock, "Multi Bound" ), "BSMultiBound" );
 	if ( iBSMultiBound.isValid() ) {
 
-		auto iBSMultiBoundData = nif->getBlock( nif->getLink( iBSMultiBound, "Data" ), "BSMultiBoundData" );
+		auto iBSMultiBoundData = nif->getBlockIndex( nif->getLink( iBSMultiBound, "Data" ), "BSMultiBoundData" );
 		if ( iBSMultiBoundData.isValid() ) {
 
 			Vector3 a, b;
@@ -1503,7 +1448,7 @@ void Node::drawHavok()
 
 	if ( iExtraDataList.isValid() ) {
 		for ( int d = 0; d < nif->rowCount( iExtraDataList ); d++ ) {
-			QModelIndex iBound = nif->getBlock( nif->getLink( iExtraDataList.child( d, 0 ) ), "BSBound" );
+			QModelIndex iBound = nif->getBlockIndex( nif->getLink( iExtraDataList.child( d, 0 ) ), "BSBound" );
 
 			if ( !iBound.isValid() )
 				continue;
@@ -1531,11 +1476,11 @@ void Node::drawHavok()
 		}
 	}
 
-	QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );
+	QModelIndex iObject = nif->getBlockIndex( nif->getLink( iBlock, "Collision Object" ) );
 	if ( !iObject.isValid() )
 		return;
 
-	QModelIndex iBody = nif->getBlock( nif->getLink( iObject, "Body" ) );
+	QModelIndex iBody = nif->getBlockIndex( nif->getLink( iObject, "Body" ) );
 
 	glPushMatrix();
 	glLoadMatrix( scene->view );
@@ -1558,7 +1503,7 @@ void Node::drawHavok()
 	}
 
 	glPointSize( 4.5 );
-	glLineWidth( 1.0 );
+	glLineWidth( 1.5 );
 
 	static const float colors[8][3] = {
 		{ 0.0f, 1.0f, 0.0f },
@@ -1575,7 +1520,7 @@ void Node::drawHavok()
 	glColor3fv( colors[ color_index ] );
 
 	if ( !Node::SELECTING ) {
-		if ( scene->currentBlock == nif->getBlock( nif->getLink( iBody, "Shape" ) ) ) {
+		if ( scene->currentBlock == nif->getBlockIndex( nif->getLink( iBody, "Shape" ) ) ) {
 			// fix: add selected visual to havok meshes
 			glHighlightColor(); // TODO: idea: I do not recommend mimicking the Open GL API
 			                    // It confuses the one who reads the code. And the Open GL API is
@@ -1590,28 +1535,24 @@ void Node::drawHavok()
 	if ( Node::SELECTING )
 		glLineWidth( 5 ); // make selection click a little more easy
 
-	drawHvkShape( nif, nif->getBlock( nif->getLink( iBody, "Shape" ) ), shapeStack, scene, colors[ color_index ] );
+	drawHvkShape( nif, nif->getBlockIndex( nif->getLink( iBody, "Shape" ) ), shapeStack, scene, colors[ color_index ] );
 
-
-	// Scale up for Skyrim
-	float havokScale = (nif->checkVersion( 0x14020007, 0x14020007 ) && nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
-
-	if ( Node::SELECTING && scene->options & Scene::ShowAxes ) {
+	if ( Node::SELECTING && scene->hasOption(Scene::ShowAxes) ) {
 		int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iBody ) );
 		glColor4ubv( (GLubyte *)&s_nodeId );
 		glDepthFunc( GL_ALWAYS );
-		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ) * havokScale, 1.0f, false );
+		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ), 1.0f / bhkScaleMult( nif ), false );
 		glDepthFunc( GL_LEQUAL );
-	} else if ( scene->options & Scene::ShowAxes ) {
-		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ) * havokScale, 1.0f );
+	} else if ( scene->hasOption(Scene::ShowAxes) ) {
+		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ), 1.0f / bhkScaleMult( nif ) );
 	}
 
 	glPopMatrix();
 
 	for ( const auto l : nif->getLinkArray( iBody, "Constraints" ) ) {
-		QModelIndex iConstraint = nif->getBlock( l );
+		QModelIndex iConstraint = nif->getBlockIndex( l );
 
-		if ( nif->inherits( iConstraint, "bhkConstraint" ) )
+		if ( nif->blockInherits( iConstraint, "bhkConstraint" ) )
 			drawHvkConstraint( nif, iConstraint, scene );
 	}
 }
@@ -1805,12 +1746,11 @@ void Node::drawFurn()
 		node->drawFurn();
 	}
 
-	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
-
-	if ( !( iBlock.isValid() && nif ) )
+	auto nif = NifModel::fromValidIndex(iBlock);
+	if ( !nif )
 		return;
 
-	if ( !(scene->selMode & Scene::SelObject) )
+	if ( !scene->isSelModeObject() )
 		return;
 
 	QModelIndex iExtraDataList = nif->getIndex( iBlock, "Extra Data List" );
@@ -1841,7 +1781,7 @@ void Node::drawFurn()
 
 	for ( int p = 0; p < nif->rowCount( iExtraDataList ); p++ ) {
 		// DONE: never seen Furn in nifs, so there may be a need of a fix here later - saw one, fixed a bug
-		QModelIndex iFurnMark = nif->getBlock( nif->getLink( iExtraDataList.child( p, 0 ) ), "BSFurnitureMarker" );
+		QModelIndex iFurnMark = nif->getBlockIndex( nif->getLink( iExtraDataList.child( p, 0 ) ), "BSFurnitureMarker" );
 
 		if ( !iFurnMark.isValid() )
 			continue;
@@ -1871,11 +1811,11 @@ void Node::drawShapes( NodeList * secondPass, bool presort )
 	if ( isHidden() )
 		return;
 
-	const NifModel * nif = static_cast<const NifModel *>(iBlock.model());
+	auto nif = NifModel::fromIndex( iBlock );
 	
 	// BSOrderedNode support
 	//	Only set if true (|=) so that it propagates to all children
-	presort |= nif->getBlock( iBlock, "BSOrderedNode" ).isValid();
+	presort |= nif->getBlockIndex( iBlock, "BSOrderedNode" ).isValid();
 
 	presorted = presort;
 	if ( presorted )
@@ -1893,7 +1833,7 @@ QString trans2string( Transform t )
 	float xr, yr, zr;
 	t.rotation.toEuler( xr, yr, zr );
 	return QString( "translation  X %1, Y %2, Z %3\n" ).Farg( t.translation[0] ).Farg( t.translation[1] ).Farg( t.translation[2] )
-	       +   QString( "rotation     Y %1, P %2, R %3  " ).Farg( xr * 180 / PI ).Farg( yr * 180 / PI ).Farg( zr * 180 / PI )
+	       +   QString( "rotation     Y %1, P %2, R %3  " ).Farg( rad2deg(xr) ).Farg( rad2deg(yr) ).Farg( rad2deg(zr) )
 	       +   QString( "( (%1, %2, %3), " ).Farg( t.rotation( 0, 0 ) ).Farg( t.rotation( 0, 1 ) ).Farg( t.rotation( 0, 2 ) )
 	       +   QString( "(%1, %2, %3), " ).Farg( t.rotation( 1, 0 ) ).Farg( t.rotation( 1, 1 ) ).Farg( t.rotation( 1, 2 ) )
 	       +   QString( "(%1, %2, %3) )\n" ).Farg( t.rotation( 2, 0 ) ).Farg( t.rotation( 2, 1 ) ).Farg( t.rotation( 2, 2 ) )
@@ -1909,16 +1849,13 @@ BoundSphere Node::bounds() const
 {
 	BoundSphere boundsphere;
 
-	auto opts = scene->options;
-
 	// the node itself
-	if ( (opts & Scene::ShowNodes) || (opts & Scene::ShowCollision) ) {
+	if ( scene->hasOption(Scene::ShowNodes) || scene->hasOption(Scene::ShowCollision) ) {
 		boundsphere |= BoundSphere( worldTrans().translation, 0 );
 	}
 
-	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
-
-	if ( !( iBlock.isValid() && nif ) )
+	auto nif = NifModel::fromValidIndex(iBlock);
+	if ( !nif )
 		return boundsphere;
 
 	// old style collision bounding box
@@ -1929,21 +1866,15 @@ BoundSphere Node::bounds() const
 		boundsphere |= BoundSphere( trans, rad.length() );
 	}
 
-	if ( nif->getBlockType( iBlock ) == "NiMesh" ) {
-		auto iBound = nif->getIndex( iBlock, "Bound" );
-		if ( iBound.isValid() ) {
-			auto center = nif->get<Vector3>( iBound, "Center" );
-			auto radius = nif->get<float>( iBound, "Radius" );
-			boundsphere |= BoundSphere( center, radius );
-		}
-	}
+	if ( nif->itemStrType( iBlock ) == "NiMesh" )
+		boundsphere |= BoundSphere( nif, iBlock );
 
 	// BSBound collision bounding box
 	QModelIndex iExtraDataList = nif->getIndex( iBlock, "Extra Data List" );
 
 	if ( iExtraDataList.isValid() ) {
 		for ( int d = 0; d < nif->rowCount( iExtraDataList ); d++ ) {
-			QModelIndex iBound = nif->getBlock( nif->getLink( iExtraDataList.child( d, 0 ) ), "BSBound" );
+			QModelIndex iBound = nif->getBlockIndex( nif->getLink( iExtraDataList.child( d, 0 ) ), "BSBound" );
 
 			if ( !iBound.isValid() )
 				continue;
@@ -1969,13 +1900,13 @@ void LODNode::clear()
 	ranges.clear();
 }
 
-void LODNode::update( const NifModel * nif, const QModelIndex & index )
+void LODNode::updateImpl( const NifModel * nif, const QModelIndex & index )
 {
-	Node::update( nif, index );
+	Node::updateImpl( nif, index );
 
-	if ( ( iBlock.isValid() && index == iBlock ) || ( iData.isValid() && index == iData ) ) {
+	if ( ( index == iBlock ) || ( iData.isValid() && index == iData ) ) {
 		ranges.clear();
-		iData = nif->getBlock( nif->getLink( iBlock, "LOD Level Data" ), "NiRangeLODData" );
+		iData = nif->getBlockIndex( nif->getLink( iBlock, "LOD Level Data" ), "NiRangeLODData" );
 		QModelIndex iLevels;
 
 		if ( iData.isValid() ) {
@@ -1993,8 +1924,6 @@ void LODNode::update( const NifModel * nif, const QModelIndex & index )
 				);
 			}
 		}
-
-
 	}
 }
 

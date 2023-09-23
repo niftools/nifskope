@@ -37,6 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gl/glcontroller.h"
 #include "gl/glmesh.h"
 #include "gl/bsshape.h"
+#include "gl/BSMesh.h"
 #include "gl/glparticles.h"
 #include "gl/gltex.h"
 #include "model/nifmodel.h"
@@ -64,7 +65,7 @@ Scene::Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * 
 
 	options = ( DoLighting | DoTexturing | DoMultisampling | DoBlending | DoVertexColors | DoSpecular | DoGlow | DoCubeMapping );
 
-	lodLevel = Level2;
+	lodLevel = Level0;
 
 	visMode = VisNone;
 
@@ -122,6 +123,8 @@ void Scene::clear( bool flushTextures )
 	textures->flush();
 
 	sceneBoundsValid = timeBoundsValid = false;
+
+	game = Game::OTHER;
 }
 
 void Scene::update( const NifModel * nif, const QModelIndex & index )
@@ -130,37 +133,30 @@ void Scene::update( const NifModel * nif, const QModelIndex & index )
 		return;
 
 	if ( index.isValid() ) {
-		QModelIndex block = nif->getBlock( index );
-
+		QModelIndex block = nif->getBlockIndex( index );
 		if ( !block.isValid() )
 			return;
 
-		for ( Property * prop : properties.list() ) {
+		for ( Property * prop : properties.list() )
 			prop->update( nif, block );
-		}
 
-		for ( Node * node : nodes.list() ) {
+		for ( Node * node : nodes.list() )
 			node->update( nif, block );
-		}
 	} else {
 		properties.validate();
 		nodes.validate();
 
-		for ( Node * n : nodes.list() ) {
-			n->update( nif, QModelIndex() );
-		}
+		for ( Property * p : properties.list() )
+			p->update( nif, p->index() );
 
-		for ( Property * p : properties.list() ) {
-			p->update( nif, QModelIndex() );
-		}
+		for ( Node * n : nodes.list() )
+			n->update( nif, n->index() );
 
 		roots.clear();
 		for ( const auto link : nif->getRootLinks() ) {
-			QModelIndex iBlock = nif->getBlock( link );
-
+			QModelIndex iBlock = nif->getBlockIndex( link );
 			if ( iBlock.isValid() ) {
 				Node * node = getNode( nif, iBlock );
-
 				if ( node ) {
 					node->makeParent( 0 );
 					roots.add( node );
@@ -203,6 +199,8 @@ void Scene::updateSelectMode( QAction * action )
 
 void Scene::updateLodLevel( int level )
 {
+	if ( game != Game::STARFIELD )
+		level = std::max(level, 2);
 	lodLevel = LodLevel( level );
 }
 
@@ -212,6 +210,8 @@ void Scene::make( NifModel * nif, bool flushTextures )
 
 	if ( !nif )
 		return;
+
+	game = Game::GameManager::get_game(nif->getVersionNumber(), nif->getUserVersion(), nif->getBSVersion());
 
 	update( nif, QModelIndex() );
 
@@ -227,7 +227,7 @@ void Scene::make( NifModel * nif, bool flushTextures )
 
 Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 {
-	if ( !( nif && iNode.isValid() ) )
+	if ( !nif || !iNode.isValid() )
 		return 0;
 
 	Node * node = nodes.get( iNode );
@@ -235,33 +235,32 @@ Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 	if ( node )
 		return node;
 
-	if ( nif->inherits( iNode, "NiNode" ) ) {
-		if ( nif->itemName( iNode ) == "NiLODNode" )
+	auto nodeName = nif->itemName(iNode);
+	if ( nif->blockInherits( iNode, "NiNode" ) ) {
+		if ( nodeName == "NiLODNode" )
 			node = new LODNode( this, iNode );
-		else if ( nif->itemName( iNode ) == "NiBillboardNode" )
+		else if ( nodeName == "NiBillboardNode" )
 			node = new BillboardNode( this, iNode );
 		else
 			node = new Node( this, iNode );
-	} else if ( nif->itemName( iNode ) == "NiTriShape"
-				|| nif->itemName( iNode ) == "NiTriStrips"
-				|| nif->inherits( iNode, "NiTriBasedGeom" ) )
-	{
+	} else if ( nodeName == "NiTriShape" || nodeName == "NiTriStrips" || nif->blockInherits( iNode, "NiTriBasedGeom" ) ) {
 		node = new Mesh( this, iNode );
 		shapes += static_cast<Shape *>(node);
-	} else if ( nif->checkVersion( 0x14050000, 0 )
-				&& nif->itemName( iNode ) == "NiMesh" )
-	{
+	} else if ( nif->checkVersion( 0x14050000, 0 ) && nodeName == "NiMesh" ) {
 		node = new Mesh( this, iNode );
 	}
-	//else if ( nif->inherits( iNode, "AParticleNode" ) || nif->inherits( iNode, "AParticleSystem" ) )
-	else if ( nif->inherits( iNode, "NiParticles" ) ) {
+	//else if ( nif->blockInherits( iNode, "AParticleNode" ) || nif->blockInherits( iNode, "AParticleSystem" ) )
+	else if ( nif->blockInherits( iNode, "NiParticles" ) ) {
 		// ... where did AParticleSystem go?
 		node = new Particles( this, iNode );
-	} else if ( nif->inherits( iNode, "BSTriShape" ) ) {
+	} else if ( nif->blockInherits( iNode, "BSTriShape" ) ) {
 		node = new BSShape( this, iNode );
 		shapes += static_cast<Shape *>(node);
-	} else if ( nif->inherits( iNode, "NiAVObject" ) ) {
-		if ( nif->itemName( iNode ) == "BSTreeNode" )
+	} else if ( nif->blockInherits(iNode, "BSGeometry") ) {
+		node = new BSMesh(this, iNode);
+		shapes += static_cast<Shape*>(node);
+	} else if ( nif->blockInherits( iNode, "NiAVObject" ) ) {
+		if ( nodeName == "BSTreeNode" )
 			node = new Node( this, iNode );
 	}
 
@@ -276,16 +275,21 @@ Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 Property * Scene::getProperty( const NifModel * nif, const QModelIndex & iProperty )
 {
 	Property * prop = properties.get( iProperty );
-
 	if ( prop )
 		return prop;
 
 	prop = Property::create( this, nif, iProperty );
-
 	if ( prop )
 		properties.add( prop );
-
 	return prop;
+}
+
+Property * Scene::getProperty( const NifModel * nif, const QModelIndex & iParentBlock, const QString & itemName, const QString & mustInherit )
+{
+	QModelIndex iPropertyBlock = nif->getBlockIndex( nif->getLink(iParentBlock, itemName) );
+	if ( iPropertyBlock.isValid() && nif->blockInherits(iPropertyBlock, mustInherit) )
+		return getProperty( nif, iPropertyBlock );
+	return nullptr;
 }
 
 void Scene::setSequence( const QString & seqname )
@@ -330,11 +334,11 @@ void Scene::draw()
 {
 	drawShapes();
 
-	if ( options & ShowNodes )
+	if ( hasOption(ShowNodes) )
 		drawNodes();
-	if ( options & ShowCollision )
+	if ( hasOption(ShowCollision) )
 		drawHavok();
-	if ( options & ShowMarkers )
+	if ( hasOption(ShowMarkers) )
 		drawFurn();
 
 	drawSelection();
@@ -342,7 +346,7 @@ void Scene::draw()
 
 void Scene::drawShapes()
 {
-	if ( options & DoBlending ) {
+	if ( hasOption(DoBlending) ) {
 		NodeList secondPass;
 
 		for ( Node * node : roots.list() ) {
@@ -464,17 +468,17 @@ QString Scene::textStats()
 
 int Scene::bindTexture( const QString & fname )
 {
-	if ( !(options & DoTexturing) || fname.isEmpty() )
+	if ( !hasOption(DoTexturing) || fname.isEmpty() )
 		return 0;
 
-	return textures->bind( fname );
+	return textures->bind( fname, game );
 }
 
 int Scene::bindTexture( const QModelIndex & iSource )
 {
-	if ( !(options & DoTexturing) || !iSource.isValid() )
+	if ( !hasOption(DoTexturing) || !iSource.isValid() )
 		return 0;
 
-	return textures->bind( iSource );
+	return textures->bind( iSource, game );
 }
 

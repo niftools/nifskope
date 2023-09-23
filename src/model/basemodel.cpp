@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "basemodel.h"
 
-#include "message.h"
+#include "xml/xmlconfig.h"
 
 #include <QByteArray>
 #include <QColor>
@@ -50,9 +50,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 BaseModel::BaseModel( QObject * p ) : QAbstractItemModel( p )
 {
-	root = new NifItem( 0 );
+	root = new NifItem( this, nullptr );
+	root->setIsConditionless( true );
 	parentWindow = qobject_cast<QWidget *>(p);
-	msgMode = TstMessage;
+	msgMode = MSG_TEST;
 }
 
 BaseModel::~BaseModel()
@@ -60,24 +61,33 @@ BaseModel::~BaseModel()
 	delete root;
 }
 
-QWidget * BaseModel::getWindow()
-{
-	return parentWindow;
-}
-
-void BaseModel::setEmitChanges( bool e )
-{
-	emitChanges = e;
-}
-
 void BaseModel::setMessageMode( MsgMode mode )
 {
 	msgMode = mode;
 }
 
+void BaseModel::logMessage( const QString & message, const QString & details, QMessageBox::Icon lvl ) const
+{
+	if ( msgMode == MSG_USER ) {
+		Message::append( nullptr, message, details, lvl );
+	} else {
+		testMsg( details );
+	}
+}
+
+void BaseModel::logWarning( const QString & details ) const
+{
+	logMessage(tr("Warnings were generated while reading the file."), details);
+}
+
 void BaseModel::testMsg( const QString & m ) const
 {
 	messages.append( TestMessage() << m );
+}
+
+inline NifItem * indexToItem( const QModelIndex & index )
+{
+	return static_cast<NifItem *>( index.internalPointer() );
 }
 
 void BaseModel::beginInsertRows( const QModelIndex & parent, int first, int last )
@@ -124,38 +134,22 @@ QList<TestMessage> BaseModel::getMessages() const
  *  array functions
  */
 
-bool BaseModel::isArray( const QModelIndex & index ) const
-{
-	return !itemArr1( index ).isEmpty();
-}
-
-bool BaseModel::isArray( NifItem * item ) const
-{
-	return item->isArray() || (item->parent() && item->parent()->isMultiArray());
-}
-
-int BaseModel::getArraySize( NifItem * array ) const
+int BaseModel::evalArraySize( const NifItem * array ) const
 {
 	// shortcut for speed
-	if ( !isArray( array ) )
+	if ( !isArray(array) ) {
+		if ( array )
+			reportError( array, __func__, "The input item is not an array." );
 		return 0;
+	}
+	
+	if ( array == root ) {
+		reportError( array, __func__, "The input item is the root." );
+		return 0;
+	}
 
-	return evaluateInt( array, array->arr1expr() );
-}
-
-bool BaseModel::updateArray( const QModelIndex & array )
-{
-	NifItem * item = static_cast<NifItem *>( array.internalPointer() );
-
-	if ( !( array.isValid() && item && array.model() == this ) )
-		return false;
-
-	return updateArrayItem( item );
-}
-
-bool BaseModel::updateArray( const QModelIndex & parent, const QString & name )
-{
-	return updateArray( getIndex( parent, name ) );
+	BaseModelEval functor(this, array);
+	return array->arr1expr().evaluateUInt(functor);
 }
 
 /*
@@ -164,143 +158,96 @@ bool BaseModel::updateArray( const QModelIndex & parent, const QString & name )
 
 QString BaseModel::itemName( const QModelIndex & index ) const
 {
-	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
-
-	if ( !( index.isValid() && item && index.model() == this ) )
-		return QString();
-
-	return item->name();
+	const NifItem * item = getItem( index );
+	if ( item )
+		return item->name();
+	return QString();
 }
 
-QString BaseModel::itemType( const QModelIndex & index ) const
+QString BaseModel::itemStrType( const QModelIndex & index ) const
 {
-	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
-
-	if ( !( index.isValid() && item && index.model() == this ) )
-		return QString();
-
-	return item->type();
+	const NifItem * item = getItem( index );
+	if ( item )
+		return item->strType();
+	return QString();
 }
 
-QString BaseModel::itemTmplt( const QModelIndex & index ) const
+QString BaseModel::itemTempl( const QModelIndex & index ) const
 {
-	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
-
-	if ( !( index.isValid() && item && index.model() == this ) )
-		return QString();
-
-	return item->temp();
+	const NifItem * item = getItem( index );
+	if ( item )
+		return item->templ();
+	return QString();
 }
-
 
 NifValue BaseModel::getValue( const QModelIndex & index ) const
 {
-	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
-
-	if ( !( index.isValid() && item && index.model() == this ) )
-		return NifValue();
-
-	return item->value();
+	const NifItem * item = getItem( index );
+	if ( item )
+		return item->value();
+	return NifValue();
 }
-
-// where is
-// NifValue BaseModel::getValue( const QModelIndex & parent, const QString & name ) const
-// ?
 
 QString BaseModel::itemArg( const QModelIndex & index ) const
 {
-	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
-
-	if ( !( index.isValid() && item && index.model() == this ) )
-		return QString();
-
-	return item->arg();
+	const NifItem * item = getItem( index );
+	if ( item )
+		return item->arg();
+	return QString();
 }
 
 QString BaseModel::itemArr1( const QModelIndex & index ) const
 {
-	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
-
-	if ( !( index.isValid() && item && index.model() == this ) )
-		return QString();
-
-	return item->arr1();
+	const NifItem * item = getItem( index );
+	if ( item )
+		return item->arr1();
+	return QString();
 }
 
 QString BaseModel::itemArr2( const QModelIndex & index ) const
 {
-	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
-
-	if ( !( index.isValid() && item && index.model() == this ) )
-		return QString();
-
-	return item->arr2();
+	const NifItem * item = getItem( index );
+	if ( item )
+		return item->arr2();
+	return QString();
 }
 
 QString BaseModel::itemCond( const QModelIndex & index ) const
 {
-	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
-
-	if ( !( index.isValid() && item && index.model() == this ) )
-		return QString();
-
-	return item->cond();
+	const NifItem * item = getItem( index );
+	if ( item )
+		return item->cond();
+	return QString();
 }
 
 quint32 BaseModel::itemVer1( const QModelIndex & index ) const
 {
-	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
-
-	if ( !( index.isValid() && item && index.model() == this ) )
-		return 0;
-
-	return item->ver1();
+	const NifItem * item = getItem( index );
+	return item ? item->ver1() : 0;
 }
 
 quint32 BaseModel::itemVer2( const QModelIndex & index ) const
 {
-	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
-
-	if ( !( index.isValid() && item && index.model() == this ) )
-		return 0;
-
-	return item->ver2();
+	const NifItem * item = getItem( index );
+	return item ? item->ver2() : 0;
 }
 
 QString BaseModel::itemText( const QModelIndex & index ) const
 {
-	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
-
-	if ( !( index.isValid() && item && index.model() == this ) )
-		return QString();
-
-	return item->text();
-}
-
-
-bool BaseModel::setValue( const QModelIndex & index, const NifValue & val )
-{
-	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
-
-	if ( !( index.isValid() && item && index.model() == this ) )
-		return false;
-
-	return setItemValue( item, val );
-}
-
-bool BaseModel::setValue( const QModelIndex & parent, const QString & name, const NifValue & val )
-{
-	NifItem * parentItem = static_cast<NifItem *>( parent.internalPointer() );
-
-	if ( !( parent.isValid() && parentItem && parent.model() == this ) )
-		return false;
-
-	NifItem * item = getItem( parentItem, name );
-
+	const NifItem * item = getItem( index );
 	if ( item )
-		return setItemValue( item, val );
+		return item->text();
+	return QString();
+}
 
-	return false;
+bool BaseModel::setItemValue( NifItem * item, const NifValue & val )
+{
+	if ( !item )
+		return false;
+
+	item->value() = val;
+	onItemValueChange( item );
+	return true;
 }
 
 
@@ -310,56 +257,35 @@ bool BaseModel::setValue( const QModelIndex & parent, const QString & name, cons
 
 QModelIndex BaseModel::index( int row, int column, const QModelIndex & parent ) const
 {
-	NifItem * parentItem;
-
-	if ( !( parent.isValid() && parent.model() == this ) )
-		parentItem = root;
-	else
-		parentItem = static_cast<NifItem *>( parent.internalPointer() );
-
-	NifItem * childItem = ( parentItem ? parentItem->child( row ) : 0 );
-
-	if ( childItem )
-		return createIndex( row, column, childItem );
-
-	return QModelIndex();
+	const NifItem * parentItem = parent.isValid() ? getItem(parent) : root;
+	return itemToIndex( parentItem ? parentItem->child(row) : nullptr, column );
 }
 
 QModelIndex BaseModel::parent( const QModelIndex & child ) const
 {
-	if ( !( child.isValid() && child.model() == this ) )
-		return QModelIndex();
-
-	NifItem * childItem = static_cast<NifItem *>( child.internalPointer() );
-
+	const NifItem * childItem = getItem( child );
 	if ( !childItem || childItem == root )
 		return QModelIndex();
 
-	NifItem * parentItem = childItem->parent();
-
-	if ( !parentItem || parentItem == root )
+	const NifItem * parentItem = childItem->parent();
+	if ( !parentItem || parentItem == root ) // Yes, we ignore parentItem == root because otherwise "Block Details" shows the whole hierarchy
 		return QModelIndex();
 
-	return createIndex( parentItem->row(), 0, parentItem );
+	return itemToIndex( parentItem );
 }
 
 int BaseModel::rowCount( const QModelIndex & parent ) const
 {
-	NifItem * parentItem;
-
-	if ( !( parent.isValid() && parent.model() == this ) )
-		parentItem = root;
-	else
-		parentItem = static_cast<NifItem *>( parent.internalPointer() );
-
-	return ( parentItem ? parentItem->childCount() : 0 );
+	if ( !parent.isValid() )
+		return root->childCount();
+	const NifItem * parentItem = getItem(parent);
+	return parentItem ? parentItem->childCount() : 0;
 }
 
 QVariant BaseModel::data( const QModelIndex & index, int role ) const
 {
-	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
-
-	if ( !( index.isValid() && item && index.model() == this ) )
+	const NifItem * item = getItem( index );
+	if ( !item )
 		return QVariant();
 
 	int column = index.column();
@@ -374,9 +300,9 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 			case NameCol:
 				return item->name();
 			case TypeCol:
-				return item->type();
+				return item->strType();
 			case ValueCol:
-				return item->value().toString();
+				return item->getValueAsString();
 			case ArgCol:
 				return item->arg();
 			case Arr1Col:
@@ -401,9 +327,9 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 			case NameCol:
 				return item->name();
 			case TypeCol:
-				return item->type();
+				return item->strType();
 			case ValueCol:
-				return item->value().toVariant();
+				return item->getValueAsVariant();
 			case ArgCol:
 				return item->arg();
 			case Arr1Col:
@@ -427,11 +353,11 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 			switch ( column ) {
 			case ValueCol:
 				{
-					switch ( item->value().type() ) {
+					switch ( item->valueType() ) {
 					case NifValue::tWord:
 					case NifValue::tShort:
 						{
-							quint16 s = item->value().toCount();
+							quint16 s = item->getCountValue();
 							return QString( "dec: %1<br>hex: 0x%2" ).arg( s ).arg( s, 4, 16, QChar( '0' ) );
 						}
 					case NifValue::tBool:
@@ -439,45 +365,48 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 					case NifValue::tUInt:
 					case NifValue::tULittle32:
 						{
-							quint32 i = item->value().toCount();
+							quint32 i = item->getCountValue();
 							return QString( "dec: %1<br>hex: 0x%2" ).arg( i ).arg( i, 8, 16, QChar( '0' ) );
 						}
 					case NifValue::tFloat:
 					case NifValue::tHfloat:
+					case NifValue::tNormbyte:
 						{
-							float f = item->value().toFloat();
-							quint32 i = item->value().toCount();
+							float f = item->getFloatValue();
+							quint32 i = item->getCountValue();
 							return QString( "float: %1<br>data: 0x%2" ).arg( f ).arg( i, 8, 16, QChar( '0' ) );
 						}
 					case NifValue::tFlags:
 						{
-							quint16 f = item->value().toCount();
+							quint16 f = item->getCountValue();
 							return QString( "dec: %1<br>hex: 0x%2<br>bin: 0b%3" ).arg( f ).arg( f, 4, 16, QChar( '0' ) ).arg( f, 16, 2, QChar( '0' ) );
 						}
 					case NifValue::tVector3:
-						return item->value().get<Vector3>().toHtml();
+						return item->get<Vector3>().toHtml();
+					case NifValue::tUshortVector3:
+						return item->get<UshortVector3>().toHtml();
 					case NifValue::tHalfVector3:
-						return item->value().get<HalfVector3>().toHtml();
+						return item->get<HalfVector3>().toHtml();
 					case NifValue::tByteVector3:
-						return item->value().get<ByteVector3>().toHtml();
+						return item->get<ByteVector3>().toHtml();
 					case NifValue::tMatrix:
-						return item->value().get<Matrix>().toHtml();
+						return item->get<Matrix>().toHtml();
 					case NifValue::tQuat:
 					case NifValue::tQuatXYZW:
-						return item->value().get<Quat>().toHtml();
+						return item->get<Quat>().toHtml();
 					case NifValue::tColor3:
 						{
-							Color3 c = item->value().get<Color3>();
+							Color3 c = item->get<Color3>();
 							return QString( "R %1<br>G %2<br>B %3" ).arg( c[0] ).arg( c[1] ).arg( c[2] );
 						}
 					case NifValue::tByteColor4:
 						{
-							Color4 c = item->value().get<ByteColor4>();
+							Color4 c = item->get<ByteColor4>();
 							return QString( "R %1<br>G %2<br>B %3<br>A %4" ).arg( c[0] ).arg( c[1] ).arg( c[2] ).arg( c[3] );
 						}
 					case NifValue::tColor4:
 						{
-							Color4 c = item->value().get<Color4>();
+							Color4 c = item->get<Color4>();
 							return QString( "R %1<br>G %2<br>B %3<br>A %4" ).arg( c[0] ).arg( c[1] ).arg( c[2] ).arg( c[3] );
 						}
 					default:
@@ -492,8 +421,8 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 		return QVariant();
 	case Qt::BackgroundColorRole:
 		{
-			if ( column == ValueCol && item->value().isColor() ) {
-				return item->value().toColor();
+			if ( column == ValueCol && item->isColor() ) {
+				return item->getColorValue();
 			}
 		}
 		return QVariant();
@@ -504,9 +433,11 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 
 bool BaseModel::setData( const QModelIndex & index, const QVariant & value, int role )
 {
-	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
+	if ( role != Qt::EditRole )
+		return false;
 
-	if ( !( index.isValid() && role == Qt::EditRole && index.model() == this && item ) )
+	NifItem * item = getItem( index );
+	if ( !item )
 		return false;
 
 	switch ( index.column() ) {
@@ -514,10 +445,10 @@ bool BaseModel::setData( const QModelIndex & index, const QVariant & value, int 
 		item->setName( value.toString() );
 		break;
 	case BaseModel::TypeCol:
-		item->setType( value.toString() );
+		item->setStrType( value.toString() );
 		break;
 	case BaseModel::ValueCol:
-		item->value().setFromVariant( value );
+		item->setValueFromVariant( value );
 		break;
 	case BaseModel::ArgCol:
 		item->setArg( value.toString() );
@@ -545,7 +476,7 @@ bool BaseModel::setData( const QModelIndex & index, const QVariant & value, int 
 	}
 
 	if ( state == Default )
-		emit dataChanged( index, index );
+		onItemValueChange( item );
 
 	return true;
 }
@@ -597,31 +528,16 @@ Qt::ItemFlags BaseModel::flags( const QModelIndex & index ) const
 
 	Qt::ItemFlags flags;
 
-	auto item = static_cast<NifItem *>(index.internalPointer());
-
-	bool condExpr;
-	if ( item )
-		condExpr = item->condition();
-	else
-		condExpr = evalCondition( index, true );
-
-	if ( condExpr )
+	const NifItem * item = indexToItem( index );
+	if ( evalCondition(item) ){
 		flags = (Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-
-	switch ( index.column() ) {
-	case TypeCol:
-	case NameCol:
-		return flags;
-	case ValueCol:
-		if ( condExpr )
-			return flags | Qt::ItemIsEditable;
-
-		return flags;
-
-	default:
-		return flags;
+		if ( index.column() == ValueCol )
+			flags |= Qt::ItemIsEditable;
 	}
+	
+	return flags;
 }
+
 
 /*
  *  load and save
@@ -668,146 +584,309 @@ void BaseModel::refreshFileInfo( const QString & f )
  *  searching
  */
 
-NifItem * BaseModel::getItem( NifItem * item, const QString & name ) const
+const NifItem * BaseModel::getItemInternal( const NifItem * parent, const QString & name, bool reportErrors ) const
 {
-	if ( !item || item == root )
+	for ( auto item : parent->childIter() )
+		if ( item->hasName(name) && evalCondition(item) )
+			return item;
+
+	if ( reportErrors )
+		reportError( parent, tr( "Could not find \"%1\" subitem." ).arg( name ) );
+	return nullptr;
+}
+
+const NifItem * BaseModel::getItemInternal( const NifItem * parent, const QLatin1String & name, bool reportErrors ) const
+{
+	for ( auto item : parent->childIter() )
+		if ( item->hasName(name) && evalCondition(item) )
+			return item;
+
+	if ( reportErrors )
+		reportError( parent, tr( "Could not find \"%1\" subitem." ).arg( QString(name) ) );
+	return nullptr;
+}
+
+const QString SLASH_QSTRING("\\");
+const QString DOTS_QSTRING("..");
+const QLatin1String SLASH_LATIN("\\");
+const QLatin1String DOTS_LATIN("..");
+
+const NifItem * BaseModel::getItem( const NifItem * parent, const QString & name, bool reportErrors ) const
+{
+	if ( !parent )
 		return nullptr;
 
-	int slash = name.indexOf( "\\" );
-	if ( slash > 0 ) {
-		QString left  = name.left( slash );
-		QString right = name.right( name.length() - slash - 1 );
+	int slashPos = name.indexOf( SLASH_QSTRING );
+	if ( slashPos > 0 ) {
+		QString left  = name.left( slashPos );
+		QString right = name.right( name.length() - slashPos - SLASH_QSTRING.length() );
 
-		if ( left == ".." )
-			return getItem( item->parent(), right );
-
-		return getItem( getItem( item, left ), right );
+		const NifItem * pp = ( left == DOTS_QSTRING ) ? parent->parent() : getItemInternal( parent, left, reportErrors );
+		return getItem( pp, right, reportErrors );	
 	}
 
-	for ( int c = 0; c < item->childCount(); c++ ) {
-		NifItem * child = item->child( c );
+	return getItemInternal( parent, name, reportErrors );	
+}
 
-		if ( child->name() == name && evalCondition( child ) )
-			return child;
+const NifItem * BaseModel::getItem( const NifItem * parent, const QLatin1String & name, bool reportErrors ) const
+{
+	if ( !parent )
+		return nullptr;
+
+	int slashPos = name.indexOf( SLASH_LATIN );
+	if ( slashPos > 0 ) {
+		QLatin1String left  = name.left( slashPos );
+		QLatin1String right = name.right( name.size() - slashPos - SLASH_LATIN.size() );
+
+		const NifItem * pp = ( left == DOTS_LATIN ) ? parent->parent() : getItemInternal( parent, left, reportErrors );
+		return getItem( pp, right, reportErrors );
+	}
+
+	return getItemInternal( parent, name, reportErrors );
+}
+
+const NifItem * BaseModel::getItem( const NifItem * parent, int childIndex, bool reportErrors ) const
+{
+	if ( !parent )
+		return nullptr;
+
+	const NifItem * item = parent->child( childIndex );
+	if ( item ) {
+		if ( evalCondition(item) )
+			return item;
+
+		if ( reportErrors ) {
+			QString repr;
+			if ( parent->isArray() )
+				repr = QString::number( childIndex );
+			else
+				repr = QString( "%1 (\"%2\")" ).arg( childIndex ).arg( item->name() );
+			reportError( parent, tr( "Subitem with index %1 has failed condition check." ).arg( repr ) );
+		}
+	} else {
+		if ( reportErrors && childIndex >= 0 )
+			reportError( parent, tr( "Invalid child index %1." ).arg( childIndex ) );
 	}
 
 	return nullptr;
 }
+
+const NifItem * BaseModel::getItem( const QModelIndex & index, bool reportErrors ) const
+{
+	if ( !index.isValid() )
+		return nullptr;
+
+	if ( index.model() != this ) {
+		if ( reportErrors )
+			reportError( tr( "BaseModel::getItem got a model index from another model (%1)." ).arg( indexRepr(index) ) );
+		return nullptr;
+	}
+
+	const NifItem * item = indexToItem( index );
+	if ( !item && reportErrors )
+		reportError( "BaseModel::getItem got a valid model index with null internalPointer." ); // WTF
+	return item;
+}
+
 
 /*
 *  Uses implicit load order
 */
-NifItem * BaseModel::getItemX( NifItem * item, const QString & name ) const
-{
-	if ( !item || !item->parent() )
-		return 0;
-
-	NifItem * parent = item->parent();
-
-	for ( int c = item->row() - 1; c >= 0; c-- ) {
-		NifItem * child = parent->child( c );
-
-		if ( child && child->name() == name && evalCondition( child ) )
-			return child;
-	}
-
-	return getItemX( parent, name );
-}
-
-NifItem * BaseModel::findItemX( NifItem * item, const QString & name ) const
+const NifItem * BaseModel::getItemX( const NifItem * item, const QLatin1String & name ) const
 {
 	while ( item ) {
-		NifItem * r = getItem( item, name );
+		const NifItem * parent = item->parent();
+		if ( !parent )
+			return nullptr;
 
-		if ( r )
-			return r;
+		for ( int c = item->row() - 1; c >= 0; c-- ) {
+			const NifItem * child = parent->child( c );
+			if ( child && child->hasName(name) && evalCondition(child) )
+				return child;
+		}
 
-		item = item->parent();
+		item = parent;
 	}
 
 	return nullptr;
 }
 
-QModelIndex BaseModel::getIndex( const QModelIndex & parent, const QString & name ) const
+const NifItem * BaseModel::findItemX( const NifItem * parent, const QLatin1String & name ) const
 {
-	NifItem * parentItem = static_cast<NifItem *>( parent.internalPointer() );
+	while ( parent ) {
+		const NifItem * c = getItem( parent, name, false );
+		if ( c )
+			return c;
+		parent = parent->parent();
+	}
 
-	if ( !( parent.isValid() && parentItem && parent.model() == this ) )
-		return QModelIndex();
-
-	NifItem * item = getItem( parentItem, name );
-
-	if ( item )
-		return createIndex( item->row(), 0, item );
-
-	return QModelIndex();
+	return nullptr;
 }
 
 /*
  *  conditions and version
  */
 
-int BaseModel::evaluateInt( NifItem * item, const NifExpr & expr ) const
+bool BaseModel::evalVersion( const NifItem * item ) const
 {
-	if ( !item || item == root )
-		return -1;
+	if ( !item )
+		return false;
 
-	BaseModelEval functor( this, item );
-	return expr.evaluateUInt( functor );
+	if ( !item->isVersionConditionCached() ) {
+		if ( item->parent() && !evalVersion( item->parent() ) )
+			item->setVersionCondition( false );
+		else if ( item->isConditionless() )
+			item->setVersionCondition( true );
+		else
+			item->setVersionCondition( evalVersionImpl( item ) );
+	}
+
+	return item->versionCondition();
 }
 
-bool BaseModel::evalCondition( NifItem * item, bool chkParents ) const
+bool BaseModel::evalCondition( const NifItem * item ) const
 {
-	if ( !evalVersion( item, chkParents ) ) {
-		// Version is global and cond is not so set false and abort
-		item->setCondition( false );
+	if ( !item )
 		return false;
+
+	if ( !evalVersion(item) )
+		return false;
+
+	if ( !item->isConditionCached() ) {
+		if ( item->parent() && !evalCondition( item->parent() ) )
+			item->setCondition( false );
+		else if ( item->isConditionless() )
+			item->setCondition( true );
+		else
+			item->setCondition( evalConditionImpl( item ) );
 	}
-
-	if ( item->isConditionValid() )
-		return item->condition();
-
-	item->setCondition( item == root );
-	if ( item->condition() )
-		return true;
-
-	if ( chkParents && item->parent() ) {
-		// Set false if parent is false and reject early
-		item->setCondition( evalCondition( item->parent(), true ) );
-		if ( !item->condition() )
-			return false;
-	}
-
-	// Early reject for cond
-	item->setCondition( item->cond().isEmpty() );
-	if ( item->condition() )
-		return true;
-
-	// If there is a cond, evaluate it
-	BaseModelEval functor( this, item );
-	item->setCondition( item->condexpr().evaluateBool( functor ) );
 
 	return item->condition();
 }
 
-bool BaseModel::evalVersion( const QModelIndex & index, bool chkParents ) const
+bool BaseModel::evalConditionImpl( const NifItem * item ) const
 {
-	NifItem * item = static_cast<NifItem *>(index.internalPointer());
+	// If there is a cond, evaluate it
+	if ( !item->cond().isEmpty() ) {
+		BaseModelEval functor( this, item );
+		if ( !item->condexpr().evaluateBool(functor) )
+			return false;
+	}
 
-	if ( index.isValid() && index.model() == this && item )
-		return evalVersion( item, chkParents );
-
-	return false;
+	return true;
 }
 
-bool BaseModel::evalCondition( const QModelIndex & index, bool chkParents ) const
+QString BaseModel::itemRepr( const NifItem * item ) const
 {
-	NifItem * item = static_cast<NifItem *>(index.internalPointer());
+	if ( !item )
+		return QString("[NULL]");
+	if ( item->model() != this )
+		return item->model()->itemRepr( item );
+	if ( item == root )
+		return QString("[ROOT]");
 
-	if ( index.isValid() && index.model() == this && item )
-		return evalCondition( item, chkParents );
+	QString result;
+	while( true ) {
+		const NifItem * parent = item->parent();
+		if ( !parent ) {
+			result = "???" + result; // WTF...
+			break;
+		} else if ( parent == root ) {
+			result = topItemRepr( item ) + result;
+			break;
+		} else {
+			QString subres;
+			if ( parent->isArray() )
+				subres = QString(" [%1]").arg( item->row() );
+			else
+				subres = SLASH_QSTRING + item->name();
+			result = subres + result;
+			item = parent;
+		}
+	}
 
-	return false;
+	return result;
+}
+
+QString BaseModel::indexRepr( const QModelIndex & index )
+{
+	if ( index.isValid() ) {
+		auto model = qobject_cast<const BaseModel *>( index.model() );
+		if ( !model )
+			return QString("[INVALID INDEX (BAD MODEL)]");
+		auto item = indexToItem( index );
+		if ( !item )
+			return QString("[INVALID INDEX (BAD ITEM POINTER)]");
+		return model->itemRepr( item );
+	}
+
+	return QString("[NULL]");
+}
+
+QString BaseModel::topItemRepr( const NifItem * item ) const
+{
+	return QString("%2 [%1]").arg( item->row() ).arg( item->name() );
+}
+
+void BaseModel::reportError( const QString & err ) const
+{
+	if ( msgMode == MSG_USER )
+		Message::append(getWindow(), "Parsing warnings:", err);
+	else
+		testMsg(err);
+}
+
+void BaseModel::reportError( const NifItem * item, const QString & err ) const
+{
+	reportError( itemRepr( item ) + ": " + err );
+}
+
+void BaseModel::reportError( const NifItem * item, const QString & funcName, const QString & err ) const
+{
+	reportError( QString("%1, %2: %3").arg( itemRepr( item ), funcName, err ) );
+}
+
+void BaseModel::reportError( const QModelIndex & index, const QString & err ) const
+{
+	reportError( indexRepr( index ) + ": " + err );
+}
+
+void BaseModel::reportError( const QModelIndex & index, const QString & funcName, const QString & err ) const
+{
+	reportError( QString("%1, %2: %3").arg( indexRepr( index ), funcName, err ) );
+}
+
+void BaseModel::onItemValueChange( NifItem * item )
+{
+	if ( state != Processing ) {
+		QModelIndex idx = itemToIndex( item, ValueCol );
+		emit dataChanged( idx, idx );
+	} else {
+		changedWhileProcessing = true;
+	}
+}
+
+void BaseModel::onArrayValuesChange( NifItem * arrayRootItem )
+{
+	int x = arrayRootItem->childCount() - 1;
+	if ( x >= 0 ) {
+		emit dataChanged(
+			createIndex( 0, ValueCol, arrayRootItem->children().at(0) ), 
+			createIndex( x, ValueCol, arrayRootItem->children().at(x) )
+		);
+	}
+}
+
+const NifItem * BaseModel::getTopItem( const NifItem * item ) const
+{
+	while( item ) {
+		auto p = item->parent();
+		if ( p == root )
+			break;
+		item = p;
+	}
+
+	return item;
 }
 
 
@@ -821,44 +900,52 @@ BaseModelEval::BaseModelEval( const BaseModel * model, const NifItem * item )
 	this->item  = item;
 }
 
-QVariant BaseModelEval::operator()(const QVariant & v) const
+QVariant BaseModelEval::operator()( const QVariant & v ) const
 {
 	if ( v.type() == QVariant::String ) {
+
+		// Resolve "ARG"
 		QString left = v.toString();
-		const NifItem * i = item;
-
-		// resolve "ARG"
-		while ( left == "ARG" ) {
-			if ( !i->parent() )
+		const NifItem * exprItem = item;
+		bool isArgExpr = false;
+		while ( left == XMLARG ) {
+			exprItem = exprItem->parent();
+			if ( !exprItem )
 				return false;
-
-			i = i->parent();
-			left = i->arg();
+			left = exprItem->arg();
+			isArgExpr = !exprItem->argexpr().noop();
 		}
 
-		// resolve reference to sibling
-		const NifItem * sibling = model->getItem( i->parent(), left );
+		// ARG is an expression
+		if ( isArgExpr )
+			return exprItem->argexpr().evaluateUInt64( BaseModelEval( model, exprItem) );
 
+		bool numeric;
+		int val = left.toInt( &numeric, 10 );
+		if ( numeric )
+			return QVariant( val );
+
+		// resolve reference to sibling
+		const NifItem * sibling = model->getItem( exprItem->parent(), left );
 		if ( sibling ) {
-			if ( sibling->value().isCount() || sibling->value().isFloat() ) {
-				return QVariant( sibling->value().toCount() );
-			} else if ( sibling->value().isFileVersion() ) {
-				return QVariant( sibling->value().toFileVersion() );
+			if ( sibling->isCount() || sibling->isFloat() ) {
+				return QVariant( sibling->getCountValue() );
+			} else if ( sibling->isFileVersion() ) {
+				return QVariant( sibling->getFileVersionValue() );
 			// this is tricky to understand
 			// we check whether the reference is an array
-			// if so, we get the current item's row number (i->row())
+			// if so, we get the current item's row number (exprItem->row())
 			// and get the sibling's child at that row number
 			// this is used for instance to describe array sizes of strips
 			} else if ( sibling->childCount() > 0 ) {
-				const NifItem * i2 = sibling->child( i->row() );
+				const NifItem * i2 = sibling->child( exprItem->row() );
 
-				if ( i2 && i2->value().isCount() )
-					return QVariant( i2->value().toCount() );
+				if ( i2 && i2->isCount() )
+					return QVariant( i2->getCountValue() );
+			} else if ( sibling->valueType() == NifValue::tBSVertexDesc ) {
+				return QVariant( sibling->get<BSVertexDesc>().GetFlags() << 4 );
 			} else {
-				if ( sibling->value().type() == NifValue::tBSVertexDesc )
-					return QVariant( sibling->value().get<BSVertexDesc>().GetFlags() << 4 );
-
-				qDebug() << ("can't convert " + left + " to a count");
+				model->reportError( item, QString( "BaseModelEval could not convert %1 to a count." ).arg( sibling->repr() ) );
 			}
 		}
 
@@ -866,13 +953,9 @@ QVariant BaseModelEval::operator()(const QVariant & v) const
 		// is the condition string a type?
 		if ( model->isAncestorOrNiBlock( left ) ) {
 			// get the type of the current block
-			const NifItem * block = i;
-
-			while ( block->parent() && block->parent()->parent() ) {
-				block = block->parent();
-			}
-
-			return QVariant( model->inherits( block->name(), left ) );
+			auto itemBlock = model->getTopItem( exprItem );
+			if ( itemBlock )
+				return QVariant( model->inherits( itemBlock->name(), left ) );
 		}
 
 		return QVariant( 0 );
@@ -890,4 +973,14 @@ unsigned DJB1Hash( const char * key, unsigned tableSize )
 		key++;
 	}
 	return hash % tableSize;
+}
+
+QString addConditionParentPrefix( const QString & x )
+{
+	for ( int c = 0; c < x.length(); c++ ) {
+		if ( !x[c].isNumber() )
+			return QString( "..\\" ) + x;
+	}
+
+	return x;
 }

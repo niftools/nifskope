@@ -32,8 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "controllers.h"
 
-#include "gl/glmesh.h"
-#include "gl/glnode.h"
+#include "gl/glshape.h"
 #include "gl/glparticles.h"
 #include "gl/glproperty.h"
 #include "gl/glscene.h"
@@ -54,7 +53,7 @@ bool ControllerManager::update( const NifModel * nif, const QModelIndex & index 
 			Scene * scene = target->scene;
 			QVector<qint32> lSequences = nif->getLinkArray( index, "Controller Sequences" );
 			for ( const auto l : lSequences ) {
-				QModelIndex iSeq = nif->getBlock( l, "NiControllerSequence" );
+				QModelIndex iSeq = nif->getBlockIndex( l, "NiControllerSequence" );
 
 				if ( iSeq.isValid() ) {
 					QString name = nif->get<QString>( iSeq, "Name" );
@@ -64,7 +63,7 @@ bool ControllerManager::update( const NifModel * nif, const QModelIndex & index 
 
 						QMap<QString, float> tags = scene->animTags[name];
 
-						QModelIndex iKeys = nif->getBlock( nif->getLink( iSeq, "Text Keys" ), "NiTextKeyExtraData" );
+						QModelIndex iKeys = nif->getBlockIndex( nif->getLink( iSeq, "Text Keys" ), "NiTextKeyExtraData" );
 						QModelIndex iTags = nif->getIndex( iKeys, "Text Keys" );
 
 						for ( int r = 0; r < nif->rowCount( iTags ); r++ ) {
@@ -85,9 +84,8 @@ bool ControllerManager::update( const NifModel * nif, const QModelIndex & index 
 
 void ControllerManager::setSequence( const QString & seqname )
 {
-	const NifModel * nif = static_cast<const NifModel *>(iBlock.model());
-
-	if ( target && iBlock.isValid() && nif ) {
+	auto nif = NifModel::fromValidIndex(iBlock);
+	if ( nif && target ) {
 		MultiTargetTransformController * multiTargetTransformer = 0;
 		for ( Controller * c : target->controllers ) {
 			if ( c->typeId() == "NiMultiTargetTransformController" ) {
@@ -98,7 +96,7 @@ void ControllerManager::setSequence( const QString & seqname )
 
 		QVector<qint32> lSequences = nif->getLinkArray( iBlock, "Controller Sequences" );
 		for ( const auto l : lSequences ) {
-			QModelIndex iSeq = nif->getBlock( l, "NiControllerSequence" );
+			QModelIndex iSeq = nif->getBlockIndex( l, "NiControllerSequence" );
 
 			if ( iSeq.isValid() && nif->get<QString>( iSeq, "Name" ) == seqname ) {
 				start = nif->get<float>( iSeq, "Start Time" );
@@ -111,15 +109,18 @@ void ControllerManager::setSequence( const QString & seqname )
 				for ( int r = 0; r < nif->rowCount( iCtrlBlcks ); r++ ) {
 					QModelIndex iCB = iCtrlBlcks.child( r, 0 );
 
-					QModelIndex iInterp = nif->getBlock( nif->getLink( iCB, "Interpolator" ), "NiInterpolator" );
+					QModelIndex iInterp = nif->getBlockIndex( nif->getLink( iCB, "Interpolator" ), "NiInterpolator" );
 
-					QModelIndex iController = nif->getBlock( nif->getLink( iCB, "Controller" ), "NiTimeController" );
+					QModelIndex iController = nif->getBlockIndex( nif->getLink( iCB, "Controller" ), "NiTimeController" );
 
 					QString nodename = nif->get<QString>( iCB, "Node Name" );
 
 					if ( nodename.isEmpty() ) {
 						QModelIndex idx = nif->getIndex( iCB, "Node Name Offset" );
 						nodename = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
+
+						if ( nodename.isEmpty() )
+							nodename = nif->get<QString>( iCB, "Target Name" );
 					}
 
 					QString proptype = nif->get<QString>( iCB, "Property Type" );
@@ -134,6 +135,9 @@ void ControllerManager::setSequence( const QString & seqname )
 					if ( ctrltype.isEmpty() ) {
 						QModelIndex idx = nif->getIndex( iCB, "Controller Type Offset" );
 						ctrltype = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
+
+						if ( ctrltype.isEmpty() && iController.isValid() )
+							ctrltype = nif->itemName( iController );
 					}
 
 					QString var1 = nif->get<QString>( iCB, "Controller ID" );
@@ -254,9 +258,8 @@ void TransformController::updateTime( float time )
 
 void TransformController::setInterpolator( const QModelIndex & idx )
 {
-	const NifModel * nif = static_cast<const NifModel *>(idx.model());
-
-	if ( nif && idx.isValid() ) {
+	auto nif = NifModel::fromValidIndex(idx);
+	if ( nif ) {
 		if ( interpolator ) {
 			delete interpolator;
 			interpolator = 0;
@@ -307,7 +310,7 @@ bool MultiTargetTransformController::update( const NifModel * nif, const QModelI
 
 			QVector<qint32> lTargets = nif->getLinkArray( index, "Extra Targets" );
 			for ( const auto l : lTargets ) {
-				Node * node = scene->getNode( nif, nif->getBlock( l ) );
+				Node * node = scene->getNode( nif, nif->getBlockIndex( l ) );
 
 				if ( node ) {
 					extraTargets.append( TransformTarget( node, 0 ) );
@@ -327,9 +330,8 @@ bool MultiTargetTransformController::update( const NifModel * nif, const QModelI
 
 bool MultiTargetTransformController::setInterpolatorNode( Node * node, const QModelIndex & idx )
 {
-	const NifModel * nif = static_cast<const NifModel *>(idx.model());
-
-	if ( !nif || !idx.isValid() )
+	auto nif = NifModel::fromValidIndex(idx);
+	if ( !nif )
 		return false;
 
 	QMutableListIterator<TransformTarget> it( extraTargets );
@@ -435,7 +437,7 @@ void MorphController::updateTime( float time )
 		}
 	}
 
-	target->updateBounds = true;
+	target->needUpdateBounds = true;
 }
 
 bool MorphController::update( const NifModel * nif, const QModelIndex & index )
@@ -462,9 +464,9 @@ bool MorphController::update( const NifModel * nif, const QModelIndex & index )
 
 			// this is ugly...
 			if ( iInterpolators.isValid() ) {
-				key->iFrames = nif->getIndex( nif->getBlock( nif->getLink( nif->getBlock( nif->getLink( iInterpolators.child( r, 0 ) ), "NiFloatInterpolator" ), "Data" ), "NiFloatData" ), "Data" );
+				key->iFrames = nif->getIndex( nif->getBlockIndex( nif->getLink( nif->getBlockIndex( nif->getLink( iInterpolators.child( r, 0 ) ), "NiFloatInterpolator" ), "Data" ), "NiFloatData" ), "Data" );
 			} else if ( iInterpolatorWeights.isValid() ) {
-				key->iFrames = nif->getIndex( nif->getBlock( nif->getLink( nif->getBlock( nif->getLink( iInterpolatorWeights.child( r, 0 ), "Interpolator" ), "NiFloatInterpolator" ), "Data" ), "NiFloatData" ), "Data" );
+				key->iFrames = nif->getIndex( nif->getBlockIndex( nif->getLink( nif->getBlockIndex( nif->getLink( iInterpolatorWeights.child( r, 0 ), "Interpolator" ), "NiFloatInterpolator" ), "Data" ), "NiFloatData" ), "Data" );
 			} else {
 				key->iFrames = iKey;
 			}
@@ -494,7 +496,7 @@ UVController::~UVController()
 
 void UVController::updateTime( float time )
 {
-	const NifModel * nif = static_cast<const NifModel *>(iData.model());
+	auto nif = NifModel::fromIndex( iData );
 	QModelIndex uvGroups = nif->getIndex( iData, "UV Groups" );
 
 	// U trans, V trans, U scale, V scale
@@ -520,7 +522,7 @@ void UVController::updateTime( float time )
 		}
 	}
 
-	target->updateData = true;
+	target->needUpdateData = true; // TODO (Gavrant): it's probably wrong (because the target shape would reset its UV map then)
 }
 
 bool UVController::update( const NifModel * nif, const QModelIndex & index )
@@ -561,27 +563,27 @@ bool ParticleController::update( const NifModel * nif, const QModelIndex & index
 		return false;
 
 	if ( Controller::update( nif, index ) || (index.isValid() && iExtras.contains( index )) ) {
-		emitNode = target->scene->getNode( nif, nif->getBlock( nif->getLink( iBlock, "Emitter" ) ) );
+		emitNode = target->scene->getNode( nif, nif->getBlockIndex( nif->getLink( iBlock, "Emitter" ) ) );
 		emitStart = nif->get<float>( iBlock, "Emit Start Time" );
 		emitStop = nif->get<float>( iBlock, "Emit Stop Time" );
-		emitRate = nif->get<float>( iBlock, "Emit Rate" );
-		emitRadius = nif->get<Vector3>( iBlock, "Start Random" );
+		emitRate = nif->get<float>( iBlock, "Birth Rate" );
+		emitRadius = nif->get<Vector3>( iBlock, "Emitter Dimensions" );
 		emitAccu = 0;
 		emitLast = emitStart;
 
 		spd = nif->get<float>( iBlock, "Speed" );
-		spdRnd = nif->get<float>( iBlock, "Speed Random" );
+		spdRnd = nif->get<float>( iBlock, "Speed Variation" );
 
 		ttl = nif->get<float>( iBlock, "Lifetime" );
-		ttlRnd = nif->get<float>( iBlock, "Lifetime Random" );
+		ttlRnd = nif->get<float>( iBlock, "Lifetime Variation" );
 
-		inc = nif->get<float>( iBlock, "Vertical Direction" );
-		incRnd = nif->get<float>( iBlock, "Vertical Angle" );
+		inc = nif->get<float>( iBlock, "Declination" );
+		incRnd = nif->get<float>( iBlock, "Declination Variation" );
 
-		dec = nif->get<float>( iBlock, "Horizontal Direction" );
-		decRnd = nif->get<float>( iBlock, "Horizontal Angle" );
+		dec = nif->get<float>( iBlock, "Planar Angle" );
+		decRnd = nif->get<float>( iBlock, "Planar Angle Variation" );
 
-		size = nif->get<float>( iBlock, "Size" );
+		size = nif->get<float>( iBlock, "Initial Size" );
 		grow = 0.0;
 		fade = 0.0;
 
@@ -599,10 +601,10 @@ bool ParticleController::update( const NifModel * nif, const QModelIndex & index
 			for ( int p = 0; p < numValid && p < nif->rowCount( iParticles ); p++ ) {
 				Particle particle;
 				particle.velocity = nif->get<Vector3>( iParticles.child( p, 0 ), "Velocity" );
-				particle.lifetime = nif->get<float>( iParticles.child( p, 0 ), "Lifetime" );
-				particle.lifespan = nif->get<float>( iParticles.child( p, 0 ), "Lifespan" );
-				particle.lasttime = nif->get<float>( iParticles.child( p, 0 ), "Timestamp" );
-				particle.vertex = nif->get<int>( iParticles.child( p, 0 ), "Vertex ID" );
+				particle.lifetime = nif->get<float>( iParticles.child( p, 0 ), "Age" );
+				particle.lifespan = nif->get<float>( iParticles.child( p, 0 ), "Life Span" );
+				particle.lasttime = nif->get<float>( iParticles.child( p, 0 ), "Last Update" );
+				particle.vertex = nif->get<int>( iParticles.child( p, 0 ), "Code" );
 				// Display saved particle start on initial load
 				list.append( particle );
 			}
@@ -610,14 +612,14 @@ bool ParticleController::update( const NifModel * nif, const QModelIndex & index
 			//}
 		}
 
-		if ( (nif->get<int>( iBlock, "Emit Flags" ) & 1) == 0 ) {
+		if ( nif->get<bool>( iBlock, "Use Birth Rate" ) == 0 ) {
 			emitRate = emitMax / (ttl + ttlRnd / 2);
 		}
 
 		iExtras.clear();
 		grav.clear();
 		iColorKeys = QModelIndex();
-		QModelIndex iExtra = nif->getBlock( nif->getLink( iBlock, "Particle Extra" ) );
+		QModelIndex iExtra = nif->getBlockIndex( nif->getLink( iBlock, "Particle Modifier" ) );
 
 		while ( iExtra.isValid() ) {
 			iExtras.append( iExtra );
@@ -628,7 +630,7 @@ bool ParticleController::update( const NifModel * nif, const QModelIndex & index
 				grow = nif->get<float>( iExtra, "Grow" );
 				fade = nif->get<float>( iExtra, "Fade" );
 			} else if ( name == "NiParticleColorModifier" ) {
-				iColorKeys = nif->getIndex( nif->getBlock( nif->getLink( iExtra, "Color Data" ), "NiColorData" ), "Data" );
+				iColorKeys = nif->getIndex( nif->getBlockIndex( nif->getLink( iExtra, "Color Data" ), "NiColorData" ), "Data" );
 			} else if ( name == "NiGravity" ) {
 				Gravity g;
 				g.force = nif->get<float>( iExtra, "Force" );
@@ -638,7 +640,7 @@ bool ParticleController::update( const NifModel * nif, const QModelIndex & index
 				grav.append( g );
 			}
 
-			iExtra = nif->getBlock( nif->getLink( iExtra, "Next Modifier" ) );
+			iExtra = nif->getBlockIndex( nif->getLink( iExtra, "Next Modifier" ) );
 		}
 
 		return true;
@@ -806,7 +808,7 @@ void AlphaController::updateTime( float time )
 		float threshold;
 
 		if ( interpolate( threshold, iData, "Data", ctrlTime( time ), lAlpha ) )
-			alphaProp->setThreshold( threshold / 255.0 );
+			alphaProp->alphaThreshold = threshold / 255.0f;
 	}
 }
 
@@ -874,9 +876,8 @@ TexFlipController::TexFlipController( TextureProperty * prop, const QModelIndex 
 
 void TexFlipController::updateTime( float time )
 {
-	const NifModel * nif = static_cast<const NifModel *>(iSources.model());
-
-	if ( !((target || oldTarget) && active && iSources.isValid() && nif) )
+	auto nif = NifModel::fromValidIndex(iSources);
+	if ( !((target || oldTarget) && active && nif) )
 		return;
 
 	float r = 0;
@@ -888,9 +889,9 @@ void TexFlipController::updateTime( float time )
 
 	// TexturingProperty
 	if ( target ) {
-		target->textures[flipSlot & 7].iSource = nif->getBlock( nif->getLink( iSources.child( (int)r, 0 ) ), "NiSourceTexture" );
+		target->textures[flipSlot & 7].iSource = nif->getBlockIndex( nif->getLink( iSources.child( (int)r, 0 ) ), "NiSourceTexture" );
 	} else if ( oldTarget ) {
-		oldTarget->iImage = nif->getBlock( nif->getLink( iSources.child( (int)r, 0 ) ), "NiImage" );
+		oldTarget->iImage = nif->getBlockIndex( nif->getLink( iSources.child( (int)r, 0 ) ), "NiImage" );
 	}
 }
 
@@ -984,7 +985,7 @@ void EffectFloatController::updateTime( float time )
 	if ( interpolate( val, iData, "Data", ctrlTime( time ), lIdx ) ) {
 		switch ( variable ) {
 		case EffectFloat::Emissive_Multiple:
-			target->setEmissive( target->getEmissiveColor(), val );
+			target->emissiveMult = val;
 			break;
 		case EffectFloat::Falloff_Start_Angle:
 			target->falloff.startAngle = val;
@@ -999,24 +1000,19 @@ void EffectFloatController::updateTime( float time )
 			target->falloff.stopOpacity = val;
 			break;
 		case EffectFloat::Alpha:
-		{
-			auto c = target->getEmissiveColor();
-			auto m = target->getEmissiveMult();
-
-			target->setEmissive( Color4( c.red(), c.green(), c.blue(), val ), m );
-		}
+			target->emissiveColor.setAlpha( val );
 			break;
 		case EffectFloat::U_Offset:
-			target->setUvOffset( val, target->getUvOffset().y );
+			target->uvOffset.x = val;
 			break;
 		case EffectFloat::U_Scale:
-			target->setUvScale( val, target->getUvScale().y );
+			target->uvScale.x = val;
 			break;
 		case EffectFloat::V_Offset:
-			target->setUvOffset( target->getUvOffset().x, val );
+			target->uvOffset.y = val;
 			break;
 		case EffectFloat::V_Scale:
-			target->setUvScale( target->getUvScale().x, val );
+			target->uvScale.y = val;
 			break;
 		default:
 			break;
@@ -1027,7 +1023,7 @@ void EffectFloatController::updateTime( float time )
 bool EffectFloatController::update( const NifModel * nif, const QModelIndex & index )
 {
 	if ( Controller::update( nif, index ) ) {
-		variable = EffectFloat::Variable( nif->get<int>( iBlock, "Type of Controlled Variable" ) );
+		variable = EffectFloat::Variable( nif->get<int>( iBlock, "Controlled Variable" ) );
 		return true;
 	}
 
@@ -1052,13 +1048,8 @@ void EffectColorController::updateTime( float time )
 	if ( interpolate( val, iData, "Data", ctrlTime( time ), lIdx ) ) {
 		switch ( variable ) {
 		case 0:
-		{
-			auto c = target->getEmissiveColor();
-			auto m = target->getEmissiveMult();
-
-			target->setEmissive( Color4( val[0], val[1], val[2], c.alpha() ), m );
+			target->emissiveColor = Color4( val[0], val[1], val[2], target->emissiveColor.alpha() );
 			break;
-		}
 		default:
 			break;
 		}
@@ -1068,7 +1059,7 @@ void EffectColorController::updateTime( float time )
 bool EffectColorController::update( const NifModel * nif, const QModelIndex & index )
 {
 	if ( Controller::update( nif, index ) ) {
-		variable = nif->get<int>( iBlock, "Type of Controlled Color" );
+		variable = nif->get<int>( iBlock, "Controlled Color" );
 		return true;
 	}
 
@@ -1095,31 +1086,31 @@ void LightingFloatController::updateTime( float time )
 		case LightingFloat::Refraction_Strength:
 			break;
 		case LightingFloat::Reflection_Strength:
-			target->setEnvironmentReflection( val );
+			target->environmentReflection = val;
 			break;
 		case LightingFloat::Glossiness:
-			target->setSpecular( target->getSpecularColor(), val, target->getSpecularStrength() );
+			target->specularGloss = val;
 			break;
 		case LightingFloat::Specular_Strength:
-			target->setSpecular( target->getSpecularColor(), target->getSpecularGloss(), val );
+			target->specularStrength = val;
 			break;
 		case LightingFloat::Emissive_Multiple:
-			target->setEmissive( target->getEmissiveColor(), val );
+			target->emissiveMult = val;
 			break;
 		case LightingFloat::Alpha:
-			target->setAlpha( val );
+			target->alpha = val;
 			break;
 		case LightingFloat::U_Offset:
-			target->setUvOffset( val, target->getUvOffset().y );
+			target->uvOffset.x = val;
 			break;
 		case LightingFloat::U_Scale:
-			target->setUvScale( val, target->getUvScale().y );
+			target->uvScale.x = val;
 			break;
 		case LightingFloat::V_Offset:
-			target->setUvOffset( target->getUvOffset().x, val );
+			target->uvOffset.y = val;
 			break;
 		case LightingFloat::V_Scale:
-			target->setUvScale( target->getUvScale().x, val );
+			target->uvScale.y = val;
 			break;
 		default:
 			break;
@@ -1130,7 +1121,7 @@ void LightingFloatController::updateTime( float time )
 bool LightingFloatController::update( const NifModel * nif, const QModelIndex & index )
 {
 	if ( Controller::update( nif, index ) ) {
-		variable = LightingFloat::Variable(nif->get<int>( iBlock, "Type of Controlled Variable" ));
+		variable = LightingFloat::Variable(nif->get<int>( iBlock, "Controlled Variable" ));
 		return true;
 	}
 
@@ -1155,10 +1146,10 @@ void LightingColorController::updateTime( float time )
 	if ( interpolate( val, iData, "Data", ctrlTime( time ), lIdx ) ) {
 		switch ( variable ) {
 		case 0:
-			target->setSpecular( { val[0], val[1], val[2] }, target->getSpecularGloss(), target->getSpecularStrength() );
+			target->specularColor = { val[0], val[1], val[2] };
 			break;
 		case 1:
-			target->setEmissive( { val[0], val[1], val[2] }, target->getEmissiveMult() );
+			target->emissiveColor = { val[0], val[1], val[2] };
 			break;
 		default:
 			break;
@@ -1169,7 +1160,7 @@ void LightingColorController::updateTime( float time )
 bool LightingColorController::update( const NifModel * nif, const QModelIndex & index )
 {
 	if ( Controller::update( nif, index ) ) {
-		variable = nif->get<int>( iBlock, "Type of Controlled Color" );
+		variable = nif->get<int>( iBlock, "Controlled Color" );
 		return true;
 	}
 

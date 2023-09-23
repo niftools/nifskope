@@ -45,8 +45,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 NifBlockEditor::NifBlockEditor( NifModel * n, const QModelIndex & i, bool fireAndForget )
-	: QWidget(), nif( n ), iBlock( i )
+	: QWidget( n->getWindow(), Qt::Tool ), nif( n ), iBlock( i )
 {
+	setWindowModality( Qt::WindowModality::WindowModal );
+
 	connect( nif, &NifModel::dataChanged, this, &NifBlockEditor::nifDataChanged );
 	connect( nif, &NifModel::modelReset, this, &NifBlockEditor::updateData );
 	connect( nif, &NifModel::destroyed, this, &NifBlockEditor::nifDestroyed );
@@ -75,8 +77,6 @@ NifBlockEditor::NifBlockEditor( NifModel * n, const QModelIndex & i, bool fireAn
 
 		layout->addLayout( btnlayout );
 	}
-
-	setWindowFlags( Qt::Tool | Qt::WindowStaysOnTopHint );
 }
 
 void NifBlockEditor::add( NifEditBox * box )
@@ -137,7 +137,7 @@ void NifBlockEditor::nifDestroyed()
 void NifBlockEditor::nifDataChanged( const QModelIndex & begin, const QModelIndex & end )
 {
 	if ( nif && iBlock.isValid() ) {
-		if ( nif->getBlockOrHeader( begin ) == iBlock || nif->getBlockOrHeader( end ) == iBlock ) {
+		if ( nif->getTopIndex( begin ) == iBlock || nif->getTopIndex( end ) == iBlock ) {
 			if ( !timer->isActive() )
 				timer->start();
 		}
@@ -193,7 +193,7 @@ QLayout * NifEditBox::getLayout()
 void NifEditBox::sltReset()
 {
 	if ( nif && index.isValid() )
-		nif->setValue( index, originalValue );
+		nif->setIndexValue( index, originalValue );
 }
 
 void NifEditBox::sltApplyData()
@@ -309,24 +309,26 @@ NifVectorEdit::NifVectorEdit( NifModel * n, const QModelIndex & index )
 	connect( vector, &VectorEdit::sigEdited, this, &NifVectorEdit::sltApplyData );
 }
 
-void NifVectorEdit::updateData( NifModel * n )
+void NifVectorEdit::updateData( NifModel * dstNif )
 {
-	NifValue val = n->getValue( index );
-
-	if ( val.type() == NifValue::tVector3 )
-		vector->setVector3( val.get<Vector3>() );
-	else if ( val.type() == NifValue::tVector2 )
-		vector->setVector2( val.get<Vector2>() );
+	NifItem * item = dstNif->getItem( index );
+	if ( item ) {
+		if ( item->isVector3() )
+			vector->setVector3( item->get<Vector3>() );
+		else if ( item->isVector2() )
+			vector->setVector2( item->get<Vector2>() );
+	}
 }
 
-void NifVectorEdit::applyData( NifModel * n )
+void NifVectorEdit::applyData( NifModel * dstNif )
 {
-	NifValue::Type type = n->getValue( index ).type();
-
-	if ( type == NifValue::tVector3 )
-		n->set<Vector3>( index, vector->getVector3() );
-	else if ( type == NifValue::tVector2 )
-		n->set<Vector2>( index, vector->getVector2() );
+	NifItem * item = dstNif->getItem( index );
+	if ( item ) {
+		if ( item->isVector3() )
+			item->set<Vector3>( vector->getVector3() );
+		else if ( item->isVector2() )
+			item->set<Vector2>( vector->getVector2() );
+	}
 }
 
 NifRotationEdit::NifRotationEdit( NifModel * n, const QModelIndex & index )
@@ -336,24 +338,26 @@ NifRotationEdit::NifRotationEdit( NifModel * n, const QModelIndex & index )
 	connect( rotation, &RotationEdit::sigEdited, this, &NifRotationEdit::sltApplyData );
 }
 
-void NifRotationEdit::updateData( NifModel * n )
+void NifRotationEdit::updateData( NifModel * dstNif )
 {
-	NifValue val = n->getValue( index );
-
-	if ( val.type() == NifValue::tMatrix )
-		rotation->setMatrix( val.get<Matrix>() );
-	else if ( val.type() == NifValue::tQuat || val.type() == NifValue::tQuatXYZW )
-		rotation->setQuat( val.get<Quat>() );
+	const NifItem * item = dstNif->getItem( index );
+	if ( item ) {
+		if ( item->isMatrix() )
+			rotation->setMatrix( item->get<Matrix>() );
+		else if ( item->isQuat() )
+			rotation->setQuat( item->get<Quat>() );
+	}
 }
 
-void NifRotationEdit::applyData( NifModel * n )
+void NifRotationEdit::applyData( NifModel * dstNif )
 {
-	NifValue::Type type = n->getValue( index ).type();
-
-	if ( type == NifValue::tMatrix )
-		n->set<Matrix>( index, rotation->getMatrix() );
-	else if ( type == NifValue::tQuat || type == NifValue::tQuatXYZW )
-		n->set<Quat>( index, rotation->getQuat() );
+	NifItem * item = dstNif->getItem( index );
+	if ( item ) {
+		if ( item->isMatrix() )
+			item->set<Matrix>( rotation->getMatrix() );
+		else if ( item->isQuat() )
+			item->set<Quat>( rotation->getQuat() );
+	}
 }
 
 NifMatrix4Edit::NifMatrix4Edit( NifModel * n, const QModelIndex & index )

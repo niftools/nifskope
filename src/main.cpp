@@ -36,6 +36,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "model/nifmodel.h"
 #include "model/kfmmodel.h"
 
+#include "gamemanager.h"
+
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QDesktopServices>
@@ -48,6 +50,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 QCoreApplication * createApplication( int &argc, char *argv[] )
 {
+	QApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
 	// Iterate over args
 	for ( int i = 1; i < argc; ++i ) {
 		// -no-gui: start as core app without all the GUI overhead
@@ -69,7 +72,6 @@ int main( int argc, char * argv[] )
 	QScopedPointer<QCoreApplication> app( createApplication( argc, argv ) );
 
 	if ( auto a = qobject_cast<QApplication *>(app.data()) ) {
-
 		a->setOrganizationName( "NifTools" );
 		a->setOrganizationDomain( "niftools.org" );
 		a->setApplicationName( "NifSkope " + NifSkopeVersion::rawToMajMin( NIFSKOPE_VERSION ) );
@@ -96,6 +98,9 @@ int main( int argc, char * argv[] )
 		// Load XML files
 		NifModel::loadXML();
 		KfmModel::loadXML();
+
+		// Init game manager
+		auto mgr = Game::GameManager::get();
 
 		int port = NIFSKOPE_IPC_PORT;
 
