@@ -82,7 +82,7 @@ bool exportCreateNodes(const NifModel* nif, const Scene* scene, tinygltf::Model&
 			// Create extra nodes for GPU LODs
 			int createdNodes = 1;
 			if ( isBSGeometry ) {
-				if ( !gltf.materials.contains(mesh->materialPath) ) {
+				if ( !mesh->materialPath.isEmpty() && !gltf.materials.contains(mesh->materialPath) ) {
 					gltf.materials << mesh->materialPath;
 				}
 				hasGPULODs = mesh->gpuLODs.size() > 0;
@@ -508,6 +508,9 @@ bool exportCreateMeshes(const NifModel* nif, const Scene* scene, tinygltf::Model
 void exportGltf(const NifModel* nif, const Scene* scene, const QModelIndex& index)
 {
 	QString filename = QFileDialog::getSaveFileName(qApp->activeWindow(), tr("Choose a .glTF file for export"), nif->getFilename(), "glTF (*.gltf)");
+	if ( filename.isEmpty() )
+		return;
+
 	QString buffName = filename;
 	buffName = QString(buffName.remove(".gltf") + ".bin");
 

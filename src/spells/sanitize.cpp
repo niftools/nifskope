@@ -447,20 +447,20 @@ public:
 			}
 
 			// Fix "Root Material" field
-			if ( isProp && nif->getIndex( iBlock, "Root Material" ).isValid() ) {
-				auto wetIdx = nif->get<int>( iBlock, "Root Material" );
-				auto wetString = nif->get<QString>( iBlock, "Root Material" );
+			if ( nif->getBSVersion() < 172 && isProp && nif->getIndex(iBlock, "Root Material").isValid() ) {
+				auto rootIdx = nif->get<int>(iBlock, "Root Material");
+				auto rootString = nif->get<QString>(iBlock, "Root Material");
 
-				int newWetIdx = -1;
+				int newRootIdx = -1;
 
-				bool invalidString = !wetString.isEmpty() && !wetString.endsWith( ".bgsm", Qt::CaseInsensitive );
-				if ( wetIdx >= numStrings || invalidString ) {
-					rename( newWetIdx, "" );
+				bool invalidString = !rootString.isEmpty() && !rootString.endsWith(".bgsm", Qt::CaseInsensitive);
+				if ( rootIdx >= numStrings || invalidString ) {
+					rename(newRootIdx, "");
 				}
 
-				if ( newWetIdx > -1 ) {
-					nif->set<int>( iBlock, "Root Material", newWetIdx );
-					modifiedBlocks.insert( nif->getIndex( iBlock, "Root Material" ), "Root Material" );
+				if ( newRootIdx > -1 ) {
+					nif->set<int>(iBlock, "Root Material", newRootIdx);
+					modifiedBlocks.insert(nif->getIndex(iBlock, "Root Material"), "Root Material");
 				}
 			}
 
@@ -481,8 +481,8 @@ public:
 					rename( newIdx, "" );
 				} else {
 					auto ci = Qt::CaseInsensitive;
-					if ( !(nameString.endsWith( ".bgsm", ci ) || nameString.endsWith( ".bgem", ci )) ) {
-						rename( newIdx, "" );
+					if ( !(nameString.endsWith(".bgsm", ci) || nameString.endsWith(".bgem", ci) || nameString.endsWith(".mat", ci)) ) {
+						rename(newIdx, "");
 					}
 				}
 			}
@@ -664,7 +664,8 @@ QModelIndex spErrorInvalidPaths::cast( NifModel * nif, const QModelIndex & )
 		auto iBSLSP = nif->getBlockIndex( i, "BSLightingShaderProperty" );
 		if ( iBSLSP.isValid() ) {
 			checkPath( nif, iBSLSP, "Name", P_NO_EXT );
-			checkPath( nif, iBSLSP, "Root Material", P_NO_EXT );
+			if ( nif->getBSVersion() < 172 )
+				checkPath( nif, iBSLSP, "Root Material", P_NO_EXT );
 		}
 
 		auto iBSESP = nif->getBlockIndex( i, "BSEffectShaderProperty" );
