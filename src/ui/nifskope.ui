@@ -315,9 +315,7 @@
     </property>
     <addaction name="aToggleHelp"/>
     <addaction name="separator"/>
-    <addaction name="aDiscord"/>
     <addaction name="aHelpWebsite"/>
-    <addaction name="aHelpForum"/>
     <addaction name="separator"/>
     <addaction name="aNifToolsWebsite"/>
     <addaction name="aNifToolsDownloads"/>
