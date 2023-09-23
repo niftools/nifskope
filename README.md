@@ -1,4 +1,4 @@
-﻿# NifSkope 2.0.dev8
+﻿# NifSkope 2.0.dev9
 
 NifSkope is a tool for opening and editing the NetImmerse file format (NIF). NIF is used by video games such as Morrowind, Oblivion, Skyrim, Fallout 3/NV/4/76, Starfield, Civilization IV, and more. 
 
