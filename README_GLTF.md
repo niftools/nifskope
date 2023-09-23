@@ -6,7 +6,12 @@ glTF Import into NifSkope will be implemented in a subsequent release.
 
 # glTF Export
 
-glTF export is currently supported on static and skinned Starfield meshes.
+glTF export is currently supported on static and skinned Starfield meshes. 
+
+To view and export Starfield meshes, you must first:
+
+1. Enable and add the path to your Starfield installation in Settings > Resources.
+2. Add the archives or extracted folders containing `geometries` to Archives or Paths in Settings > Resources, under Starfield.
 
 Skinned meshes currently require a small amount of setup before export. For the Blender glTF importer they require certain import options.
 
