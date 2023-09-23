@@ -18,6 +18,7 @@
 #include <QBuffer>
 #include <QVector>
 #include <QFileDialog>
+#include <QFileInfo>
 
 #define tr( x ) QApplication::tr( x )
 
@@ -532,7 +533,12 @@ void exportGltf(const NifModel* nif, const Scene* scene, const QModelIndex& inde
 		gltf.materials.prepend("Default");
 		for ( const auto& name : gltf.materials ) {
 			auto mat = tinygltf::Material();
-			mat.name = name.toStdString();
+			auto finfo = QFileInfo(name);
+			mat.name = finfo.baseName().toStdString();
+			std::map<std::string, tinygltf::Value> extras;
+			extras["Material Path"] = tinygltf::Value(name.toStdString());
+			mat.extras = tinygltf::Value(extras);
+
 			model.materials.push_back(mat);
 		}
 
